@@ -23,11 +23,9 @@ class AlbumBackdrop extends StatefulWidget {
   State<AlbumBackdrop> createState() => _AlbumBackdropState();
 }
 
-class _AlbumBackdropState extends State<AlbumBackdrop>
-    with SingleTickerProviderStateMixin {
+class _AlbumBackdropState extends State<AlbumBackdrop> {
   static const _fallbackColor = Color(0xFF263333);
 
-  late final AnimationController _backgroundMotion;
   Color _dominantColor = _fallbackColor;
   Color _vibrantColor = _fallbackColor;
   int _paletteRequest = 0;
@@ -35,11 +33,6 @@ class _AlbumBackdropState extends State<AlbumBackdrop>
   @override
   void initState() {
     super.initState();
-    _backgroundMotion = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 6),
-    );
-    _syncBackgroundMotion();
     _extractPalette();
   }
 
@@ -52,25 +45,7 @@ class _AlbumBackdropState extends State<AlbumBackdrop>
       _paletteRequest++;
       _dominantColor = _fallbackColor;
       _vibrantColor = _fallbackColor;
-      _syncBackgroundMotion();
       _extractPalette();
-    }
-  }
-
-  @override
-  void dispose() {
-    _backgroundMotion.dispose();
-    super.dispose();
-  }
-
-  void _syncBackgroundMotion() {
-    if (widget.imageUrl?.trim().isNotEmpty == true) {
-      if (!_backgroundMotion.isAnimating) {
-        _backgroundMotion.repeat(reverse: true);
-      }
-    } else {
-      _backgroundMotion.stop();
-      _backgroundMotion.value = 0;
     }
   }
 
@@ -97,7 +72,6 @@ class _AlbumBackdropState extends State<AlbumBackdrop>
         size: const Size(24, 24),
         maximumColorCount: 5,
         timeout: const Duration(seconds: 4),
-        runInIsolate: false,
       );
       if (!mounted || request != _paletteRequest) return;
       setState(() {
@@ -143,28 +117,16 @@ class _AlbumBackdropState extends State<AlbumBackdrop>
       children: [
         const ColoredBox(color: Color(0xFF101819)),
         if (provider != null)
-          AnimatedBuilder(
-            animation: _backgroundMotion,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 38, sigmaY: 38),
-              child: Image(image: provider, fit: BoxFit.cover),
-            ),
-            builder: (context, child) {
-              final drift = Curves.easeInOutSine.transform(
-                _backgroundMotion.value,
-              );
-              return Positioned.fill(
-                child: ClipRect(
-                  child: Transform.translate(
-                    offset: Offset((drift - 0.5) * 120, (0.5 - drift) * 84),
-                    child: Transform.scale(
-                      scale: 1.2 + drift * 0.28,
-                      child: child,
-                    ),
-                  ),
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: Image(
+                  image: ResizeImage(provider, width: 640, height: 640),
+                  fit: BoxFit.cover,
                 ),
-              );
-            },
+              ),
+            ),
           ),
         Positioned.fill(
           child: AnimatedContainer(
