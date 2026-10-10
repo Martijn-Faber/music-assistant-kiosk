@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'player_glass_widgets.dart';
+
 /// A low-motion clock shown while the selected player is idle.
 class ClockScreensaverPage extends StatefulWidget {
   const ClockScreensaverPage({super.key});
@@ -50,30 +52,49 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                 style: const TextStyle(
                   color: Color(0xFFF1F4EA),
                   fontSize: 88,
-                  fontWeight: FontWeight.w300,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -3,
                   height: 1,
+                  shadows: [
+                    Shadow(
+                      color: Color(0x33000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
               date,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFFD8E0DB),
                 fontSize: 18,
-                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w500,
+                shadows: [Shadow(color: Color(0x44000000), blurRadius: 8)],
               ),
             ),
-            const SizedBox(height: 44),
-            const Text(
-              'Tap to choose something to play',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFFAAB7B4),
-                fontSize: 13,
-                letterSpacing: 0.2,
+            const SizedBox(height: 36),
+            GlassSurface(
+              borderRadius: 999,
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+              tint: const Color(0x22202730),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.radio_rounded, size: 16, color: Color(0xFFE9F0EB)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Tap to choose a station',
+                    style: TextStyle(
+                      color: Color(0xFFE9F0EB),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
