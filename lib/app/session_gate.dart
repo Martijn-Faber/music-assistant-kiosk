@@ -34,11 +34,14 @@ class _SessionGateState extends State<SessionGate> {
   int _volumeRefreshRequest = 0;
   Timer? _volumeFeedbackTimer;
   bool _showVolumeFeedback = false;
+  bool? _clock24HourFormat;
+  int _clockFormatRevision = 0;
 
   @override
   void initState() {
     super.initState();
     _volumeButtons.setHandler(_handleHardwareButton);
+    unawaited(_restoreClockFormat());
     _restoreSession();
   }
 
@@ -69,9 +72,8 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      final selectedPlayerId = players.any(
-        (player) => player.id == savedSession.selectedPlayerId,
-      )
+      final selectedPlayerId =
+          players.any((player) => player.id == savedSession.selectedPlayerId)
           ? savedSession.selectedPlayerId
           : null;
       setState(() {
@@ -81,7 +83,8 @@ class _SessionGateState extends State<SessionGate> {
       });
       _listenToPlayerChanges(repository);
       await _setVolumeControlEnabled(selectedPlayerId != null);
-      if (selectedPlayerId != null) unawaited(_refreshQuality(selectedPlayerId));
+      if (selectedPlayerId != null)
+        unawaited(_refreshQuality(selectedPlayerId));
     } catch (_) {
       await repository?.disconnect();
       if (mounted) {
@@ -90,6 +93,24 @@ class _SessionGateState extends State<SessionGate> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _restoreClockFormat() async {
+    try {
+      final revision = _clockFormatRevision;
+      final format = await _sessionStorage.readClock24HourFormat();
+      if (mounted && revision == _clockFormatRevision) {
+        setState(() => _clock24HourFormat = format);
+      }
+    } catch (_) {
+      // The clock falls back to the device's time format if storage is unavailable.
+    }
+  }
+
+  void _setClockFormat(bool? format) {
+    _clockFormatRevision++;
+    setState(() => _clock24HourFormat = format);
+    unawaited(_sessionStorage.saveClock24HourFormat(format));
   }
 
   Future<void> _connect(
@@ -124,9 +145,8 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      final selectedPlayerId = players.any(
-        (player) => player.id == savedPlayerId,
-      )
+      final selectedPlayerId =
+          players.any((player) => player.id == savedPlayerId)
           ? savedPlayerId
           : null;
       setState(() {
@@ -136,7 +156,8 @@ class _SessionGateState extends State<SessionGate> {
       });
       _listenToPlayerChanges(repository);
       await _setVolumeControlEnabled(selectedPlayerId != null);
-      if (selectedPlayerId != null) unawaited(_refreshQuality(selectedPlayerId));
+      if (selectedPlayerId != null)
+        unawaited(_refreshQuality(selectedPlayerId));
     } on MissingPluginException {
       await repository?.disconnect();
       if (mounted) {
@@ -197,8 +218,8 @@ class _SessionGateState extends State<SessionGate> {
         final previousPlayer = _players
             .where((item) => item.id == player.id)
             .firstOrNull;
-        final updatedPlayer = player.volumeLevel == null &&
-                previousPlayer?.volumeLevel != null
+        final updatedPlayer =
+            player.volumeLevel == null && previousPlayer?.volumeLevel != null
             ? player.withVolumeLevel(previousPlayer!.volumeLevel)
             : player;
         final trackChanged =
@@ -347,7 +368,8 @@ class _SessionGateState extends State<SessionGate> {
       final currentPlayer = _players
           .where((player) => player.id == playerId)
           .firstOrNull;
-      final playerToStore = refreshedPlayer.volumeLevel == null &&
+      final playerToStore =
+          refreshedPlayer.volumeLevel == null &&
               currentPlayer?.volumeLevel != null
           ? refreshedPlayer.withVolumeLevel(currentPlayer!.volumeLevel)
           : refreshedPlayer;
@@ -396,6 +418,8 @@ class _SessionGateState extends State<SessionGate> {
       playerActionError: _playerActionError,
       error: _playerError,
       showVolumeFeedback: _showVolumeFeedback,
+      clock24HourFormat: _clock24HourFormat,
+      onClock24HourFormatChanged: _setClockFormat,
       onSelectPlayer: _selectPlayer,
       onDisconnect: _disconnect,
     );

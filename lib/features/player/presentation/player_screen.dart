@@ -23,6 +23,8 @@ class PlayerScreen extends StatelessWidget {
     required this.playerActionError,
     required this.error,
     required this.showVolumeFeedback,
+    required this.clock24HourFormat,
+    required this.onClock24HourFormatChanged,
     required this.onSelectPlayer,
     required this.onDisconnect,
   });
@@ -34,6 +36,8 @@ class PlayerScreen extends StatelessWidget {
   final String? playerActionError;
   final String? error;
   final bool showVolumeFeedback;
+  final bool? clock24HourFormat;
+  final ValueChanged<bool?> onClock24HourFormatChanged;
   final ValueChanged<String> onSelectPlayer;
   final VoidCallback onDisconnect;
 
@@ -176,6 +180,8 @@ class PlayerScreen extends StatelessWidget {
       serverAddress:
           Uri.tryParse(repository.serverUrl)?.authority ?? repository.serverUrl,
       deviceName: player?.name,
+      clock24HourFormat: clock24HourFormat,
+      onClock24HourFormatChanged: onClock24HourFormatChanged,
       onSelectPlayer: onSelectPlayer,
       onSignOut: onDisconnect,
     );
@@ -185,7 +191,7 @@ class PlayerScreen extends StatelessWidget {
         playerName: 'No player selected',
         groupMemberCount: null,
         pages: [
-          const ClockScreensaverPage(),
+          ClockScreensaverPage(alwaysUse24HourFormat: clock24HourFormat),
           const NothingPlayingPage(),
           const NothingPlayingPage(),
           settingsPage,
@@ -224,7 +230,10 @@ class PlayerScreen extends StatelessWidget {
       playerName: player.name,
       groupMemberCount: player.groupMemberCount,
       pages: [
-        ClockScreensaverPage(nowPlayingLabel: nowPlayingLabel),
+        ClockScreensaverPage(
+          nowPlayingLabel: nowPlayingLabel,
+          alwaysUse24HourFormat: clock24HourFormat,
+        ),
         idleHome,
         playerView,
         settingsPage,
@@ -592,6 +601,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
       return ClockScreensaverPage(
         nowPlayingLabel: page.nowPlayingLabel,
         onNowPlayingTap: _openPlayerPage,
+        alwaysUse24HourFormat: page.alwaysUse24HourFormat,
       );
     }
     return page;

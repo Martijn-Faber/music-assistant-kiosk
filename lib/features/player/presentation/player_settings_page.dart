@@ -11,6 +11,8 @@ class PlayerSettingsPage extends StatefulWidget {
     required this.selectedPlayerId,
     required this.serverAddress,
     required this.deviceName,
+    required this.clock24HourFormat,
+    required this.onClock24HourFormatChanged,
     required this.onSelectPlayer,
     required this.onSignOut,
   });
@@ -19,6 +21,8 @@ class PlayerSettingsPage extends StatefulWidget {
   final String? selectedPlayerId;
   final String serverAddress;
   final String? deviceName;
+  final bool? clock24HourFormat;
+  final ValueChanged<bool?> onClock24HourFormatChanged;
   final ValueChanged<String> onSelectPlayer;
   final VoidCallback onSignOut;
 
@@ -113,6 +117,10 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     ),
                   ],
                   const SizedBox(height: 20),
+                  _sectionLabel('CLOCK FORMAT'),
+                  const SizedBox(height: 8),
+                  _clockFormatSelector(),
+                  const SizedBox(height: 20),
                   _sectionLabel('CONNECTED TO'),
                   const SizedBox(height: 8),
                   _infoRow(Icons.dns_outlined, widget.serverAddress),
@@ -155,6 +163,61 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
       letterSpacing: 1.1,
     ),
   );
+
+  Widget _clockFormatSelector() {
+    final selected = switch (widget.clock24HourFormat) {
+      true => 2,
+      false => 1,
+      null => 0,
+    };
+    const options = <(String, bool?)>[
+      ('System', null),
+      ('12 hour', false),
+      ('24 hour', true),
+    ];
+
+    return GlassSurface(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(4),
+      tint: const Color(0x22303840),
+      child: Row(
+        children: [
+          for (var index = 0; index < options.length; index++)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () =>
+                    widget.onClock24HourFormatChanged(options[index].$2),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  decoration: BoxDecoration(
+                    color: index == selected
+                        ? const Color(0x33FFFFFF)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      options[index].$1,
+                      style: TextStyle(
+                        color: index == selected
+                            ? Colors.white
+                            : const Color(0xFFCBD4D0),
+                        fontSize: 12,
+                        fontWeight: index == selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   Widget _infoRow(IconData icon, String value) => GlassSurface(
     borderRadius: 15,

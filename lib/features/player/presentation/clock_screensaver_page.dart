@@ -10,10 +10,12 @@ class ClockScreensaverPage extends StatefulWidget {
     super.key,
     this.nowPlayingLabel,
     this.onNowPlayingTap,
+    this.alwaysUse24HourFormat,
   });
 
   final String? nowPlayingLabel;
   final VoidCallback? onNowPlayingTap;
+  final bool? alwaysUse24HourFormat;
 
   @override
   State<ClockScreensaverPage> createState() => _ClockScreensaverPageState();
@@ -42,7 +44,9 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
   Widget build(BuildContext context) {
     final time = MaterialLocalizations.of(context).formatTimeOfDay(
       TimeOfDay.fromDateTime(_now),
-      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+      alwaysUse24HourFormat:
+          widget.alwaysUse24HourFormat ??
+          MediaQuery.alwaysUse24HourFormatOf(context),
     );
     final date = MaterialLocalizations.of(context).formatFullDate(_now);
 

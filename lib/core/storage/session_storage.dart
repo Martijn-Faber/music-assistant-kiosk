@@ -17,6 +17,24 @@ class SessionStorage {
   static const _serverKey = 'music_assistant_server';
   static const _tokenKey = 'music_assistant_token';
   static const _playerKey = 'music_assistant_player';
+  static const _clock24HourKey = 'clock_24_hour_format';
+
+  Future<bool?> readClock24HourFormat() async {
+    final value = await _storage.read(key: _clock24HourKey);
+    return switch (value) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    };
+  }
+
+  Future<void> saveClock24HourFormat(bool? value) async {
+    if (value == null) {
+      await _storage.delete(key: _clock24HourKey);
+    } else {
+      await _storage.write(key: _clock24HourKey, value: value.toString());
+    }
+  }
 
   Future<SavedSession?> readSession() async {
     final serverUrl = await _storage.read(key: _serverKey);
