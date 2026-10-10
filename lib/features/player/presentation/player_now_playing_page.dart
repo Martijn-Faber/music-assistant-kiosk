@@ -136,11 +136,17 @@ class NowPlayingPage extends StatelessWidget {
     if (!centered) {
       return SizedBox(
         height: artworkSize,
-        child: Stack(
-          clipBehavior: Clip.none,
+        child: CustomMultiChildLayout(
+          delegate: _TrackInfoPillLayoutDelegate(),
           children: [
-            Align(alignment: Alignment.topLeft, child: _qualityVolumePill()),
-            Center(child: trackInfo),
+            LayoutId(
+              id: _TrackInfoPillLayoutDelegate.trackInfo,
+              child: trackInfo,
+            ),
+            LayoutId(
+              id: _TrackInfoPillLayoutDelegate.pill,
+              child: _qualityVolumePill(),
+            ),
           ],
         ),
       );
@@ -246,6 +252,39 @@ class NowPlayingPage extends StatelessWidget {
       ],
     );
   }
+}
+
+class _TrackInfoPillLayoutDelegate extends MultiChildLayoutDelegate {
+  _TrackInfoPillLayoutDelegate();
+
+  static const trackInfo = 'track-info';
+  static const pill = 'pill';
+
+  @override
+  void performLayout(Size size) {
+    final infoSize = layoutChild(
+      trackInfo,
+      // Keep the child height unconstrained so its wrapped title and seek bar
+      // are measured together; this lets the pill sit above the full block.
+      BoxConstraints(maxWidth: size.width),
+    );
+    final infoTop = (size.height - infoSize.height) / 2;
+    positionChild(trackInfo, Offset(0, infoTop));
+
+    final pillSize = layoutChild(
+      pill,
+      BoxConstraints(maxWidth: size.width, maxHeight: size.height),
+    );
+    // The track block can be taller than the artwork area when the title
+    // wraps. Allow the pill to move above that area's top instead of clamping
+    // it back down on top of the title.
+    final pillTop = infoTop - pillSize.height - 12;
+    positionChild(pill, Offset(0, pillTop));
+  }
+
+  @override
+  bool shouldRelayout(covariant _TrackInfoPillLayoutDelegate oldDelegate) =>
+      false;
 }
 
 class _TrackProgressBar extends StatefulWidget {
