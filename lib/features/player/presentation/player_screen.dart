@@ -576,38 +576,14 @@ class _PlayerPagesState extends State<_PlayerPages> {
           child: SizedBox(
             height: 58,
             child: Center(
-              child: index == 0 || index == 3
+              child: index == 0 || index == 1 || index == 3
                   ? const SizedBox.shrink()
                   : index == 2
                   ? PlayerNamePill(
                       playerName: widget.playerName,
                       groupMemberCount: widget.groupMemberCount,
                     )
-                  : GlassSurface(
-                      borderRadius: 999,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.radio_rounded,
-                            size: 16,
-                            color: Color(0xFFE9F0EB),
-                          ),
-                          const SizedBox(width: 7),
-                          Text(
-                            index == 1 ? 'RADIO' : 'SETTINGS',
-                            style: TextStyle(
-                              color: Color(0xFFE9F0EB),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  : const SizedBox.shrink(),
             ),
           ),
         ),
