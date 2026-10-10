@@ -13,6 +13,7 @@ class NowPlayingPage extends StatelessWidget {
     super.key,
     required this.player,
     required this.repository,
+    required this.onShowQueue,
     required this.qualityLabel,
     required this.playerActionError,
     required this.error,
@@ -20,6 +21,7 @@ class NowPlayingPage extends StatelessWidget {
 
   final PlayerSummary player;
   final MusicAssistantRepository repository;
+  final VoidCallback onShowQueue;
   final String? qualityLabel;
   final String? playerActionError;
   final String? error;
@@ -35,11 +37,39 @@ class NowPlayingPage extends StatelessWidget {
           : (constraints.maxHeight - 16)
                 .clamp(compact ? 116.0 : 150.0, compact ? 176.0 : 220.0)
                 .toDouble();
-      final artwork = ArtworkImage(
-        imageUrl: player.imageUrl,
-        serverUrl: repository.serverUrl,
-        token: repository.token,
-        size: artworkSize,
+      final artwork = SizedBox.square(
+        dimension: artworkSize,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ArtworkImage(
+              imageUrl: player.imageUrl,
+              serverUrl: repository.serverUrl,
+              token: repository.token,
+              size: artworkSize,
+            ),
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onShowQueue,
+                  borderRadius: BorderRadius.circular(999),
+                  child: const GlassPill(
+                    padding: EdgeInsets.all(11),
+                    tint: Color(0x66202730),
+                    child: Icon(
+                      Icons.queue_music_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
       final details = _details(compact, desktop, artworkSize, centered: !wide);
       if (wide) {
@@ -148,15 +178,6 @@ class NowPlayingPage extends StatelessWidget {
               : qualityLabel ?? 'QUALITY UNKNOWN',
           style: const TextStyle(color: Colors.white, fontSize: 12),
         ),
-        if (player.volumeLevel != null) ...[
-          const SizedBox(width: 14),
-          const Icon(Icons.volume_up_outlined, size: 15, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(
-            '${player.volumeLevel}%',
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ],
       ],
     ),
   );

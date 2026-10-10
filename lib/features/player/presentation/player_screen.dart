@@ -10,6 +10,7 @@ import 'clock_screensaver_page.dart';
 import 'idle_player_page.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
+import 'player_queue_sheet.dart';
 import 'player_settings_page.dart';
 import 'radio_station_picker_dialog.dart';
 
@@ -220,6 +221,17 @@ class PlayerScreen extends StatelessWidget {
         : NowPlayingPage(
             player: player,
             repository: repository,
+            onShowQueue: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              enableDrag: false,
+              useSafeArea: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              showDragHandle: false,
+              builder: (context) =>
+                  PlayerQueueSheet(repository: repository, playerId: player.id),
+            ),
             qualityLabel: qualityLabel,
             playerActionError: playerActionError,
             error: error,
@@ -744,3 +756,4 @@ class _PlayerPagesState extends State<_PlayerPages> {
     ],
   );
 }
+

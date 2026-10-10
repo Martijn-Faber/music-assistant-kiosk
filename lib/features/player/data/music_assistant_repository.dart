@@ -3,6 +3,7 @@ import 'package:music_assistant/music_assistant.dart';
 
 import '../domain/player_summary.dart';
 import '../domain/playback_progress_report.dart';
+import '../domain/player_queue_snapshot.dart';
 import '../domain/recent_media_item.dart';
 import '../domain/radio_station.dart';
 
@@ -98,6 +99,26 @@ class MusicAssistantRepository {
       return '${format.toUpperCase()} · ${(bitRate / 1000).round()} KBPS';
     }
     return format.toUpperCase();
+  }
+
+  Future<PlayerQueueSnapshot> fetchQueue(String playerId) async {
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final queueId = queue?.queueId ?? playerId;
+    final response = await _client.sendCommand(
+      'player_queues/items',
+      args: {'queue_id': queueId, 'limit': 500, 'offset': 0},
+    );
+    final items = response is List
+        ? response
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(growable: false)
+        : const <Map<String, dynamic>>[];
+    return PlayerQueueSnapshot(
+      playerName: queue?.displayName ?? playerId,
+      currentIndex: queue?.currentIndex,
+      items: items,
+    );
   }
 
   Future<List<RadioStation>> fetchRadioStations() async {

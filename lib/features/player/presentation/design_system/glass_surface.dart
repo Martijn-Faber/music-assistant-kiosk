@@ -12,6 +12,7 @@ class GlassSurface extends StatelessWidget {
     this.padding = const EdgeInsets.all(8),
     this.constraints,
     this.tint = const Color(0x33232A30),
+    this.border,
   });
 
   final Widget child;
@@ -19,6 +20,7 @@ class GlassSurface extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final BoxConstraints? constraints;
   final Color tint;
+  final Border? border;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -42,7 +44,7 @@ class GlassSurface extends StatelessWidget {
           decoration: BoxDecoration(
             color: tint,
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: GlassTokens.border, width: 0.8),
+            border: border ?? Border.all(color: GlassTokens.border, width: 0.8),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
