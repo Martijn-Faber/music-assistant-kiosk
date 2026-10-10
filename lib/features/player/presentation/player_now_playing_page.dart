@@ -41,7 +41,7 @@ class NowPlayingPage extends StatelessWidget {
         token: repository.token,
         size: artworkSize,
       );
-      final details = _details(context, compact, desktop, centered: !wide);
+      final details = _details(compact, desktop, artworkSize, centered: !wide);
       if (wide) {
         return Padding(
           padding: EdgeInsets.symmetric(
@@ -97,11 +97,71 @@ class NowPlayingPage extends StatelessWidget {
   );
 
   Widget _details(
-    BuildContext context,
     bool compact,
-    bool desktop, {
+    bool desktop,
+    double artworkSize, {
     required bool centered,
   }) {
+    final trackInfo = _trackInfo(compact, desktop, centered: centered);
+    if (!centered) {
+      return SizedBox(
+        height: artworkSize,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Align(alignment: Alignment.topLeft, child: _qualityVolumePill()),
+            Center(child: trackInfo),
+          ],
+        ),
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _qualityVolumePill(),
+        SizedBox(height: compact ? 10 : 16),
+        _trackInfo(compact, desktop, centered: true),
+      ],
+    );
+  }
+
+  Widget _qualityVolumePill() => GlassPill(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    tint: const Color(0x22202730),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          player.available == false
+              ? Icons.error_outline_rounded
+              : Icons.graphic_eq_rounded,
+          size: 15,
+          color: player.available == false
+              ? const Color(0xFFFF8E7C)
+              : Colors.white,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          player.available == false
+              ? 'UNAVAILABLE'
+              : qualityLabel ?? 'QUALITY UNKNOWN',
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
+        if (player.volumeLevel != null) ...[
+          const SizedBox(width: 14),
+          const Icon(Icons.volume_up_outlined, size: 15, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            '${player.volumeLevel}%',
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ],
+      ],
+    ),
+  );
+
+  Widget _trackInfo(bool compact, bool desktop, {required bool centered}) {
     final artist = player.artist?.trim();
     final album = player.album?.trim();
     final hasArtist = artist?.isNotEmpty == true;
@@ -148,45 +208,6 @@ class NowPlayingPage extends StatelessWidget {
           SizedBox(height: compact ? 12 : 18),
           _TrackProgressBar(player: player, centered: centered),
         ],
-        SizedBox(height: compact ? 8 : 18),
-        GlassPill(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          tint: const Color(0x22202730),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                player.available == false
-                    ? Icons.error_outline_rounded
-                    : Icons.graphic_eq_rounded,
-                size: 15,
-                color: player.available == false
-                    ? const Color(0xFFFF8E7C)
-                    : Colors.white,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                player.available == false
-                    ? 'UNAVAILABLE'
-                    : qualityLabel ?? 'QUALITY UNKNOWN',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-              if (player.volumeLevel != null) ...[
-                const SizedBox(width: 14),
-                const Icon(
-                  Icons.volume_up_outlined,
-                  size: 15,
-                  color: Colors.white,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${player.volumeLevel}%',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ],
-            ],
-          ),
-        ),
         if (playerActionError != null) ...[
           const SizedBox(height: 8),
           Text(
