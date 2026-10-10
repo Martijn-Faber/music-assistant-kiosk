@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
 import '../domain/radio_station.dart';
 import 'album_backdrop.dart';
+import 'clock_screensaver_page.dart';
 import 'idle_player_page.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
@@ -182,6 +185,7 @@ class PlayerScreen extends StatelessWidget {
         playerName: 'No player selected',
         groupMemberCount: null,
         pages: [
+          const ClockScreensaverPage(),
           const NothingPlayingPage(),
           const NothingPlayingPage(),
           settingsPage,
@@ -211,7 +215,7 @@ class PlayerScreen extends StatelessWidget {
       isIdle: isIdle,
       playerName: player.name,
       groupMemberCount: player.groupMemberCount,
-      pages: [playerView, idleHome, settingsPage],
+      pages: [const ClockScreensaverPage(), idleHome, playerView, settingsPage],
     );
   }
 
@@ -484,14 +488,17 @@ class _PlayerPages extends StatefulWidget {
 }
 
 class _PlayerPagesState extends State<_PlayerPages> {
+  static const _screensaverDelay = Duration(minutes: 1);
+
   late final PageController _controller;
   late int _pageIndex;
   bool _showPager = false;
+  Timer? _screensaverTimer;
 
   @override
   void initState() {
     super.initState();
-    _pageIndex = widget.isIdle ? 1 : 0;
+    _pageIndex = widget.isIdle ? 0 : 2;
     _controller = PageController(initialPage: _pageIndex, viewportFraction: 1);
   }
 
@@ -499,7 +506,8 @@ class _PlayerPagesState extends State<_PlayerPages> {
   void didUpdateWidget(covariant _PlayerPages oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isIdle != widget.isIdle) {
-      final targetPage = widget.isIdle ? 1 : 0;
+      _screensaverTimer?.cancel();
+      final targetPage = widget.isIdle ? 0 : 2;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_controller.hasClients) return;
         _controller.animateToPage(
@@ -513,6 +521,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
 
   @override
   void dispose() {
+    _screensaverTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -528,6 +537,33 @@ class _PlayerPagesState extends State<_PlayerPages> {
     return false;
   }
 
+  void _onPageChanged(int index) {
+    setState(() => _pageIndex = index);
+    _screensaverTimer?.cancel();
+    if (widget.isIdle && index != 0) {
+      _screensaverTimer = Timer(_screensaverDelay, () {
+        if (mounted && widget.isIdle && _controller.hasClients) {
+          _controller.animateToPage(
+            0,
+            duration: const Duration(milliseconds: 550),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      });
+    }
+  }
+
+  void _openIdlePage() {
+    if (!widget.isIdle || _pageIndex != 0 || !_controller.hasClients) {
+      return;
+    }
+    _controller.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
   Widget _pageBottomControl(int index) => Positioned(
     left: 0,
     right: 0,
@@ -540,9 +576,9 @@ class _PlayerPagesState extends State<_PlayerPages> {
           child: SizedBox(
             height: 58,
             child: Center(
-              child: index == 2
+              child: index == 0 || index == 3
                   ? const SizedBox.shrink()
-                  : index == 0
+                  : index == 2
                   ? PlayerNamePill(
                       playerName: widget.playerName,
                       groupMemberCount: widget.groupMemberCount,
@@ -588,7 +624,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
         child: PageView.builder(
           controller: _controller,
           itemCount: widget.pages.length,
-          onPageChanged: (index) => setState(() => _pageIndex = index),
+          onPageChanged: _onPageChanged,
           itemBuilder: (context, index) => AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -650,9 +686,13 @@ class _PlayerPagesState extends State<_PlayerPages> {
                 ),
               );
             },
-            child: Stack(
-              fit: StackFit.expand,
-              children: [widget.pages[index], _pageBottomControl(index)],
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: index == 0 && widget.isIdle ? _openIdlePage : null,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [widget.pages[index], _pageBottomControl(index)],
+              ),
             ),
           ),
         ),
