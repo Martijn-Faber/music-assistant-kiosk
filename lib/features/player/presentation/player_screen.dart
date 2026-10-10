@@ -202,6 +202,14 @@ class PlayerScreen extends StatelessWidget {
       onBrowseRadio: () => _startRadio(context, player),
     );
     final isIdle = !hasCurrentTrack && !isPlaying;
+    final nowPlayingLabel = hasCurrentTrack
+        ? [
+            player.title!.trim(),
+            if (player.artist?.trim().isNotEmpty == true) player.artist!.trim(),
+          ].join(' · ')
+        : isPlaying
+        ? 'Music is playing'
+        : null;
     final playerView = isIdle
         ? const NothingPlayingPage()
         : NowPlayingPage(
@@ -215,7 +223,12 @@ class PlayerScreen extends StatelessWidget {
       isIdle: isIdle,
       playerName: player.name,
       groupMemberCount: player.groupMemberCount,
-      pages: [const ClockScreensaverPage(), idleHome, playerView, settingsPage],
+      pages: [
+        ClockScreensaverPage(nowPlayingLabel: nowPlayingLabel),
+        idleHome,
+        playerView,
+        settingsPage,
+      ],
     );
   }
 
@@ -564,6 +577,26 @@ class _PlayerPagesState extends State<_PlayerPages> {
     );
   }
 
+  void _openPlayerPage() {
+    if (!_controller.hasClients) return;
+    _controller.animateToPage(
+      2,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  Widget _pageContent(int index) {
+    final page = widget.pages[index];
+    if (page is ClockScreensaverPage) {
+      return ClockScreensaverPage(
+        nowPlayingLabel: page.nowPlayingLabel,
+        onNowPlayingTap: _openPlayerPage,
+      );
+    }
+    return page;
+  }
+
   Widget _pageBottomControl(int index) => Positioned(
     left: 0,
     right: 0,
@@ -667,7 +700,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
               onTap: index == 0 && widget.isIdle ? _openIdlePage : null,
               child: Stack(
                 fit: StackFit.expand,
-                children: [widget.pages[index], _pageBottomControl(index)],
+                children: [_pageContent(index), _pageBottomControl(index)],
               ),
             ),
           ),

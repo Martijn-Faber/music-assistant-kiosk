@@ -6,7 +6,14 @@ import 'player_glass_widgets.dart';
 
 /// A low-motion clock shown while the selected player is idle.
 class ClockScreensaverPage extends StatefulWidget {
-  const ClockScreensaverPage({super.key});
+  const ClockScreensaverPage({
+    super.key,
+    this.nowPlayingLabel,
+    this.onNowPlayingTap,
+  });
+
+  final String? nowPlayingLabel;
+  final VoidCallback? onNowPlayingTap;
 
   @override
   State<ClockScreensaverPage> createState() => _ClockScreensaverPageState();
@@ -77,24 +84,43 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
               ),
             ),
             const SizedBox(height: 36),
-            GlassSurface(
-              borderRadius: 999,
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
-              tint: const Color(0x22202730),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.radio_rounded, size: 16, color: Color(0xFFE9F0EB)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Tap to choose a station',
-                    style: TextStyle(
+            GestureDetector(
+              onTap: widget.nowPlayingLabel == null
+                  ? null
+                  : widget.onNowPlayingTap,
+              child: GlassSurface(
+                borderRadius: 999,
+                constraints: const BoxConstraints(maxWidth: 360),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 9,
+                ),
+                tint: const Color(0x22202730),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.nowPlayingLabel == null
+                          ? Icons.radio_rounded
+                          : Icons.music_note_rounded,
+                      size: 16,
                       color: Color(0xFFE9F0EB),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        widget.nowPlayingLabel ?? 'Tap to choose a station',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Color(0xFFE9F0EB),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
