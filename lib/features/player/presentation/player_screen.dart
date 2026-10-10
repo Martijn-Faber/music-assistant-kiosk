@@ -7,8 +7,8 @@ import 'album_backdrop.dart';
 import 'idle_player_page.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
+import 'player_settings_page.dart';
 import 'radio_station_picker_dialog.dart';
-import 'player_settings_dialog.dart';
 
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({
@@ -33,22 +33,6 @@ class PlayerScreen extends StatelessWidget {
   final bool showVolumeFeedback;
   final ValueChanged<String> onSelectPlayer;
   final VoidCallback onDisconnect;
-
-  Future<void> _openSettings(BuildContext context) async {
-    final server = Uri.tryParse(repository.serverUrl);
-    final player = _selectedPlayer;
-    final playerId = await showDialog<String>(
-      context: context,
-      builder: (context) => PlayerSettingsDialog(
-        players: players,
-        selectedPlayerId: selectedPlayerId,
-        serverAddress: server?.authority ?? repository.serverUrl,
-        deviceName: player?.name,
-        onSignOut: onDisconnect,
-      ),
-    );
-    if (playerId != null) onSelectPlayer(playerId);
-  }
 
   PlayerSummary? get _selectedPlayer =>
       players.where((player) => player.id == selectedPlayerId).firstOrNull;
@@ -89,34 +73,6 @@ class PlayerScreen extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             SafeArea(child: Center(child: _playerContent(context, player))),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: SafeArea(
-                child: GlassSurface(
-                  borderRadius: 12,
-                  padding: EdgeInsets.zero,
-                  child: SizedBox.square(
-                    dimension: 36,
-                    child: IconButton(
-                      tooltip: 'Settings',
-                      onPressed: () => _openSettings(context),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 36,
-                        height: 36,
-                      ),
-                      style: IconButton.styleFrom(
-                        foregroundColor: const Color(0xFFE9F0EB),
-                        backgroundColor: Colors.transparent,
-                      ),
-                      icon: const Icon(Icons.settings_outlined, size: 19),
-                    ),
-                  ),
-                ),
-              ),
-            ),
             if (player != null)
               Positioned(
                 left: 0,
@@ -211,25 +167,23 @@ class PlayerScreen extends StatelessWidget {
   }
 
   Widget _playerContent(BuildContext context, PlayerSummary? player) {
+    final settingsPage = PlayerSettingsPage(
+      players: players,
+      selectedPlayerId: selectedPlayerId,
+      serverAddress:
+          Uri.tryParse(repository.serverUrl)?.authority ?? repository.serverUrl,
+      deviceName: player?.name,
+      onSelectPlayer: onSelectPlayer,
+      onSignOut: onDisconnect,
+    );
     if (player == null) {
-      return const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.speaker_group_outlined,
-            size: 36,
-            color: Color(0xFF83918E),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Choose a player in Settings',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFFF1F4EA),
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+      return _PlayerPages(
+        isIdle: true,
+        playerName: 'No player selected',
+        pages: [
+          const NothingPlayingPage(),
+          const NothingPlayingPage(),
+          settingsPage,
         ],
       );
     }
@@ -255,7 +209,7 @@ class PlayerScreen extends StatelessWidget {
     return _PlayerPages(
       isIdle: isIdle,
       playerName: player.name,
-      pages: [playerView, idleHome],
+      pages: [playerView, idleHome, settingsPage],
     );
   }
 
@@ -582,7 +536,9 @@ class _PlayerPagesState extends State<_PlayerPages> {
           child: SizedBox(
             height: 58,
             child: Center(
-              child: index == 0
+              child: index == 2
+                  ? const SizedBox.shrink()
+                  : index == 0
                   ? PlayerNamePill(playerName: widget.playerName)
                   : GlassSurface(
                       borderRadius: 999,
@@ -599,8 +555,8 @@ class _PlayerPagesState extends State<_PlayerPages> {
                             color: Color(0xFFE9F0EB),
                           ),
                           const SizedBox(width: 7),
-                          const Text(
-                            'RADIO',
+                          Text(
+                            index == 1 ? 'RADIO' : 'SETTINGS',
                             style: TextStyle(
                               color: Color(0xFFE9F0EB),
                               fontSize: 11,
@@ -708,9 +664,14 @@ class _PlayerPagesState extends State<_PlayerPages> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    PageDot(active: _pageIndex == 0),
-                    const SizedBox(width: 7),
-                    PageDot(active: _pageIndex == 1),
+                    for (
+                      var index = 0;
+                      index < widget.pages.length;
+                      index++
+                    ) ...[
+                      if (index > 0) const SizedBox(width: 7),
+                      PageDot(active: _pageIndex == index),
+                    ],
                   ],
                 ),
               ),
