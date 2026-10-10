@@ -1,3 +1,5 @@
+import 'playback_progress_report.dart';
+
 class PlayerSummary {
   const PlayerSummary({
     required this.id,
@@ -6,6 +8,7 @@ class PlayerSummary {
     this.available,
     this.volumeLevel,
     this.title,
+    this.mediaUri,
     this.artist,
     this.album,
     this.imageUrl,
@@ -21,6 +24,7 @@ class PlayerSummary {
   final bool? available;
   final int? volumeLevel;
   final String? title;
+  final String? mediaUri;
   final String? artist;
   final String? album;
   final String? imageUrl;
@@ -40,6 +44,7 @@ class PlayerSummary {
     available: available,
     volumeLevel: value,
     title: title,
+    mediaUri: mediaUri,
     artist: artist,
     album: album,
     imageUrl: imageUrl,
@@ -48,6 +53,27 @@ class PlayerSummary {
     elapsedTimeSeconds: elapsedTimeSeconds,
     elapsedTimeLastUpdated: elapsedTimeLastUpdated,
   );
+
+  PlayerSummary withPlaybackProgress(PlaybackProgressReport report) {
+    final newItem =
+        mediaUri != report.uri && (mediaUri != null || title != report.name);
+    return PlayerSummary(
+      id: id,
+      name: name,
+      playbackState: report.isPlaying ? 'playing' : 'paused',
+      available: available,
+      volumeLevel: volumeLevel,
+      title: report.name,
+      mediaUri: report.uri,
+      artist: report.artist ?? (newItem ? null : artist),
+      album: report.album ?? (newItem ? null : album),
+      imageUrl: report.imageUrl ?? (newItem ? null : imageUrl),
+      groupMembers: groupMembers,
+      durationSeconds: report.durationSeconds,
+      elapsedTimeSeconds: report.secondsPlayed,
+      elapsedTimeLastUpdated: DateTime.now().millisecondsSinceEpoch / 1000,
+    );
+  }
 
   factory PlayerSummary.fromMap(Map<String, dynamic> data) {
     final id = data['player_id'];
@@ -76,6 +102,7 @@ class PlayerSummary {
       available: available is bool ? available : null,
       volumeLevel: volumeLevel is num ? volumeLevel.toInt() : null,
       title: _mapString(media, 'title'),
+      mediaUri: _mapString(media, 'uri'),
       artist: _mapString(media, 'artist'),
       album: _mapString(media, 'album'),
       imageUrl: _mapString(media, 'image_url'),

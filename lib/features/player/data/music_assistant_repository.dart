@@ -2,6 +2,7 @@ import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 
 import '../domain/player_summary.dart';
+import '../domain/playback_progress_report.dart';
 import '../domain/recent_media_item.dart';
 import '../domain/radio_station.dart';
 
@@ -196,9 +197,27 @@ class MusicAssistantRepository {
   void Function() listenToPlayerEvents({
     required void Function(PlayerSummary player) onChanged,
     required void Function(String playerId) onRemoved,
+    required void Function(String playerId, PlaybackProgressReport report)
+    onProgress,
   }) {
     return _client.subscribe(
       (event) {
+        if (event.type == EventType.mediaItemPlayed) {
+          final data = event.data;
+          if (data is! Map) return;
+          final playerId = data['player_id'];
+          if (playerId is! String || playerId.isEmpty) return;
+          try {
+            onProgress(
+              playerId,
+              PlaybackProgressReport.fromMap(Map<String, dynamic>.from(data)),
+            );
+          } on FormatException {
+            return;
+          }
+          return;
+        }
+
         if (event.type == EventType.playerRemoved) {
           final playerId = event.objectId;
           if (playerId != null) onRemoved(playerId);
@@ -222,6 +241,7 @@ class MusicAssistantRepository {
         EventType.playerAdded,
         EventType.playerUpdated,
         EventType.playerRemoved,
+        EventType.mediaItemPlayed,
       },
     );
   }

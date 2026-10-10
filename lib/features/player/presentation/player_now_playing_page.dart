@@ -257,21 +257,34 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   void didUpdateWidget(covariant _TrackProgressBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     final trackChanged =
+        oldWidget.player.mediaUri != widget.player.mediaUri ||
         oldWidget.player.title != widget.player.title ||
         oldWidget.player.imageUrl != widget.player.imageUrl;
     final positionChanged =
-        oldWidget.player.elapsedTimeSeconds != widget.player.elapsedTimeSeconds;
-    if (trackChanged || positionChanged) {
-      _localPositionAtStart = trackChanged
-          ? widget.player.elapsedTimeSeconds ?? 0
-          : widget.player.elapsedTimeSeconds ??
-                _positionAt(_now, oldWidget.player);
+        oldWidget.player.elapsedTimeSeconds !=
+            widget.player.elapsedTimeSeconds ||
+        oldWidget.player.elapsedTimeLastUpdated !=
+            widget.player.elapsedTimeLastUpdated;
+    if (trackChanged) {
+      _localPositionAtStart = widget.player.elapsedTimeSeconds ?? 0;
       _localPositionStartedAt = DateTime.now();
+      _now = _localPositionStartedAt;
+    } else if (positionChanged) {
+      // Re-anchor from the newest server sample so periodic position events
+      // don't make the progress bar jump back to an older local estimate.
+      _localPositionStartedAt = DateTime.now();
+      _localPositionAtStart = _positionAt(
+        _localPositionStartedAt,
+        widget.player,
+      );
       _now = _localPositionStartedAt;
     } else if (oldWidget.player.playbackState.toLowerCase() !=
         widget.player.playbackState.toLowerCase()) {
-      _localPositionAtStart = _positionAt(_now, oldWidget.player);
       _localPositionStartedAt = DateTime.now();
+      _localPositionAtStart = _positionAt(
+        _localPositionStartedAt,
+        oldWidget.player,
+      );
       _now = _localPositionStartedAt;
     }
     if (oldWidget.player.playbackState != widget.player.playbackState ||
@@ -283,7 +296,7 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   void _updateTimer() {
     _timer?.cancel();
     if (_isPlaying && (widget.player.durationSeconds ?? 0) > 0) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
         if (mounted) setState(() => _now = DateTime.now());
       });
     }

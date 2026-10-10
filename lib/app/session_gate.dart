@@ -225,6 +225,7 @@ class _SessionGateState extends State<SessionGate> {
         final trackChanged =
             previousPlayer == null ||
             previousPlayer.title != updatedPlayer.title ||
+            previousPlayer.mediaUri != updatedPlayer.mediaUri ||
             previousPlayer.artist != updatedPlayer.artist ||
             previousPlayer.album != updatedPlayer.album;
         final volumeChanged =
@@ -268,6 +269,14 @@ class _SessionGateState extends State<SessionGate> {
           unawaited(_sessionStorage.saveSelectedPlayerId(null));
           unawaited(_setVolumeControlEnabled(false));
         }
+      },
+      onProgress: (playerId, report) {
+        if (!mounted) return;
+        final index = _players.indexWhere((player) => player.id == playerId);
+        if (index == -1) return;
+        setState(() {
+          _players[index] = _players[index].withPlaybackProgress(report);
+        });
       },
     );
   }
