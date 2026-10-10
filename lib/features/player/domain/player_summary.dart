@@ -9,6 +9,7 @@ class PlayerSummary {
     this.artist,
     this.album,
     this.imageUrl,
+    this.groupMembers = const [],
   });
 
   final String id;
@@ -20,6 +21,11 @@ class PlayerSummary {
   final String? artist;
   final String? album;
   final String? imageUrl;
+  final List<String>? groupMembers;
+
+  /// Number of output players in a group, or null for a single player.
+  int? get groupMemberCount =>
+      (groupMembers?.length ?? 0) > 1 ? groupMembers!.length : null;
 
   PlayerSummary withVolumeLevel(int? value) => PlayerSummary(
     id: id,
@@ -31,6 +37,7 @@ class PlayerSummary {
     artist: artist,
     album: album,
     imageUrl: imageUrl,
+    groupMembers: groupMembers,
   );
 
   factory PlayerSummary.fromMap(Map<String, dynamic> data) {
@@ -43,6 +50,10 @@ class PlayerSummary {
     final media = rawMedia is Map ? rawMedia : null;
     final available = data['available'];
     final volumeLevel = data['group_volume'] ?? data['volume_level'];
+    final rawGroupMembers = data['group_members'] ?? data['group_childs'];
+    final groupMembers = rawGroupMembers is List
+        ? rawGroupMembers.whereType<String>().toList(growable: false)
+        : const <String>[];
 
     return PlayerSummary(
       id: id,
@@ -54,6 +65,7 @@ class PlayerSummary {
       artist: _mapString(media, 'artist'),
       album: _mapString(media, 'album'),
       imageUrl: _mapString(media, 'image_url'),
+      groupMembers: groupMembers,
     );
   }
 

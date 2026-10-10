@@ -180,6 +180,7 @@ class PlayerScreen extends StatelessWidget {
       return _PlayerPages(
         isIdle: true,
         playerName: 'No player selected',
+        groupMemberCount: null,
         pages: [
           const NothingPlayingPage(),
           const NothingPlayingPage(),
@@ -209,6 +210,7 @@ class PlayerScreen extends StatelessWidget {
     return _PlayerPages(
       isIdle: isIdle,
       playerName: player.name,
+      groupMemberCount: player.groupMemberCount,
       pages: [playerView, idleHome, settingsPage],
     );
   }
@@ -468,11 +470,13 @@ class _PlayerPages extends StatefulWidget {
   const _PlayerPages({
     required this.isIdle,
     required this.playerName,
+    required this.groupMemberCount,
     required this.pages,
   });
 
   final bool isIdle;
   final String playerName;
+  final int? groupMemberCount;
   final List<Widget> pages;
 
   @override
@@ -539,7 +543,10 @@ class _PlayerPagesState extends State<_PlayerPages> {
               child: index == 2
                   ? const SizedBox.shrink()
                   : index == 0
-                  ? PlayerNamePill(playerName: widget.playerName)
+                  ? PlayerNamePill(
+                      playerName: widget.playerName,
+                      groupMemberCount: widget.groupMemberCount,
+                    )
                   : GlassSurface(
                       borderRadius: 999,
                       padding: const EdgeInsets.symmetric(

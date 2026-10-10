@@ -20,9 +20,10 @@ class PageDot extends StatelessWidget {
 }
 
 class PlayerNamePill extends StatelessWidget {
-  const PlayerNamePill({required this.playerName});
+  const PlayerNamePill({required this.playerName, this.groupMemberCount});
 
   final String playerName;
+  final int? groupMemberCount;
 
   @override
   Widget build(BuildContext context) => GlassSurface(
@@ -35,15 +36,32 @@ class PlayerNamePill extends StatelessWidget {
         const Icon(Icons.speaker_outlined, size: 16, color: Color(0xFFE9F0EB)),
         const SizedBox(width: 8),
         Flexible(
-          child: Text(
-            playerName,
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                color: Color(0xFFE9F0EB),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              children: [
+                TextSpan(text: playerName),
+                if (groupMemberCount != null)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.aboveBaseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: Text(
+                      ' +$groupMemberCount',
+                      style: const TextStyle(
+                        color: Color(0xFFE9F0EB),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFE9F0EB),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ),
       ],
