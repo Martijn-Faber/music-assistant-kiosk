@@ -10,6 +10,9 @@ class PlayerSummary {
     this.album,
     this.imageUrl,
     this.groupMembers = const [],
+    this.durationSeconds,
+    this.elapsedTimeSeconds,
+    this.elapsedTimeLastUpdated,
   });
 
   final String id;
@@ -22,6 +25,9 @@ class PlayerSummary {
   final String? album;
   final String? imageUrl;
   final List<String>? groupMembers;
+  final int? durationSeconds;
+  final double? elapsedTimeSeconds;
+  final double? elapsedTimeLastUpdated;
 
   /// Number of output players in a group, or null for a single player.
   int? get groupMemberCount =>
@@ -38,6 +44,9 @@ class PlayerSummary {
     album: album,
     imageUrl: imageUrl,
     groupMembers: groupMembers,
+    durationSeconds: durationSeconds,
+    elapsedTimeSeconds: elapsedTimeSeconds,
+    elapsedTimeLastUpdated: elapsedTimeLastUpdated,
   );
 
   factory PlayerSummary.fromMap(Map<String, dynamic> data) {
@@ -51,6 +60,11 @@ class PlayerSummary {
     final available = data['available'];
     final volumeLevel = data['group_volume'] ?? data['volume_level'];
     final rawGroupMembers = data['group_members'] ?? data['group_childs'];
+    final elapsedTime = data['elapsed_time'] ?? media?['elapsed_time'];
+    final elapsedTimeLastUpdated =
+        data['elapsed_time_last_updated'] ??
+        media?['elapsed_time_last_updated'];
+    final duration = media?['duration'];
     final groupMembers = rawGroupMembers is List
         ? rawGroupMembers.whereType<String>().toList(growable: false)
         : const <String>[];
@@ -66,6 +80,11 @@ class PlayerSummary {
       album: _mapString(media, 'album'),
       imageUrl: _mapString(media, 'image_url'),
       groupMembers: groupMembers,
+      durationSeconds: duration is num ? duration.toInt() : null,
+      elapsedTimeSeconds: elapsedTime is num ? elapsedTime.toDouble() : null,
+      elapsedTimeLastUpdated: elapsedTimeLastUpdated is num
+          ? elapsedTimeLastUpdated.toDouble()
+          : null,
     );
   }
 
