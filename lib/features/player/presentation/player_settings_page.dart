@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/player_summary.dart';
-import 'player_glass_widgets.dart';
+import 'design_system/glass_design_system.dart';
 
 /// Settings as a regular pager destination, sized for the kiosk display.
 class PlayerSettingsPage extends StatefulWidget {
@@ -64,50 +64,30 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  _sectionLabel('PLAYER ON SCREEN'),
+                  const GlassSectionLabel('PLAYER ON SCREEN'),
                   const SizedBox(height: 8),
-                  GlassSurface(
-                    borderRadius: 18,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    tint: const Color(0x22303840),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value:
-                            widget.players.any((p) => p.id == _selectedPlayerId)
-                            ? _selectedPlayerId
-                            : null,
-                        isExpanded: true,
-                        dropdownColor: const Color(0xFF263333),
-                        hint: const Text(
-                          'Select a player',
-                          style: TextStyle(color: Color(0xFFCBD4D0)),
-                        ),
-                        iconEnabledColor: Colors.white,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                        items: widget.players
-                            .map(
-                              (player) => DropdownMenuItem(
-                                value: player.id,
-                                child: Text(
-                                  player.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (id) {
-                          if (id == null) return;
-                          setState(() => _selectedPlayerId = id);
-                          widget.onSelectPlayer(id);
-                        },
-                      ),
-                    ),
+                  GlassDropdown<String>(
+                    value: widget.players.any((p) => p.id == _selectedPlayerId)
+                        ? _selectedPlayerId
+                        : null,
+                    hint: 'Select a player',
+                    items: widget.players
+                        .map(
+                          (player) => DropdownMenuItem<String>(
+                            value: player.id,
+                            child: Text(
+                              player.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      setState(() => _selectedPlayerId = id);
+                      widget.onSelectPlayer(id);
+                    },
                   ),
                   if (widget.players.isEmpty) ...[
                     const SizedBox(height: 8),
@@ -117,34 +97,26 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     ),
                   ],
                   const SizedBox(height: 20),
-                  _sectionLabel('CLOCK FORMAT'),
+                  const GlassSectionLabel('CLOCK FORMAT'),
                   const SizedBox(height: 8),
                   _clockFormatSelector(),
                   const SizedBox(height: 20),
-                  _sectionLabel('CONNECTED TO'),
+                  const GlassSectionLabel('CONNECTED TO'),
                   const SizedBox(height: 8),
-                  _infoRow(Icons.dns_outlined, widget.serverAddress),
+                  GlassInfoRow(
+                    icon: Icons.dns_outlined,
+                    value: widget.serverAddress,
+                  ),
                   const SizedBox(height: 8),
-                  _infoRow(
-                    Icons.speaker_outlined,
-                    widget.deviceName ?? 'No player selected',
+                  GlassInfoRow(
+                    icon: Icons.speaker_outlined,
+                    value: widget.deviceName ?? 'No player selected',
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: OutlinedButton.icon(
-                      onPressed: widget.onSignOut,
-                      icon: const Icon(Icons.logout_rounded),
-                      label: const Text('SIGN OUT'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFFFA294),
-                        side: const BorderSide(color: Color(0x66FFFFFF)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
+                  GlassOutlineButton(
+                    icon: Icons.logout_rounded,
+                    label: 'SIGN OUT',
+                    onPressed: widget.onSignOut,
                   ),
                 ],
               ),
@@ -155,87 +127,20 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     ),
   );
 
-  Widget _sectionLabel(String text) => Text(
-    text,
-    style: const TextStyle(
-      color: Color(0xFFCBD4D0),
-      fontSize: 11,
-      letterSpacing: 1.1,
-    ),
-  );
-
   Widget _clockFormatSelector() {
     final selected = switch (widget.clock24HourFormat) {
       true => 2,
       false => 1,
       null => 0,
     };
-    const options = <(String, bool?)>[
-      ('System', null),
-      ('12 hour', false),
-      ('24 hour', true),
-    ];
-
-    return GlassSurface(
-      borderRadius: 16,
-      padding: const EdgeInsets.all(4),
-      tint: const Color(0x22303840),
-      child: Row(
-        children: [
-          for (var index = 0; index < options.length; index++)
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () =>
-                    widget.onClock24HourFormatChanged(options[index].$2),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  decoration: BoxDecoration(
-                    color: index == selected
-                        ? const Color(0x33FFFFFF)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      options[index].$1,
-                      style: TextStyle(
-                        color: index == selected
-                            ? Colors.white
-                            : const Color(0xFFCBD4D0),
-                        fontSize: 12,
-                        fontWeight: index == selected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+    return GlassSegmentedControl(
+      options: const ['System', '12 hour', '24 hour'],
+      selectedIndex: selected,
+      onSelected: (index) => widget.onClock24HourFormatChanged(switch (index) {
+        1 => false,
+        2 => true,
+        _ => null,
+      }),
     );
   }
-
-  Widget _infoRow(IconData icon, String value) => GlassSurface(
-    borderRadius: 15,
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    tint: const Color(0x1A303840),
-    child: Row(
-      children: [
-        Icon(icon, size: 19, color: const Color(0xFFD8E0DB)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFFE9F0EB), fontSize: 14),
-          ),
-        ),
-      ],
-    ),
-  );
 }

@@ -92,8 +92,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
               onTap: widget.nowPlayingLabel == null
                   ? null
                   : widget.onNowPlayingTap,
-              child: GlassSurface(
-                borderRadius: 999,
+              child: GlassPill(
                 constraints: const BoxConstraints(maxWidth: 360),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 15,

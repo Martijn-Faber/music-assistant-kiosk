@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/player_summary.dart';
+import 'design_system/glass_dropdown.dart';
 
 class PlayerSettingsDialog extends StatefulWidget {
   const PlayerSettingsDialog({
@@ -58,15 +59,14 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
             if (widget.players.isEmpty)
               const Text('No players found on this server.')
             else
-              DropdownButton<String>(
+              GlassDropdown<String>(
                 value:
                     widget.players.any(
                       (player) => player.id == _selectedPlayerId,
                     )
                     ? _selectedPlayerId
                     : null,
-                isExpanded: true,
-                hint: const Text('Select a player'),
+                hint: 'Select a player',
                 items: widget.players
                     .map(
                       (player) => DropdownMenuItem<String>(

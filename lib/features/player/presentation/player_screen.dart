@@ -119,11 +119,10 @@ class PlayerScreen extends StatelessWidget {
 
   Widget _volumeFeedbackBar(PlayerSummary player) {
     final volume = player.volumeLevel?.clamp(0, 100);
-    return GlassSurface(
+    return GlassPill(
       key: const ValueKey('volume-feedback-visible'),
       constraints: const BoxConstraints(maxWidth: 300),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      borderRadius: 999,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -328,8 +327,7 @@ class PlayerScreen extends StatelessWidget {
           ),
         ],
         SizedBox(height: compact ? 8 : 18),
-        GlassSurface(
-          borderRadius: 999,
+        GlassPill(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           tint: const Color(0x22202730),
           child: Row(
@@ -723,8 +721,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
           bottom: 8,
           child: IgnorePointer(
             child: Center(
-              child: GlassSurface(
-                borderRadius: 999,
+              child: GlassPill(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 tint: const Color(0x33202730),
                 child: Row(

@@ -149,8 +149,7 @@ class NowPlayingPage extends StatelessWidget {
           _TrackProgressBar(player: player, centered: centered),
         ],
         SizedBox(height: compact ? 8 : 18),
-        GlassSurface(
-          borderRadius: 999,
+        GlassPill(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           tint: const Color(0x22202730),
           child: Row(

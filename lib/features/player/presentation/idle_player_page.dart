@@ -287,8 +287,7 @@ class _FavoriteRadioTab extends StatelessWidget {
       Positioned(
         right: 8,
         top: 8,
-        child: GlassSurface(
-          borderRadius: 999,
+        child: GlassPill(
           padding: EdgeInsets.zero,
           child: TextButton.icon(
             onPressed: onBrowseRadio,
