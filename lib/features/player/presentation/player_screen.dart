@@ -12,6 +12,7 @@ import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
 import 'player_queue_sheet.dart';
 import 'player_settings_page.dart';
+import 'player_volume_dialog.dart';
 import 'radio_station_picker_dialog.dart';
 
 class PlayerScreen extends StatelessWidget {
@@ -192,6 +193,8 @@ class PlayerScreen extends StatelessWidget {
         isIdle: true,
         playerName: 'No player selected',
         groupMemberCount: null,
+        repository: repository,
+        player: null,
         pages: [
           ClockScreensaverPage(alwaysUse24HourFormat: clock24HourFormat),
           const NothingPlayingPage(),
@@ -247,6 +250,8 @@ class PlayerScreen extends StatelessWidget {
       isIdle: isIdle,
       playerName: player.name,
       groupMemberCount: player.groupMemberCount,
+      repository: repository,
+      player: player,
       pages: [
         ClockScreensaverPage(
           nowPlayingLabel: nowPlayingLabel,
@@ -514,12 +519,16 @@ class _PlayerPages extends StatefulWidget {
     required this.isIdle,
     required this.playerName,
     required this.groupMemberCount,
+    required this.repository,
+    required this.player,
     required this.pages,
   });
 
   final bool isIdle;
   final String playerName;
   final int? groupMemberCount;
+  final MusicAssistantRepository repository;
+  final PlayerSummary? player;
   final List<Widget> pages;
 
   @override
@@ -624,7 +633,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
     return page;
   }
 
-  Widget _pageBottomControl(int index) => Positioned(
+  Widget _pageBottomControl(BuildContext context, int index) => Positioned(
     left: 0,
     right: 0,
     bottom: 2,
@@ -633,6 +642,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
         duration: const Duration(milliseconds: 140),
         opacity: _showPager ? 0 : 1,
         child: IgnorePointer(
+          ignoring: _showPager,
           child: SizedBox(
             height: 58,
             child: Center(
@@ -642,6 +652,15 @@ class _PlayerPagesState extends State<_PlayerPages> {
                   ? PlayerNamePill(
                       playerName: widget.playerName,
                       groupMemberCount: widget.groupMemberCount,
+                      onTap: widget.player == null
+                          ? null
+                          : () => showDialog<void>(
+                              context: context,
+                              builder: (_) => PlayerVolumeDialog(
+                                repository: widget.repository,
+                                player: widget.player!,
+                              ),
+                            ),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -715,7 +734,10 @@ class _PlayerPagesState extends State<_PlayerPages> {
               onTap: index == 0 && widget.isIdle ? _openIdlePage : null,
               child: Stack(
                 fit: StackFit.expand,
-                children: [_pageContent(index), _pageBottomControl(index)],
+                children: [
+                  _pageContent(index),
+                  _pageBottomControl(context, index),
+                ],
               ),
             ),
           ),

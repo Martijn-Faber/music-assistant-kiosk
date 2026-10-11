@@ -337,6 +337,15 @@ class MusicAssistantRepository {
   Future<void> setGroupVolume(String playerId, int volumeLevel) =>
       _client.players.groupVolume(playerId, volumeLevel);
 
+  Future<void> setPlayerVolume(String playerId, int volumeLevel) async {
+    // Music Assistant expects `volume_level` for this command. The SDK's
+    // volumeSet helper sends `volume`, which the server does not recognize.
+    await _client.sendCommand(
+      'players/cmd/volume_set',
+      args: {'player_id': playerId, 'volume_level': volumeLevel},
+    );
+  }
+
   Future<void> togglePlayback(String playerId) =>
       _client.players.playPause(playerId);
 
