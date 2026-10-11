@@ -349,16 +349,16 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       _didPositionQueueAtCurrentItem = true;
                       _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
                       WidgetsBinding.instance.addPostFrameCallback((_) async {
-                        if (!mounted) return;
-                        if (shouldExpandSheet && _sheetController.isAttached) {
-                          await _sheetController.animateTo(
-                            _maxExtent,
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOutCubic,
-                          );
-                        }
                         if (!mounted || !scrollController.hasClients) return;
                         final position = scrollController.position;
+                        final expandSheet =
+                            shouldExpandSheet && _sheetController.isAttached;
+                        final expansionPixels = expandSheet
+                            ? MediaQuery.sizeOf(context).height *
+                                  (_maxExtent - _sheetController.size)
+                            : 0.0;
+                        final targetViewport =
+                            position.viewportDimension + expansionPixels;
                         final currentRowHeight =
                             _queueArtist(queue.items[currentQueueRowIndex]) ==
                                     null
@@ -369,15 +369,29 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               queue.items,
                               currentQueueRowIndex,
                             ) -
-                            (position.viewportDimension - currentRowHeight) /
-                                2;
-                        await scrollController.animateTo(
+                            (targetViewport - currentRowHeight) / 2;
+                        final targetMaxScrollExtent =
+                            (position.maxScrollExtent - expansionPixels)
+                                .clamp(0.0, position.maxScrollExtent)
+                                .toDouble();
+                        final sheetAnimation = expandSheet
+                            ? _sheetController.animateTo(
+                                _maxExtent,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                              )
+                            : Future<void>.value();
+                        final scrollAnimation = scrollController.animateTo(
                           targetOffset
-                              .clamp(0.0, position.maxScrollExtent)
+                              .clamp(0.0, targetMaxScrollExtent)
                               .toDouble(),
-                          duration: const Duration(milliseconds: 500),
+                          duration: const Duration(milliseconds: 420),
                           curve: Curves.easeInOutCubic,
                         );
+                        await Future.wait<void>([
+                          sheetAnimation,
+                          scrollAnimation,
+                        ]);
                       });
                     }
                     return ListView.separated(
