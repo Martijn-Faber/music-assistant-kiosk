@@ -401,7 +401,15 @@ class _SessionGateState extends State<SessionGate> {
     final index = _players.indexWhere((player) => player.id == playerId);
     if (index == -1) return;
     setState(() {
-      _players[index] = _players[index].asIdle();
+      final player = _players[index];
+      _players[index] = PlayerSummary(
+        id: player.id,
+        name: player.name,
+        playbackState: 'idle',
+        available: player.available,
+        volumeLevel: player.volumeLevel,
+        groupMembers: player.groupMembers,
+      );
       if (_selectedPlayerId == playerId) _qualityLabel = null;
     });
   }

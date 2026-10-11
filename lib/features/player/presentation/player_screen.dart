@@ -669,54 +669,42 @@ class _PlayerPagesState extends State<_PlayerPages> {
                   : _pageIndex.toDouble();
               final distance = (page - index).abs();
               final scale = (1 - distance * 0.36).clamp(0.82, 1.0).toDouble();
-              final opacity = (1 - distance * 0.14).clamp(0.82, 1.0).toDouble();
               final cornerRadius = (distance * 52).clamp(0.0, 28.0).toDouble();
-              final shadowAlpha = (distance * 72).round().clamp(0, 56).toInt();
               final borderAlpha = (distance * 180)
                   .round()
                   .clamp(0, 110)
                   .toInt();
-              return Opacity(
-                opacity: opacity,
-                child: Transform.scale(
-                  scale: scale,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(cornerRadius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color.fromARGB(shadowAlpha, 0, 0, 0),
-                          blurRadius: 22 * distance,
-                          offset: Offset(0, 7 * distance),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(cornerRadius),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          child!,
-                          IgnorePointer(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  cornerRadius,
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        RepaintBoundary(child: child!),
+                        IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                cornerRadius,
+                              ),
+                              border: Border.all(
+                                color: Color.fromARGB(
+                                  borderAlpha,
+                                  255,
+                                  255,
+                                  255,
                                 ),
-                                border: Border.all(
-                                  color: Color.fromARGB(
-                                    borderAlpha,
-                                    255,
-                                    255,
-                                    255,
-                                  ),
-                                  width: 1,
-                                ),
+                                width: 1,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

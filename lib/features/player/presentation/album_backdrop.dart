@@ -120,9 +120,9 @@ class _AlbumBackdropState extends State<AlbumBackdrop> {
           Positioned.fill(
             child: RepaintBoundary(
               child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                imageFilter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                 child: Image(
-                  image: ResizeImage(provider, width: 640, height: 640),
+                  image: ResizeImage(provider, width: 320, height: 320),
                   fit: BoxFit.cover,
                 ),
               ),

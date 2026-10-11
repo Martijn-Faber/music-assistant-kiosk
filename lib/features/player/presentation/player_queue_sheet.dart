@@ -202,6 +202,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         borderRadius: 28,
         padding: EdgeInsets.zero,
         tint: const Color(0xBB141D20),
+
+        showShadow: false,
         border: const Border(
           top: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
           left: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
@@ -491,6 +493,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     borderRadius: 14,
                                     padding: EdgeInsets.zero,
                                     tint: const Color(0x33202730),
+                                    blurSigma: 0,
+                                    showShadow: false,
                                     child: Material(
                                       type: MaterialType.transparency,
                                       child: tile,
