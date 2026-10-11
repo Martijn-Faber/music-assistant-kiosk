@@ -69,9 +69,7 @@ class MusicAssistantRepository {
     return (await fetchPlaybackQualityInfo(playerId))?.qualityLabel;
   }
 
-  Future<PlaybackQualityInfo?> fetchPlaybackQualityInfo(
-    String playerId,
-  ) async {
+  Future<PlaybackQualityInfo?> fetchPlaybackQualityInfo(String playerId) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
     final currentItem = queue?.currentItem;
     final streamDetails = currentItem?.streamdetails;
@@ -102,8 +100,7 @@ class MusicAssistantRepository {
     if (audioFormat != null &&
         format != null &&
         losslessFormats.contains(format)) {
-      qualityLabel = audioFormat.sampleRate > 48000 ||
-              audioFormat.bitDepth > 16
+      qualityLabel = audioFormat.sampleRate > 48000 || audioFormat.bitDepth > 16
           ? 'HI-RES LOSSLESS'
           : 'LOSSLESS';
     } else if (format != null && format.isNotEmpty && format != '?') {
@@ -114,7 +111,8 @@ class MusicAssistantRepository {
     }
 
     final mediaProvider = currentItem.mediaItem?['provider'];
-    final source = streamDetails?.provider ??
+    final source =
+        streamDetails?.provider ??
         (mediaProvider is String ? mediaProvider : null);
     return PlaybackQualityInfo(
       source: source,
@@ -146,6 +144,15 @@ class MusicAssistantRepository {
       playerName: queue?.displayName ?? playerId,
       currentIndex: queue?.currentIndex,
       items: items,
+      autoplayEnabled: queue?.dontStopTheMusicEnabled ?? false,
+    );
+  }
+
+  Future<void> setQueueAutoplay(String playerId, bool enabled) async {
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    await _client.playerQueues.dontStopTheMusic(
+      queue?.queueId ?? playerId,
+      enabled,
     );
   }
 

@@ -35,6 +35,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   final ValueNotifier<double> _dismissProgress = ValueNotifier(0);
   double _handleDragDistance = 0;
   bool _isClearingQueue = false;
+  bool? _autoplayEnabled;
+  bool _isTogglingAutoplay = false;
   bool _isRemovingQueueItem = false;
   String? _removingQueueItemKey;
   List<Map<String, dynamic>>? _queueItemsOverride;
@@ -48,7 +50,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   @override
   void initState() {
     super.initState();
-    _queue = widget.repository.fetchQueue(widget.playerId);
+    _queue = _loadQueue();
     _currentPlayingUri = widget.initialMediaUri;
     _unsubscribeFromPlayerEvents = widget.repository.listenToPlayerEvents(
       onChanged: (player) {
@@ -72,6 +74,34 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     );
   }
 
+  Future<PlayerQueueSnapshot> _loadQueue() async {
+    final queue = await widget.repository.fetchQueue(widget.playerId);
+    if (mounted) setState(() => _autoplayEnabled = queue.autoplayEnabled);
+    return queue;
+  }
+
+  Future<void> _toggleAutoplay() async {
+    final current = _autoplayEnabled;
+    if (current == null || _isTogglingAutoplay) return;
+    final next = !current;
+    setState(() {
+      _autoplayEnabled = next;
+      _isTogglingAutoplay = true;
+    });
+    try {
+      await widget.repository.setQueueAutoplay(widget.playerId, next);
+    } catch (error) {
+      debugPrint('Could not update queue autoplay: $error');
+      if (!mounted) return;
+      setState(() => _autoplayEnabled = current);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not change autoplay.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isTogglingAutoplay = false);
+    }
+  }
+
   @override
   void dispose() {
     _unsubscribeFromPlayerEvents();
@@ -82,18 +112,16 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   void _onHandleDragUpdate(DragUpdateDetails details) {
     setState(() {
-      _handleDragDistance = (_handleDragDistance + details.delta.dy).clamp(
-        0.0,
-        180.0,
-      ).toDouble();
+      _handleDragDistance = (_handleDragDistance + details.delta.dy)
+          .clamp(0.0, 180.0)
+          .toDouble();
     });
     if (_sheetController.isAttached) {
       final height = MediaQuery.sizeOf(context).height;
       _sheetController.jumpTo(
-        (_sheetController.size - details.delta.dy / height).clamp(
-          _minExtent,
-          _maxExtent,
-        ).toDouble(),
+        (_sheetController.size - details.delta.dy / height)
+            .clamp(_minExtent, _maxExtent)
+            .toDouble(),
       );
     }
   }
@@ -102,7 +130,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     final dragDistance = _handleDragDistance;
     setState(() => _handleDragDistance = 0);
     if (!_sheetController.isAttached) return;
-    final shouldClose = _sheetController.size <= _minExtent + .015 ||
+    final shouldClose =
+        _sheetController.size <= _minExtent + .015 ||
         dragDistance >= 72 ||
         details.velocity.pixelsPerSecond.dy > 850;
     _sheetController.animateTo(
@@ -201,7 +230,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     required int queueIndex,
     required String? queueItemId,
   }) async {
-    if (_isClearingQueue || _isRemovingQueueItem ||
+    if (_isClearingQueue ||
+        _isRemovingQueueItem ||
         _startingQueueRowIndex != null) {
       return false;
     }
@@ -244,409 +274,468 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       shouldCloseOnMinExtent: true,
       builder: (context, scrollController) => SizedBox.expand(
         child: GlassSurface(
-        borderRadius: 28,
-        padding: EdgeInsets.zero,
-        tint: const Color(0xBB141D20),
+          borderRadius: 28,
+          padding: EdgeInsets.zero,
+          tint: const Color(0xBB141D20),
 
-        showShadow: false,
-        border: const Border(
-          top: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
-          left: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
-          right: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 30,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onVerticalDragUpdate: _onHandleDragUpdate,
-                    onVerticalDragEnd: _onHandleDragEnd,
-                    onVerticalDragCancel: () {
-                      if (mounted) setState(() => _handleDragDistance = 0);
-                    },
-                    child: Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: const Color(0x99FFFFFF),
-                          borderRadius: BorderRadius.circular(999),
+          showShadow: false,
+          border: const Border(
+            top: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
+            left: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
+            right: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 30,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: _onHandleDragUpdate,
+                      onVerticalDragEnd: _onHandleDragEnd,
+                      onVerticalDragCancel: () {
+                        if (mounted) setState(() => _handleDragDistance = 0);
+                      },
+                      child: Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0x99FFFFFF),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Row(
-                children: [
-                  const Icon(Icons.queue_music_rounded, color: Colors.white),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Queue',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
+                Row(
+                  children: [
+                    const Icon(Icons.queue_music_rounded, color: Colors.white),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Queue',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: 'Clear queue',
-                    onPressed: _isClearingQueue || _isRemovingQueueItem
-                        ? null
-                        : _confirmClearQueue,
-                    icon: _isClearingQueue
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white70,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.delete_sweep_outlined,
-                            color: Colors.white70,
-                          ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: FutureBuilder<PlayerQueueSnapshot>(
-                  future: _queue,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return SingleChildScrollView(
-                        controller: scrollController,
-                        child: SizedBox(
-                          height: 240,
-                          child: const Center(
-                            child: CircularProgressIndicator(
+                    IconButton(
+                      tooltip: _autoplayEnabled == true
+                          ? 'Disable autoplay'
+                          : 'Enable autoplay',
+                      onPressed: _autoplayEnabled == null || _isTogglingAutoplay
+                          ? null
+                          : _toggleAutoplay,
+                      isSelected: _autoplayEnabled == true,
+                      selectedIcon: _isTogglingAutoplay
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white70,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.all_inclusive_rounded,
                               color: Colors.white,
                             ),
-                          ),
-                        ),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      return SingleChildScrollView(
-                        controller: scrollController,
-                        child: const SizedBox(
-                          height: 240,
-                          child: Center(
-                            child: Text(
-                              'Could not load the queue.',
-                              style: TextStyle(color: Colors.white70),
+                      icon: _isTogglingAutoplay
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white70,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.all_inclusive_rounded,
+                              color: Colors.white70,
+                            ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: _autoplayEnabled == true
+                            ? const Color(0x33FFFFFF)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Clear queue',
+                      onPressed: _isClearingQueue || _isRemovingQueueItem
+                          ? null
+                          : _confirmClearQueue,
+                      icon: _isClearingQueue
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white70,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.delete_sweep_outlined,
+                              color: Colors.white70,
+                            ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: FutureBuilder<PlayerQueueSnapshot>(
+                    future: _queue,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return SingleChildScrollView(
+                          controller: scrollController,
+                          child: SizedBox(
+                            height: 240,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }
-                    final queue = snapshot.data!;
-                    final queueItems = _queueItemsOverride ?? queue.items;
-                    if (queueItems.isEmpty) {
-                      return SingleChildScrollView(
-                        controller: scrollController,
-                        child: const SizedBox(
-                          height: 240,
-                          child: Center(
-                            child: Text(
-                              'The queue is empty.',
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    final currentQueueIndex = queue.currentIndex;
-                    final uriMatch = _currentPlayingUri == null
-                        ? -1
-                        : queueItems.indexWhere(
-                            (item) => _queueItemUri(item) == _currentPlayingUri,
-                          );
-                    final serverIndexMatch = currentQueueIndex == null
-                        ? -1
-                        : queueItems.indexWhere((item) {
-                            final itemIndex = item['index'] is num
-                                ? (item['index'] as num).toInt()
-                                : item['sort_index'] is num
-                                ? (item['sort_index'] as num).toInt()
-                                : -1;
-                            return itemIndex == currentQueueIndex;
-                          });
-                    final currentQueueRowIndex =
-                        _currentQueueRowIndexOverride ??
-                        (uriMatch >= 0 ? uriMatch : serverIndexMatch);
-                    if (currentQueueRowIndex >= 0 &&
-                        currentQueueRowIndex != _lastAutoScrolledQueueRowIndex) {
-                      final shouldExpandSheet = !_didPositionQueueAtCurrentItem;
-                      _didPositionQueueAtCurrentItem = true;
-                      _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
-                      WidgetsBinding.instance.addPostFrameCallback((_) async {
-                        if (!mounted || !scrollController.hasClients) return;
-                        final position = scrollController.position;
-                        final expandSheet =
-                            shouldExpandSheet && _sheetController.isAttached;
-                        final expansionPixels = expandSheet
-                            ? MediaQuery.sizeOf(context).height *
-                                  (_maxExtent - _sheetController.size)
-                            : 0.0;
-                        final targetViewport =
-                            position.viewportDimension + expansionPixels;
-                        final currentRowHeight =
-                            _queueArtist(queueItems[currentQueueRowIndex]) ==
-                                    null
-                                ? 63.0
-                                : 79.0;
-                        final targetOffset =
-                            _estimatedQueueOffset(
-                              queueItems,
-                              currentQueueRowIndex,
-                            ) -
-                            (targetViewport - currentRowHeight) / 2;
-                        final targetMaxScrollExtent =
-                            (position.maxScrollExtent - expansionPixels)
-                                .clamp(0.0, position.maxScrollExtent)
-                                .toDouble();
-                        final sheetAnimation = expandSheet
-                            ? _sheetController.animateTo(
-                                _maxExtent,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                              )
-                            : Future<void>.value();
-                        final scrollAnimation = scrollController.animateTo(
-                          targetOffset
-                              .clamp(0.0, targetMaxScrollExtent)
-                              .toDouble(),
-                          duration: const Duration(milliseconds: 420),
-                          curve: Curves.easeInOutCubic,
                         );
-                        await Future.wait<void>([
-                          sheetAnimation,
-                          scrollAnimation,
-                        ]);
-                      });
-                    }
-                    return ListView.separated(
-                      controller: scrollController,
-                      itemCount: queueItems.length,
-                      separatorBuilder: (_, index) {
-                        final touchesCurrentItem =
-                            index == currentQueueRowIndex ||
-                            index + 1 == currentQueueRowIndex;
-                        return touchesCurrentItem
-                            ? const SizedBox(height: 1)
-                            : const Divider(
-                                color: Color(0x33FFFFFF),
-                                height: 1,
-                              );
-                      },
-                      itemBuilder: (context, index) {
-                        final item = queueItems[index];
-                        final queueIndex = item['index'] is num
-                            ? (item['index'] as num).toInt()
-                            : item['sort_index'] is num
-                            ? (item['sort_index'] as num).toInt()
-                            : index;
-                        final queueItemId = item['queue_item_id'] is String
-                            ? item['queue_item_id'] as String
-                            : null;
-                        final itemKey = _queueItemKey(item, index);
-                        final isCurrent = index == currentQueueRowIndex;
-                        final isPreviouslyPlayed = currentQueueRowIndex >= 0 &&
-                            index < currentQueueRowIndex;
-                        final artist = _queueArtist(item);
-                        final isLoading = _startingQueueRowIndex == index;
-                        final tile = ListTile(
-                          onTap: _startingQueueRowIndex == null &&
-                                  !_isClearingQueue
-                              ? () => _playQueueItem(
-                                  rowIndex: index,
-                                  queueIndex: queueIndex,
-                                  queueItemId: queueItemId,
-                                )
-                              : null,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                      }
+                      if (snapshot.hasError) {
+                        return SingleChildScrollView(
+                          controller: scrollController,
+                          child: const SizedBox(
+                            height: 240,
+                            child: Center(
+                              child: Text(
+                                'Could not load the queue.',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ),
                           ),
-                          leading: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 30,
-                                child: Center(
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: TextStyle(
-                                      color: isCurrent
-                                          ? Colors.white
-                                          : Colors.white54,
-                                      fontWeight: isCurrent
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
+                        );
+                      }
+                      final queue = snapshot.data!;
+                      final queueItems = _queueItemsOverride ?? queue.items;
+                      if (queueItems.isEmpty) {
+                        return SingleChildScrollView(
+                          controller: scrollController,
+                          child: const SizedBox(
+                            height: 240,
+                            child: Center(
+                              child: Text(
+                                'The queue is empty.',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      final currentQueueIndex = queue.currentIndex;
+                      final uriMatch = _currentPlayingUri == null
+                          ? -1
+                          : queueItems.indexWhere(
+                              (item) =>
+                                  _queueItemUri(item) == _currentPlayingUri,
+                            );
+                      final serverIndexMatch = currentQueueIndex == null
+                          ? -1
+                          : queueItems.indexWhere((item) {
+                              final itemIndex = item['index'] is num
+                                  ? (item['index'] as num).toInt()
+                                  : item['sort_index'] is num
+                                  ? (item['sort_index'] as num).toInt()
+                                  : -1;
+                              return itemIndex == currentQueueIndex;
+                            });
+                      final currentQueueRowIndex =
+                          _currentQueueRowIndexOverride ??
+                          (uriMatch >= 0 ? uriMatch : serverIndexMatch);
+                      if (currentQueueRowIndex >= 0 &&
+                          currentQueueRowIndex !=
+                              _lastAutoScrolledQueueRowIndex) {
+                        final shouldExpandSheet =
+                            !_didPositionQueueAtCurrentItem;
+                        _didPositionQueueAtCurrentItem = true;
+                        _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
+                        WidgetsBinding.instance.addPostFrameCallback((_) async {
+                          if (!mounted || !scrollController.hasClients) return;
+                          final position = scrollController.position;
+                          final expandSheet =
+                              shouldExpandSheet && _sheetController.isAttached;
+                          final expansionPixels = expandSheet
+                              ? MediaQuery.sizeOf(context).height *
+                                    (_maxExtent - _sheetController.size)
+                              : 0.0;
+                          final targetViewport =
+                              position.viewportDimension + expansionPixels;
+                          final currentRowHeight =
+                              _queueArtist(queueItems[currentQueueRowIndex]) ==
+                                  null
+                              ? 63.0
+                              : 79.0;
+                          final targetOffset =
+                              _estimatedQueueOffset(
+                                queueItems,
+                                currentQueueRowIndex,
+                              ) -
+                              (targetViewport - currentRowHeight) / 2;
+                          final targetMaxScrollExtent =
+                              (position.maxScrollExtent - expansionPixels)
+                                  .clamp(0.0, position.maxScrollExtent)
+                                  .toDouble();
+                          final sheetAnimation = expandSheet
+                              ? _sheetController.animateTo(
+                                  _maxExtent,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                )
+                              : Future<void>.value();
+                          final scrollAnimation = scrollController.animateTo(
+                            targetOffset
+                                .clamp(0.0, targetMaxScrollExtent)
+                                .toDouble(),
+                            duration: const Duration(milliseconds: 420),
+                            curve: Curves.easeInOutCubic,
+                          );
+                          await Future.wait<void>([
+                            sheetAnimation,
+                            scrollAnimation,
+                          ]);
+                        });
+                      }
+                      return ListView.separated(
+                        controller: scrollController,
+                        itemCount: queueItems.length,
+                        separatorBuilder: (_, index) {
+                          final touchesCurrentItem =
+                              index == currentQueueRowIndex ||
+                              index + 1 == currentQueueRowIndex;
+                          return touchesCurrentItem
+                              ? const SizedBox(height: 1)
+                              : const Divider(
+                                  color: Color(0x33FFFFFF),
+                                  height: 1,
+                                );
+                        },
+                        itemBuilder: (context, index) {
+                          final item = queueItems[index];
+                          final queueIndex = item['index'] is num
+                              ? (item['index'] as num).toInt()
+                              : item['sort_index'] is num
+                              ? (item['sort_index'] as num).toInt()
+                              : index;
+                          final queueItemId = item['queue_item_id'] is String
+                              ? item['queue_item_id'] as String
+                              : null;
+                          final itemKey = _queueItemKey(item, index);
+                          final isCurrent = index == currentQueueRowIndex;
+                          final isPreviouslyPlayed =
+                              currentQueueRowIndex >= 0 &&
+                              index < currentQueueRowIndex;
+                          final artist = _queueArtist(item);
+                          final isLoading = _startingQueueRowIndex == index;
+                          final tile = ListTile(
+                            onTap:
+                                _startingQueueRowIndex == null &&
+                                    !_isClearingQueue
+                                ? () => _playQueueItem(
+                                    rowIndex: index,
+                                    queueIndex: queueIndex,
+                                    queueItemId: queueItemId,
+                                  )
+                                : null,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                            ),
+                            leading: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 30,
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: TextStyle(
+                                        color: isCurrent
+                                            ? Colors.white
+                                            : Colors.white54,
+                                        fontWeight: isCurrent
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              ArtworkImage(
-                                imageUrl: RecentMediaItem.imageUrlFromMap(
-                                  Map<String, dynamic>.from(item),
+                                const SizedBox(width: 10),
+                                ArtworkImage(
+                                  imageUrl: RecentMediaItem.imageUrlFromMap(
+                                    Map<String, dynamic>.from(item),
+                                  ),
+                                  serverUrl: widget.repository.serverUrl,
+                                  token: widget.repository.token,
+                                  size: 48,
                                 ),
-                                serverUrl: widget.repository.serverUrl,
-                                token: widget.repository.token,
-                                size: 48,
-                              ),
-                            ],
-                          ),
-                          title: Text(
-                            item['name'] is String
-                                ? item['name'] as String
-                                : 'Unknown item',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: isCurrent
-                                  ? Colors.white
-                                  : const Color(0xFFD8E0DB),
-                              fontWeight: isCurrent
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
+                              ],
                             ),
-                          ),
-                          subtitle: artist == null
-                              ? null
-                              : Text(
-                                  artist,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white54),
-                                ),
-                          trailing: isLoading
-                              ? const SizedBox.square(
-                                  dimension: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                            title: Text(
+                              item['name'] is String
+                                  ? item['name'] as String
+                                  : 'Unknown item',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isCurrent
+                                    ? Colors.white
+                                    : const Color(0xFFD8E0DB),
+                                fontWeight: isCurrent
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                            subtitle: artist == null
+                                ? null
+                                : Text(
+                                    artist,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                    ),
                                   ),
-                                )
-                              : null,
-                        );
-                        return Dismissible(
-                          key: ValueKey(itemKey),
-                          direction: _isClearingQueue ||
-                                  (_isRemovingQueueItem &&
-                                      _removingQueueItemKey != itemKey) ||
-                                  _startingQueueRowIndex != null
-                              ? DismissDirection.none
-                              : DismissDirection.endToStart,
-                          confirmDismiss: (_) => _removeQueueItem(
-                            itemKey: itemKey,
-                            queueIndex: queueIndex,
-                            queueItemId: queueItemId,
-                          ),
-                          onUpdate: (details) {
-                            _dismissProgress.value = details.progress
-                                .clamp(0.0, 1.0)
-                                .toDouble();
-                          },
-                          onDismissed: (_) {
-                            final updatedItems = List<Map<String, dynamic>>.of(
-                              queueItems,
-                            )..removeAt(index);
-                            setState(() {
-                              _queueItemsOverride = updatedItems;
-                              _isRemovingQueueItem = false;
-                              _removingQueueItemKey = null;
-                            });
-                            _dismissProgress.value = 0;
-                          },
-                          background: const SizedBox.expand(),
-                          secondaryBackground: Container(
-                            alignment: Alignment.centerRight,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) =>
-                                  ValueListenableBuilder<double>(
-                                valueListenable: _dismissProgress,
-                                builder: (context, progress, _) => Container(
-                                  width: (constraints.maxWidth * progress - 8)
-                                      .clamp(0.0, constraints.maxWidth)
-                                      .toDouble(),
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD94A4A),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: _removingQueueItemKey == itemKey
-                                      ? const SizedBox.square(
-                                          dimension: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
+                            trailing: isLoading
+                                ? const SizedBox.square(
+                                    dimension: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : null,
+                          );
+                          return Dismissible(
+                            key: ValueKey(itemKey),
+                            direction:
+                                _isClearingQueue ||
+                                    (_isRemovingQueueItem &&
+                                        _removingQueueItemKey != itemKey) ||
+                                    _startingQueueRowIndex != null
+                                ? DismissDirection.none
+                                : DismissDirection.endToStart,
+                            confirmDismiss: (_) => _removeQueueItem(
+                              itemKey: itemKey,
+                              queueIndex: queueIndex,
+                              queueItemId: queueItemId,
+                            ),
+                            onUpdate: (details) {
+                              _dismissProgress.value = details.progress
+                                  .clamp(0.0, 1.0)
+                                  .toDouble();
+                            },
+                            onDismissed: (_) {
+                              final updatedItems =
+                                  List<Map<String, dynamic>>.of(queueItems)
+                                    ..removeAt(index);
+                              setState(() {
+                                _queueItemsOverride = updatedItems;
+                                _isRemovingQueueItem = false;
+                                _removingQueueItemKey = null;
+                              });
+                              _dismissProgress.value = 0;
+                            },
+                            background: const SizedBox.expand(),
+                            secondaryBackground: Container(
+                              alignment: Alignment.centerRight,
+                              child: LayoutBuilder(
+                                builder: (context, constraints) =>
+                                    ValueListenableBuilder<double>(
+                                      valueListenable: _dismissProgress,
+                                      builder: (context, progress, _) => Container(
+                                        width:
+                                            (constraints.maxWidth * progress -
+                                                    8)
+                                                .clamp(
+                                                  0.0,
+                                                  constraints.maxWidth,
+                                                )
+                                                .toDouble(),
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD94A4A),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
                                           ),
-                                        )
-                                      : Icon(
-                                          Icons.remove_from_queue_rounded,
-                                          color: Colors.white,
-                                          size: ((constraints.maxWidth *
-                                                      progress -
-                                                  8)
-                                              .clamp(0.0, constraints.maxWidth) *
-                                              0.65)
-                                              .clamp(0.0, 24.0)
-                                              .toDouble(),
                                         ),
-                                ),
+                                        alignment: Alignment.center,
+                                        child: _removingQueueItemKey == itemKey
+                                            ? const SizedBox.square(
+                                                dimension: 22,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                              )
+                                            : Icon(
+                                                Icons.remove_from_queue_rounded,
+                                                color: Colors.white,
+                                                size:
+                                                    ((constraints.maxWidth *
+                                                                        progress -
+                                                                    8)
+                                                                .clamp(
+                                                                  0.0,
+                                                                  constraints
+                                                                      .maxWidth,
+                                                                ) *
+                                                            0.65)
+                                                        .clamp(0.0, 24.0)
+                                                        .toDouble(),
+                                              ),
+                                      ),
+                                    ),
                               ),
                             ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Opacity(
-                              opacity: isPreviouslyPlayed ? .42 : 1,
-                              child: isCurrent
-                                  ? GlassSurface(
-                                      borderRadius: 14,
-                                      padding: EdgeInsets.zero,
-                                      tint: const Color(0x33202730),
-                                      blurSigma: 0,
-                                      showShadow: false,
-                                      child: Material(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Opacity(
+                                opacity: isPreviouslyPlayed ? .42 : 1,
+                                child: isCurrent
+                                    ? GlassSurface(
+                                        borderRadius: 14,
+                                        padding: EdgeInsets.zero,
+                                        tint: const Color(0x33202730),
+                                        blurSigma: 0,
+                                        showShadow: false,
+                                        child: Material(
+                                          type: MaterialType.transparency,
+                                          child: tile,
+                                        ),
+                                      )
+                                    : Material(
                                         type: MaterialType.transparency,
                                         child: tile,
                                       ),
-                                    )
-                                  : Material(
-                                      type: MaterialType.transparency,
-                                      child: tile,
-                                    ),
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -683,10 +772,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         (media['artist'] is String ? media['artist'] as String : null);
   }
 
-  double _estimatedQueueOffset(
-    List<Map<String, dynamic>> items,
-    int rowIndex,
-  ) {
+  double _estimatedQueueOffset(List<Map<String, dynamic>> items, int rowIndex) {
     var offset = 0.0;
     for (var index = 0; index < rowIndex; index++) {
       // A subtitle makes ListTile taller; include the outer vertical padding
