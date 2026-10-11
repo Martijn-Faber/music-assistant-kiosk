@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
+import '../domain/playback_quality_info.dart';
 import '../domain/player_summary.dart';
 import 'artwork_image.dart';
 import 'player_glass_widgets.dart';
@@ -71,7 +72,13 @@ class NowPlayingPage extends StatelessWidget {
           ],
         ),
       );
-      final details = _details(compact, desktop, artworkSize, centered: !wide);
+      final details = _details(
+        context,
+        compact,
+        desktop,
+        artworkSize,
+        centered: !wide,
+      );
       if (wide) {
         return Padding(
           padding: EdgeInsets.symmetric(
@@ -127,6 +134,7 @@ class NowPlayingPage extends StatelessWidget {
   );
 
   Widget _details(
+    BuildContext context,
     bool compact,
     bool desktop,
     double artworkSize, {
@@ -145,7 +153,7 @@ class NowPlayingPage extends StatelessWidget {
             ),
             LayoutId(
               id: _TrackInfoPillLayoutDelegate.pill,
-              child: _qualityVolumePill(),
+              child: _qualityVolumePill(context),
             ),
           ],
         ),
@@ -155,38 +163,60 @@ class NowPlayingPage extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _qualityVolumePill(),
+        _qualityVolumePill(context),
         SizedBox(height: compact ? 10 : 16),
         _trackInfo(compact, desktop, centered: true),
       ],
     );
   }
 
-  Widget _qualityVolumePill() => GlassPill(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-    tint: const Color(0x22202730),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          player.available == false
-              ? Icons.error_outline_rounded
-              : Icons.graphic_eq_rounded,
-          size: 15,
-          color: player.available == false
-              ? const Color(0xFFFF8E7C)
-              : Colors.white,
+  Widget _qualityVolumePill(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () => _showPlaybackInfo(context),
+      borderRadius: BorderRadius.circular(999),
+      child: GlassPill(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        tint: const Color(0x22202730),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              player.available == false
+                  ? Icons.error_outline_rounded
+                  : Icons.graphic_eq_rounded,
+              size: 15,
+              color: player.available == false
+                  ? const Color(0xFFFF8E7C)
+                  : Colors.white,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              player.available == false
+                  ? 'UNAVAILABLE'
+                  : qualityLabel ?? 'QUALITY UNKNOWN',
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+
+
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          player.available == false
-              ? 'UNAVAILABLE'
-              : qualityLabel ?? 'QUALITY UNKNOWN',
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-        ),
-      ],
+      ),
     ),
   );
+
+  Future<void> _showPlaybackInfo(BuildContext context) async {
+    final details = repository.fetchPlaybackQualityInfo(player.id);
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _PlaybackQualityDialog(
+        details: details,
+        trackTitle: player.title,
+        artist: player.artist,
+        fallbackQualityLabel: qualityLabel,
+      ),
+    );
+  }
 
   Widget _trackInfo(bool compact, bool desktop, {required bool centered}) {
     final artist = player.artist?.trim();
@@ -438,6 +468,170 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
     final remainder = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
   }
+}
+
+class _PlaybackQualityDialog extends StatelessWidget {
+  const _PlaybackQualityDialog({
+    required this.details,
+    required this.trackTitle,
+    required this.artist,
+    required this.fallbackQualityLabel,
+  });
+
+  final Future<PlaybackQualityInfo?> details;
+  final String? trackTitle;
+  final String? artist;
+  final String? fallbackQualityLabel;
+
+  @override
+  Widget build(BuildContext context) => Dialog(
+    backgroundColor: Colors.transparent,
+    insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+    child: GlassSurface(
+      borderRadius: 24,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      tint: const Color(0xEE141D20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Playback details',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  ),
+                ],
+              ),
+              if (trackTitle?.trim().isNotEmpty == true) ...[
+                Text(
+                  trackTitle!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                ),
+                if (artist?.trim().isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      artist!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+              ],
+              FutureBuilder<PlaybackQualityInfo?>(
+                future: details,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return const Text(
+                      'Could not load playback details.',
+                      style: TextStyle(color: Colors.white70),
+                    );
+                  }
+                  final info = snapshot.data;
+                  if (info == null) {
+                    return _detailRows([
+                      MapEntry('Quality', fallbackQualityLabel ?? 'Unknown'),
+                      const MapEntry(
+                        'Source',
+                        'Playback details are unavailable',
+                      ),
+                    ]);
+                  }
+                  final rows = <MapEntry<String, String>>[];
+                  void add(String label, String? value) {
+                    if (value?.trim().isNotEmpty == true) {
+                      rows.add(MapEntry(label, value!.trim()));
+                    }
+                  }
+
+                  add('Source', info.source?.toUpperCase());
+                  add('Stream', _prettify(info.streamType));
+                  add('Quality', info.qualityLabel ?? fallbackQualityLabel);
+                  add('Codec', info.codec?.toUpperCase());
+                  add('Container', info.container?.toUpperCase());
+                  if (info.sampleRateHz != null && info.sampleRateHz! > 0) {
+                    add(
+                      'Sample rate',
+                      '${(info.sampleRateHz! / 1000).toStringAsFixed(info.sampleRateHz! % 1000 == 0 ? 0 : 1)} kHz',
+                    );
+                  }
+                  if (info.bitDepth != null && info.bitDepth! > 0) {
+                    add('Bit depth', '${info.bitDepth} bit');
+                  }
+                  if (info.channels != null && info.channels! > 0) {
+                    add('Channels', '${info.channels}');
+                  }
+                  if (info.bitRate != null && info.bitRate! > 0) {
+                    add('Bitrate', '${(info.bitRate! / 1000).round()} kbps');
+                  }
+                  return _detailRows(rows);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _detailRows(List<MapEntry<String, String>> rows) => Column(
+    children: [
+      for (final row in rows)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  row.key,
+                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Flexible(
+                child: Text(
+                  row.value,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+
+  String? _prettify(String? value) => value
+      ?.split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
 }
 
 class NothingPlayingPage extends StatelessWidget {

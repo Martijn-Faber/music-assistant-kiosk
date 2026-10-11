@@ -4,6 +4,7 @@ import 'package:music_assistant/music_assistant.dart';
 import '../domain/player_summary.dart';
 import '../domain/playback_progress_report.dart';
 import '../domain/player_queue_snapshot.dart';
+import '../domain/playback_quality_info.dart';
 import '../domain/recent_media_item.dart';
 import '../domain/radio_station.dart';
 
@@ -65,13 +66,24 @@ class MusicAssistantRepository {
   }
 
   Future<String?> fetchQualityLabel(String playerId) async {
-    final queue = await _client.playerQueues.getActiveQueue(playerId);
-    final audioFormat = queue?.currentItem?.streamdetails?.audioFormat;
-    if (audioFormat == null) return null;
+    return (await fetchPlaybackQualityInfo(playerId))?.qualityLabel;
+  }
 
-    final codec = audioFormat.codecType.value.toLowerCase();
-    final contentType = audioFormat.contentType.value.toLowerCase();
-    final format = codec == '?' ? contentType : codec;
+  Future<PlaybackQualityInfo?> fetchPlaybackQualityInfo(
+    String playerId,
+  ) async {
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final currentItem = queue?.currentItem;
+    final streamDetails = currentItem?.streamdetails;
+    final audioFormat = streamDetails?.audioFormat;
+    if (currentItem == null || (streamDetails == null && audioFormat == null)) {
+      return null;
+    }
+
+    final codec = audioFormat?.codecType.value.toLowerCase();
+    final contentType = audioFormat?.contentType.value.toLowerCase();
+    final format = codec == null || codec == '?' ? contentType : codec;
+    String? qualityLabel;
     const losslessFormats = {
       'flac',
       'wav',
@@ -87,18 +99,34 @@ class MusicAssistantRepository {
       's32le',
     };
 
-    if (losslessFormats.contains(format)) {
-      return audioFormat.sampleRate > 48000 || audioFormat.bitDepth > 16
+    if (audioFormat != null &&
+        format != null &&
+        losslessFormats.contains(format)) {
+      qualityLabel = audioFormat.sampleRate > 48000 ||
+              audioFormat.bitDepth > 16
           ? 'HI-RES LOSSLESS'
           : 'LOSSLESS';
+    } else if (format != null && format.isNotEmpty && format != '?') {
+      final bitRate = audioFormat?.bitRate;
+      qualityLabel = bitRate != null && bitRate > 0
+          ? '${format.toUpperCase()} · ${(bitRate / 1000).round()} KBPS'
+          : format.toUpperCase();
     }
-    if (format.isEmpty || format == '?') return null;
 
-    final bitRate = audioFormat.bitRate;
-    if (bitRate != null && bitRate > 0) {
-      return '${format.toUpperCase()} · ${(bitRate / 1000).round()} KBPS';
-    }
-    return format.toUpperCase();
+    final mediaProvider = currentItem.mediaItem?['provider'];
+    final source = streamDetails?.provider ??
+        (mediaProvider is String ? mediaProvider : null);
+    return PlaybackQualityInfo(
+      source: source,
+      streamType: streamDetails?.streamType?.value,
+      codec: codec == null || codec == '?' ? null : codec,
+      container: contentType == null || contentType == '?' ? null : contentType,
+      sampleRateHz: audioFormat?.sampleRate,
+      bitDepth: audioFormat?.bitDepth,
+      channels: audioFormat?.channels,
+      bitRate: audioFormat?.bitRate,
+      qualityLabel: qualityLabel,
+    );
   }
 
   Future<PlayerQueueSnapshot> fetchQueue(String playerId) async {
