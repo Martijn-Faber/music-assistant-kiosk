@@ -143,7 +143,10 @@ class NowPlayingPage extends StatelessWidget {
     final trackInfo = _trackInfo(compact, desktop, centered: centered);
     if (!centered) {
       return SizedBox(
-        height: artworkSize,
+        // The layout delegate can place the pill above the artwork's top edge.
+        // Keep extra hit-test space around the layout without changing the
+        // visual alignment of the track info with the artwork.
+        height: artworkSize + 128,
         child: CustomMultiChildLayout(
           delegate: _TrackInfoPillLayoutDelegate(),
           children: [
