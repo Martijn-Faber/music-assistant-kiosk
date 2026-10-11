@@ -11,10 +11,12 @@ class PlayerQueueSheet extends StatefulWidget {
     super.key,
     required this.repository,
     required this.playerId,
+    required this.onQueueCleared,
   });
 
   final MusicAssistantRepository repository;
   final String playerId;
+  final ValueChanged<String> onQueueCleared;
 
   @override
   State<PlayerQueueSheet> createState() => _PlayerQueueSheetState();
@@ -29,6 +31,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
   double _handleDragDistance = 0;
+  bool _isClearingQueue = false;
 
   @override
   void initState() {
@@ -72,6 +75,57 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       duration: const Duration(milliseconds: 160),
       curve: Curves.easeOutCubic,
     );
+  }
+
+  Future<void> _confirmClearQueue() async {
+    if (_isClearingQueue) return;
+    final shouldClear = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF202A2D),
+        title: const Text(
+          'Clear queue?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'This will remove all items from the queue.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'CLEAR QUEUE',
+              style: TextStyle(color: Color(0xFFFF8E7C)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (shouldClear != true || !mounted) return;
+
+    setState(() => _isClearingQueue = true);
+    try {
+      await widget.repository.clearQueue(widget.playerId);
+      if (mounted) {
+        widget.onQueueCleared(widget.playerId);
+        if (mounted) Navigator.of(context).pop();
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Could not clear the queue: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not clear the queue.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isClearingQueue = false);
+    }
   }
 
   @override
@@ -136,6 +190,22 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Clear queue',
+                    onPressed: _isClearingQueue ? null : _confirmClearQueue,
+                    icon: _isClearingQueue
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white70,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.delete_sweep_outlined,
+                            color: Colors.white70,
+                          ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),

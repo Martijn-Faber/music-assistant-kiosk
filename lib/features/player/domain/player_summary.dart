@@ -54,6 +54,15 @@ class PlayerSummary {
     elapsedTimeLastUpdated: elapsedTimeLastUpdated,
   );
 
+  PlayerSummary asIdle() => PlayerSummary(
+    id: id,
+    name: name,
+    playbackState: 'idle',
+    available: available,
+    volumeLevel: volumeLevel,
+    groupMembers: groupMembers,
+  );
+
   PlayerSummary withPlaybackProgress(PlaybackProgressReport report) {
     final newItem =
         mediaUri != report.uri && (mediaUri != null || title != report.name);

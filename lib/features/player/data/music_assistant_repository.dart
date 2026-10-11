@@ -121,6 +121,13 @@ class MusicAssistantRepository {
     );
   }
 
+  Future<void> clearQueue(String playerId) async {
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final queueId = queue?.queueId ?? playerId;
+    await _client.playerQueues.stop(queueId);
+    await _client.playerQueues.clear(queueId);
+  }
+
   Future<List<RadioStation>> fetchRadioStations() async {
     final response = await _client.sendCommand('music/radios/library_items');
     final rawItems = switch (response) {

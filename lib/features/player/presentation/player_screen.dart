@@ -27,6 +27,7 @@ class PlayerScreen extends StatelessWidget {
     required this.clock24HourFormat,
     required this.onClock24HourFormatChanged,
     required this.onSelectPlayer,
+    required this.onQueueCleared,
     required this.onDisconnect,
   });
 
@@ -40,6 +41,7 @@ class PlayerScreen extends StatelessWidget {
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
   final ValueChanged<String> onSelectPlayer;
+  final ValueChanged<String> onQueueCleared;
   final VoidCallback onDisconnect;
 
   PlayerSummary? get _selectedPlayer =>
@@ -230,7 +232,11 @@ class PlayerScreen extends StatelessWidget {
               elevation: 0,
               showDragHandle: false,
               builder: (context) =>
-                  PlayerQueueSheet(repository: repository, playerId: player.id),
+                  PlayerQueueSheet(
+                    repository: repository,
+                    playerId: player.id,
+                    onQueueCleared: onQueueCleared,
+                  ),
             ),
             qualityLabel: qualityLabel,
             playerActionError: playerActionError,

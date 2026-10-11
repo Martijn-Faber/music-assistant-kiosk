@@ -397,6 +397,15 @@ class _SessionGateState extends State<SessionGate> {
     }
   }
 
+  void _markPlayerIdle(String playerId) {
+    final index = _players.indexWhere((player) => player.id == playerId);
+    if (index == -1) return;
+    setState(() {
+      _players[index] = _players[index].asIdle();
+      if (_selectedPlayerId == playerId) _qualityLabel = null;
+    });
+  }
+
   Future<void> _setVolumeControlEnabled(bool enabled) async {
     try {
       await _volumeButtons.setEnabled(enabled);
@@ -430,6 +439,7 @@ class _SessionGateState extends State<SessionGate> {
       clock24HourFormat: _clock24HourFormat,
       onClock24HourFormatChanged: _setClockFormat,
       onSelectPlayer: _selectPlayer,
+      onQueueCleared: _markPlayerIdle,
       onDisconnect: _disconnect,
     );
   }
