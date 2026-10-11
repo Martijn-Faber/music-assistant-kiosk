@@ -32,8 +32,12 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   late Future<PlayerQueueSnapshot> _queue;
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
+  final ValueNotifier<double> _dismissProgress = ValueNotifier(0);
   double _handleDragDistance = 0;
   bool _isClearingQueue = false;
+  bool _isRemovingQueueItem = false;
+  String? _removingQueueItemKey;
+  List<Map<String, dynamic>>? _queueItemsOverride;
   int? _startingQueueRowIndex;
   int? _currentQueueRowIndexOverride;
   bool _didPositionQueueAtCurrentItem = false;
@@ -71,6 +75,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   @override
   void dispose() {
     _unsubscribeFromPlayerEvents();
+    _dismissProgress.dispose();
     _sheetController.dispose();
     super.dispose();
   }
@@ -108,7 +113,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   }
 
   Future<void> _confirmClearQueue() async {
-    if (_isClearingQueue) return;
+    if (_isClearingQueue || _isRemovingQueueItem) return;
     final shouldClear = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -163,7 +168,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     required int queueIndex,
     String? queueItemId,
   }) async {
-    if (_startingQueueRowIndex != null || _isClearingQueue) return;
+    if (_startingQueueRowIndex != null ||
+        _isClearingQueue ||
+        _isRemovingQueueItem) {
+      return;
+    }
     setState(() => _startingQueueRowIndex = rowIndex);
     try {
       await widget.repository.playQueueItem(
@@ -184,6 +193,42 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       }
     } finally {
       if (mounted) setState(() => _startingQueueRowIndex = null);
+    }
+  }
+
+  Future<bool> _removeQueueItem({
+    required String itemKey,
+    required int queueIndex,
+    required String? queueItemId,
+  }) async {
+    if (_isClearingQueue || _isRemovingQueueItem ||
+        _startingQueueRowIndex != null) {
+      return false;
+    }
+    setState(() {
+      _isRemovingQueueItem = true;
+      _removingQueueItemKey = itemKey;
+    });
+    try {
+      await widget.repository.removeQueueItem(
+        widget.playerId,
+        index: queueIndex,
+        queueItemId: queueItemId,
+      );
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Could not remove queue item $itemKey: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        setState(() {
+          _isRemovingQueueItem = false;
+          _removingQueueItemKey = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not remove this queue item.')),
+        );
+      }
+      return false;
     }
   }
 
@@ -254,7 +299,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                   ),
                   IconButton(
                     tooltip: 'Clear queue',
-                    onPressed: _isClearingQueue ? null : _confirmClearQueue,
+                    onPressed: _isClearingQueue || _isRemovingQueueItem
+                        ? null
+                        : _confirmClearQueue,
                     icon: _isClearingQueue
                         ? const SizedBox.square(
                             dimension: 18,
@@ -310,7 +357,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       );
                     }
                     final queue = snapshot.data!;
-                    if (queue.items.isEmpty) {
+                    final queueItems = _queueItemsOverride ?? queue.items;
+                    if (queueItems.isEmpty) {
                       return SingleChildScrollView(
                         controller: scrollController,
                         child: const SizedBox(
@@ -327,12 +375,12 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     final currentQueueIndex = queue.currentIndex;
                     final uriMatch = _currentPlayingUri == null
                         ? -1
-                        : queue.items.indexWhere(
+                        : queueItems.indexWhere(
                             (item) => _queueItemUri(item) == _currentPlayingUri,
                           );
                     final serverIndexMatch = currentQueueIndex == null
                         ? -1
-                        : queue.items.indexWhere((item) {
+                        : queueItems.indexWhere((item) {
                             final itemIndex = item['index'] is num
                                 ? (item['index'] as num).toInt()
                                 : item['sort_index'] is num
@@ -360,13 +408,13 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         final targetViewport =
                             position.viewportDimension + expansionPixels;
                         final currentRowHeight =
-                            _queueArtist(queue.items[currentQueueRowIndex]) ==
+                            _queueArtist(queueItems[currentQueueRowIndex]) ==
                                     null
                                 ? 63.0
                                 : 79.0;
                         final targetOffset =
                             _estimatedQueueOffset(
-                              queue.items,
+                              queueItems,
                               currentQueueRowIndex,
                             ) -
                             (targetViewport - currentRowHeight) / 2;
@@ -396,7 +444,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     }
                     return ListView.separated(
                       controller: scrollController,
-                      itemCount: queue.items.length,
+                      itemCount: queueItems.length,
                       separatorBuilder: (_, index) {
                         final touchesCurrentItem =
                             index == currentQueueRowIndex ||
@@ -409,7 +457,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               );
                       },
                       itemBuilder: (context, index) {
-                        final item = queue.items[index];
+                        final item = queueItems[index];
                         final queueIndex = item['index'] is num
                             ? (item['index'] as num).toInt()
                             : item['sort_index'] is num
@@ -418,6 +466,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         final queueItemId = item['queue_item_id'] is String
                             ? item['queue_item_id'] as String
                             : null;
+                        final itemKey = _queueItemKey(item, index);
                         final isCurrent = index == currentQueueRowIndex;
                         final isPreviouslyPlayed = currentQueueRowIndex >= 0 &&
                             index < currentQueueRowIndex;
@@ -498,26 +547,96 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                 )
                               : null,
                         );
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Opacity(
-                            opacity: isPreviouslyPlayed ? .42 : 1,
-                            child: isCurrent
-                                ? GlassSurface(
-                                    borderRadius: 14,
-                                    padding: EdgeInsets.zero,
-                                    tint: const Color(0x33202730),
-                                    blurSigma: 0,
-                                    showShadow: false,
-                                    child: Material(
+                        return Dismissible(
+                          key: ValueKey(itemKey),
+                          direction: _isClearingQueue ||
+                                  (_isRemovingQueueItem &&
+                                      _removingQueueItemKey != itemKey) ||
+                                  _startingQueueRowIndex != null
+                              ? DismissDirection.none
+                              : DismissDirection.endToStart,
+                          confirmDismiss: (_) => _removeQueueItem(
+                            itemKey: itemKey,
+                            queueIndex: queueIndex,
+                            queueItemId: queueItemId,
+                          ),
+                          onUpdate: (details) {
+                            _dismissProgress.value = details.progress
+                                .clamp(0.0, 1.0)
+                                .toDouble();
+                          },
+                          onDismissed: (_) {
+                            final updatedItems = List<Map<String, dynamic>>.of(
+                              queueItems,
+                            )..removeAt(index);
+                            setState(() {
+                              _queueItemsOverride = updatedItems;
+                              _isRemovingQueueItem = false;
+                              _removingQueueItemKey = null;
+                            });
+                            _dismissProgress.value = 0;
+                          },
+                          background: const SizedBox.expand(),
+                          secondaryBackground: Container(
+                            alignment: Alignment.centerRight,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) =>
+                                  ValueListenableBuilder<double>(
+                                valueListenable: _dismissProgress,
+                                builder: (context, progress, _) => Container(
+                                  width: (constraints.maxWidth * progress - 8)
+                                      .clamp(0.0, constraints.maxWidth)
+                                      .toDouble(),
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD94A4A),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: _removingQueueItemKey == itemKey
+                                      ? const SizedBox.square(
+                                          dimension: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.remove_from_queue_rounded,
+                                          color: Colors.white,
+                                          size: ((constraints.maxWidth *
+                                                      progress -
+                                                  8)
+                                              .clamp(0.0, constraints.maxWidth) *
+                                              0.65)
+                                              .clamp(0.0, 24.0)
+                                              .toDouble(),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Opacity(
+                              opacity: isPreviouslyPlayed ? .42 : 1,
+                              child: isCurrent
+                                  ? GlassSurface(
+                                      borderRadius: 14,
+                                      padding: EdgeInsets.zero,
+                                      tint: const Color(0x33202730),
+                                      blurSigma: 0,
+                                      showShadow: false,
+                                      child: Material(
+                                        type: MaterialType.transparency,
+                                        child: tile,
+                                      ),
+                                    )
+                                  : Material(
                                       type: MaterialType.transparency,
                                       child: tile,
                                     ),
-                                  )
-                                : Material(
-                                    type: MaterialType.transparency,
-                                    child: tile,
-                                  ),
+                            ),
                           ),
                         );
                       },
@@ -583,5 +702,13 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       return mediaItem['uri'] as String;
     }
     return item['uri'] is String ? item['uri'] as String : null;
+  }
+
+  String _queueItemKey(Map<String, dynamic> item, int rowIndex) {
+    final queueItemId = item['queue_item_id'];
+    if (queueItemId is String && queueItemId.isNotEmpty) return queueItemId;
+    final index = item['index'] ?? item['sort_index'];
+    if (index is num) return 'queue-index-${index.toInt()}';
+    return 'queue-row-$rowIndex-${_queueItemUri(item) ?? 'unknown'}';
   }
 }

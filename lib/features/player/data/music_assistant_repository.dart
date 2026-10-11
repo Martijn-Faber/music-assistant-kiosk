@@ -156,6 +156,18 @@ class MusicAssistantRepository {
     await _client.playerQueues.clear(queueId);
   }
 
+  Future<void> removeQueueItem(
+    String playerId, {
+    required int index,
+    String? queueItemId,
+  }) async {
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    await _client.playerQueues.deleteItem(
+      queue?.queueId ?? playerId,
+      queueItemId ?? index,
+    );
+  }
+
   Future<void> playQueueItem(
     String playerId, {
     required int index,
