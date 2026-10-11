@@ -3,6 +3,8 @@ package com.example.app
 import android.media.VolumeProvider
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.content.Context
+import android.net.wifi.WifiManager
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
@@ -13,6 +15,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 	private var mediaSession: MediaSession? = null
 	private var hardwareButtonChannel: MethodChannel? = null
+	private var multicastLock: WifiManager.MulticastLock? = null
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
@@ -21,6 +24,31 @@ class MainActivity : FlutterActivity() {
 			"com.example.app/volume_buttons",
 		)
 		hardwareButtonChannel = volumeButtonChannel
+		MethodChannel(
+			flutterEngine.dartExecutor.binaryMessenger,
+			"com.example.app/network_discovery",
+		).setMethodCallHandler { call, result ->
+			when (call.method) {
+				"acquireMulticastLock" -> {
+					val wifiManager = applicationContext.getSystemService(
+						Context.WIFI_SERVICE,
+					) as WifiManager
+					val lock = multicastLock ?: wifiManager.createMulticastLock(
+						"MusicAssistantDiscovery",
+					).also {
+							it.setReferenceCounted(false)
+							multicastLock = it
+						}
+					if (!lock.isHeld) lock.acquire()
+					result.success(null)
+				}
+				"releaseMulticastLock" -> {
+					multicastLock?.let { if (it.isHeld) it.release() }
+					result.success(null)
+				}
+				else -> result.notImplemented()
+			}
+		}
 
 		val mainHandler = Handler(Looper.getMainLooper())
 		val volumeProvider = object : VolumeProvider(
@@ -93,6 +121,8 @@ class MainActivity : FlutterActivity() {
 	}
 
 	override fun onDestroy() {
+		multicastLock?.let { if (it.isHeld) it.release() }
+		multicastLock = null
 		mediaSession?.isActive = false
 		mediaSession?.release()
 		mediaSession = null

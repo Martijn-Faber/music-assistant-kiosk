@@ -37,6 +37,7 @@ dependencies:
   wakelock_plus: ^1.8.1
   flutter_secure_storage: ^11.2.0
   music_assistant: ^0.2.0
+  multicast_dns: ^0.3.3+1
   palette_generator_plus: ^1.0.0
 dev_dependencies:
   flutter_test:

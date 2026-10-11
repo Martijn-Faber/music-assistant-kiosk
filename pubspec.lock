@@ -305,7 +305,7 @@ packages:
     source: hosted
     version: "1.18.0"
   multicast_dns:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: multicast_dns
       sha256: "134668a9605c747322d8c3eb0e89a4c0cbdedb29f8d2d5ae29d14daef724987b"
