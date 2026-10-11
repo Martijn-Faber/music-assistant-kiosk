@@ -1,0 +1,104 @@
+import 'package:flutter/material.dart';
+
+/// Artwork-backed card used for actions that start playback.
+///
+/// Owns the shared tap target, artwork treatment, loading feedback, play badge,
+/// and border. Callers supply the artwork and the card-specific text overlay.
+class ArtworkPlaybackCard extends StatelessWidget {
+  const ArtworkPlaybackCard({
+    super.key,
+    required this.artwork,
+    required this.content,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  final Widget artwork;
+  final Widget content;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: Material(
+      color: const Color(0xFF1B2727),
+      borderRadius: BorderRadius.circular(13),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            artwork,
+            if (isLoading) const ColoredBox(color: Color(0x77000000)),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x00000000), Color(0xE6000000)],
+                  stops: [0.2, 1],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: isLoading
+                  ? const SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Color(0xFFF1F4EA),
+                      ),
+                    )
+                  : _PlayBadge(enabled: onTap != null),
+            ),
+            content,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: const Color(0x44FFFFFF)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _PlayBadge extends StatelessWidget {
+  const _PlayBadge({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 28,
+    height: 28,
+    decoration: BoxDecoration(
+      color: const Color(0x55303840),
+      shape: BoxShape.circle,
+      border: Border.all(color: const Color(0xAAFFFFFF)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x44000000),
+          blurRadius: 8,
+          offset: Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Icon(
+      Icons.play_arrow_rounded,
+      size: 18,
+      color: enabled ? Colors.white : const Color(0xFF7C8581),
+    ),
+  );
+}

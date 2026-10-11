@@ -5,6 +5,7 @@ import '../domain/player_summary.dart';
 import '../domain/recent_media_item.dart';
 import '../domain/radio_station.dart';
 import 'artwork_image.dart';
+import 'artwork_playback_card.dart';
 import 'player_glass_widgets.dart';
 
 class IdlePlayerPage extends StatefulWidget {
@@ -29,6 +30,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   int _sectionIndex = 0;
   int _cardIndex = 0;
   String? _startingStationId;
+  String? _startingRecentUri;
 
   @override
   void initState() {
@@ -53,7 +55,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   }
 
   Future<void> _playStation(RadioStation station) async {
-    if (_startingStationId != null) return;
+    if (_startingStationId != null || _startingRecentUri != null) return;
     setState(() => _startingStationId = station.id);
     try {
       await widget.repository.playRadio(widget.player.id, station);
@@ -67,10 +69,14 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   }
 
   Future<void> _playRecent(RecentMediaItem item) async {
+    if (_startingStationId != null || _startingRecentUri != null) return;
+    setState(() => _startingRecentUri = item.uri);
     try {
       await widget.repository.playRecentItem(widget.player.id, item);
     } catch (_) {
       _showPlayError();
+    } finally {
+      if (mounted) setState(() => _startingRecentUri = null);
     }
   }
 
@@ -143,7 +149,8 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                         repository: widget.repository,
                         playerAvailable: widget.player.available != false,
                         startingStationId: _startingStationId,
-                        isStarting: _startingStationId != null,
+                        isStarting: _startingStationId != null ||
+                            _startingRecentUri != null,
                         onPlayStation: _playStation,
                         onBrowseRadio: widget.onBrowseRadio,
                       );
@@ -173,7 +180,12 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                           child: _RecentCard(
                             item: item,
                             repository: widget.repository,
-                            onTap: available ? () => _playRecent(item) : null,
+                            isLoading: _startingRecentUri == item.uri,
+                            onTap: available &&
+                                    _startingStationId == null &&
+                                    _startingRecentUri == null
+                                ? () => _playRecent(item)
+                                : null,
                           ),
                         );
                       },
@@ -367,70 +379,23 @@ class _RadioCard extends StatelessWidget {
   final bool isLoading;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: double.infinity,
-    child: Material(
-      color: const Color(0xFF1B2727),
-      borderRadius: BorderRadius.circular(13),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _artwork(),
-            if (isLoading) const ColoredBox(color: Color(0x77000000)),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00000000), Color(0xE6000000)],
-                  stops: [0.2, 1],
-                ),
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: isLoading
-                  ? const SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Color(0xFFF1F4EA),
-                      ),
-                    )
-                  : _PlayBadge(enabled: onTap != null),
-            ),
-            Positioned(
-              left: 11,
-              right: 42,
-              bottom: 10,
-              child: Text(
-                station.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFFF1F4EA),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: const Color(0x44FFFFFF)),
-                  ),
-                ),
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) => ArtworkPlaybackCard(
+    artwork: _artwork(),
+    isLoading: isLoading,
+    onTap: onTap,
+    content: Positioned(
+      left: 11,
+      right: 42,
+      bottom: 10,
+      child: Text(
+        station.name,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Color(0xFFF1F4EA),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
         ),
       ),
     ),
@@ -459,87 +424,52 @@ class _RecentCard extends StatelessWidget {
     required this.item,
     required this.repository,
     required this.onTap,
+    required this.isLoading,
   });
 
   final RecentMediaItem item;
   final MusicAssistantRepository repository;
   final VoidCallback? onTap;
+  final bool isLoading;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: double.infinity,
-    child: Material(
-      color: const Color(0xFF1B2727),
-      borderRadius: BorderRadius.circular(13),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _artwork(),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00000000), Color(0xE6000000)],
-                  stops: [0.2, 1],
-                ),
-              ),
+  Widget build(BuildContext context) => ArtworkPlaybackCard(
+    artwork: _artwork(),
+    isLoading: isLoading,
+    onTap: onTap,
+    content: Positioned(
+      left: 11,
+      right: 10,
+      bottom: 10,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            item.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFF1F4EA),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
             ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: _PlayBadge(enabled: onTap != null),
-            ),
-            Positioned(
-              left: 11,
-              right: 10,
-              bottom: 10,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    item.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFF1F4EA),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
-                    ),
-                  ),
-                  if (item.artist != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      item.artist!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD8E0DB),
-                        fontSize: 10,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: const Color(0x44FFFFFF)),
-                  ),
-                ),
+          ),
+          if (item.artist != null) ...[
+            const SizedBox(height: 3),
+            Text(
+              item.artist!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFFD8E0DB),
+                fontSize: 10,
+                shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
               ),
             ),
           ],
-        ),
+        ],
       ),
     ),
   );
@@ -568,35 +498,6 @@ class _ArtworkPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => ColoredBox(
     color: Color(0xFF263333),
     child: Center(child: Icon(icon, color: const Color(0xFFCFD7D3), size: 30)),
-  );
-}
-
-class _PlayBadge extends StatelessWidget {
-  const _PlayBadge({required this.enabled});
-
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 28,
-    height: 28,
-    decoration: BoxDecoration(
-      color: const Color(0x55303840),
-      shape: BoxShape.circle,
-      border: Border.all(color: const Color(0xAAFFFFFF)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x44000000),
-          blurRadius: 8,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Icon(
-      Icons.play_arrow_rounded,
-      size: 18,
-      color: enabled ? Colors.white : const Color(0xFF7C8581),
-    ),
   );
 }
 
