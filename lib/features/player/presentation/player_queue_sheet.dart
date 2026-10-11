@@ -11,11 +11,13 @@ class PlayerQueueSheet extends StatefulWidget {
     super.key,
     required this.repository,
     required this.playerId,
+    required this.initialMediaUri,
     required this.onQueueCleared,
   });
 
   final MusicAssistantRepository repository;
   final String playerId;
+  final String? initialMediaUri;
   final ValueChanged<String> onQueueCleared;
 
   @override
@@ -32,15 +34,43 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       DraggableScrollableController();
   double _handleDragDistance = 0;
   bool _isClearingQueue = false;
+  int? _startingQueueRowIndex;
+  int? _currentQueueRowIndexOverride;
+  bool _didPositionQueueAtCurrentItem = false;
+  int? _lastAutoScrolledQueueRowIndex;
+  late String? _currentPlayingUri;
+  late final void Function() _unsubscribeFromPlayerEvents;
 
   @override
   void initState() {
     super.initState();
     _queue = widget.repository.fetchQueue(widget.playerId);
+    _currentPlayingUri = widget.initialMediaUri;
+    _unsubscribeFromPlayerEvents = widget.repository.listenToPlayerEvents(
+      onChanged: (player) {
+        if (player.id != widget.playerId ||
+            (player.mediaUri == null && player.title == null)) {
+          return;
+        }
+        if (!mounted) return;
+        setState(() {
+          // Some player updates include a title but omit the URI. Keep the last
+          // known URI in that case so the queue highlight does not fall back to
+          // an older currentIndex from the initial queue snapshot.
+          if (player.mediaUri != null) {
+            _currentPlayingUri = player.mediaUri;
+            _currentQueueRowIndexOverride = null;
+          }
+        });
+      },
+      onRemoved: (_) {},
+      onProgress: (_, _) {},
+    );
   }
 
   @override
   void dispose() {
+    _unsubscribeFromPlayerEvents();
     _sheetController.dispose();
     super.dispose();
   }
@@ -125,6 +155,35 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       }
     } finally {
       if (mounted) setState(() => _isClearingQueue = false);
+    }
+  }
+
+  Future<void> _playQueueItem({
+    required int rowIndex,
+    required int queueIndex,
+    String? queueItemId,
+  }) async {
+    if (_startingQueueRowIndex != null || _isClearingQueue) return;
+    setState(() => _startingQueueRowIndex = rowIndex);
+    try {
+      await widget.repository.playQueueItem(
+        widget.playerId,
+        index: queueIndex,
+        queueItemId: queueItemId,
+      );
+      if (mounted) {
+        setState(() => _currentQueueRowIndexOverride = rowIndex);
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Could not play queue item $queueItemId: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not start this queue item.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _startingQueueRowIndex = null);
     }
   }
 
@@ -263,28 +322,100 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         ),
                       );
                     }
+                    final currentQueueIndex = queue.currentIndex;
+                    final uriMatch = _currentPlayingUri == null
+                        ? -1
+                        : queue.items.indexWhere(
+                            (item) => _queueItemUri(item) == _currentPlayingUri,
+                          );
+                    final serverIndexMatch = currentQueueIndex == null
+                        ? -1
+                        : queue.items.indexWhere((item) {
+                            final itemIndex = item['index'] is num
+                                ? (item['index'] as num).toInt()
+                                : item['sort_index'] is num
+                                ? (item['sort_index'] as num).toInt()
+                                : -1;
+                            return itemIndex == currentQueueIndex;
+                          });
+                    final currentQueueRowIndex =
+                        _currentQueueRowIndexOverride ??
+                        (uriMatch >= 0 ? uriMatch : serverIndexMatch);
+                    if (currentQueueRowIndex >= 0 &&
+                        currentQueueRowIndex != _lastAutoScrolledQueueRowIndex) {
+                      final shouldExpandSheet = !_didPositionQueueAtCurrentItem;
+                      _didPositionQueueAtCurrentItem = true;
+                      _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
+                      WidgetsBinding.instance.addPostFrameCallback((_) async {
+                        if (!mounted) return;
+                        if (shouldExpandSheet && _sheetController.isAttached) {
+                          await _sheetController.animateTo(
+                            _maxExtent,
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeOutCubic,
+                          );
+                        }
+                        if (!mounted || !scrollController.hasClients) return;
+                        final position = scrollController.position;
+                        final currentRowHeight =
+                            _queueArtist(queue.items[currentQueueRowIndex]) ==
+                                    null
+                                ? 63.0
+                                : 79.0;
+                        final targetOffset =
+                            _estimatedQueueOffset(
+                              queue.items,
+                              currentQueueRowIndex,
+                            ) -
+                            (position.viewportDimension - currentRowHeight) /
+                                2;
+                        await scrollController.animateTo(
+                          targetOffset
+                              .clamp(0.0, position.maxScrollExtent)
+                              .toDouble(),
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOutCubic,
+                        );
+                      });
+                    }
                     return ListView.separated(
                       controller: scrollController,
                       itemCount: queue.items.length,
-                      separatorBuilder: (_, _) =>
-                          const Divider(color: Color(0x33FFFFFF), height: 1),
+                      separatorBuilder: (_, index) {
+                        final touchesCurrentItem =
+                            index == currentQueueRowIndex ||
+                            index + 1 == currentQueueRowIndex;
+                        return touchesCurrentItem
+                            ? const SizedBox(height: 1)
+                            : const Divider(
+                                color: Color(0x33FFFFFF),
+                                height: 1,
+                              );
+                      },
                       itemBuilder: (context, index) {
                         final item = queue.items[index];
-                        final itemIndex = item['index'] is num
+                        final queueIndex = item['index'] is num
                             ? (item['index'] as num).toInt()
+                            : item['sort_index'] is num
+                            ? (item['sort_index'] as num).toInt()
                             : index;
-                        final isCurrent = itemIndex == queue.currentIndex;
-                        final media = item['media_item'] is Map
-                            ? Map<String, dynamic>.from(
-                                item['media_item'] as Map,
-                              )
-                            : const <String, dynamic>{};
-                        final artist =
-                            _artistLabel(media['artists']) ??
-                            (media['artist'] is String
-                                ? media['artist'] as String
-                                : null);
+                        final queueItemId = item['queue_item_id'] is String
+                            ? item['queue_item_id'] as String
+                            : null;
+                        final isCurrent = index == currentQueueRowIndex;
+                        final isPreviouslyPlayed = currentQueueRowIndex >= 0 &&
+                            index < currentQueueRowIndex;
+                        final artist = _queueArtist(item);
+                        final isLoading = _startingQueueRowIndex == index;
                         final tile = ListTile(
+                          onTap: _startingQueueRowIndex == null &&
+                                  !_isClearingQueue
+                              ? () => _playQueueItem(
+                                  rowIndex: index,
+                                  queueIndex: queueIndex,
+                                  queueItemId: queueItemId,
+                                )
+                              : null,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 8,
                           ),
@@ -294,17 +425,17 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               SizedBox(
                                 width: 30,
                                 child: Center(
-                                  child: isCurrent
-                                      ? const Icon(
-                                          Icons.equalizer_rounded,
-                                          color: Colors.white,
-                                        )
-                                      : Text(
-                                          '${index + 1}',
-                                          style: const TextStyle(
-                                            color: Colors.white54,
-                                          ),
-                                        ),
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: isCurrent
+                                          ? Colors.white
+                                          : Colors.white54,
+                                      fontWeight: isCurrent
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                    ),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -341,17 +472,35 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(color: Colors.white54),
                                 ),
+                          trailing: isLoading
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : null,
                         );
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: isCurrent
-                              ? GlassSurface(
-                                  borderRadius: 14,
-                                  padding: EdgeInsets.zero,
-                                  tint: const Color(0x33202730),
-                                  child: tile,
-                                )
-                              : tile,
+                          child: Opacity(
+                            opacity: isPreviouslyPlayed ? .42 : 1,
+                            child: isCurrent
+                                ? GlassSurface(
+                                    borderRadius: 14,
+                                    padding: EdgeInsets.zero,
+                                    tint: const Color(0x33202730),
+                                    child: Material(
+                                      type: MaterialType.transparency,
+                                      child: tile,
+                                    ),
+                                  )
+                                : Material(
+                                    type: MaterialType.transparency,
+                                    child: tile,
+                                  ),
+                          ),
                         );
                       },
                     );
@@ -387,5 +536,34 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         .where((name) => name.isNotEmpty)
         .toList();
     return names.isEmpty ? null : names.join(', ');
+  }
+
+  String? _queueArtist(Map<String, dynamic> item) {
+    final media = item['media_item'] is Map
+        ? Map<String, dynamic>.from(item['media_item'] as Map)
+        : const <String, dynamic>{};
+    return _artistLabel(media['artists']) ??
+        (media['artist'] is String ? media['artist'] as String : null);
+  }
+
+  double _estimatedQueueOffset(
+    List<Map<String, dynamic>> items,
+    int rowIndex,
+  ) {
+    var offset = 0.0;
+    for (var index = 0; index < rowIndex; index++) {
+      // A subtitle makes ListTile taller; include the outer vertical padding
+      // and the separator between rows in the estimate.
+      offset += _queueArtist(items[index]) == null ? 63 : 79;
+    }
+    return offset;
+  }
+
+  String? _queueItemUri(Map<String, dynamic> item) {
+    final mediaItem = item['media_item'];
+    if (mediaItem is Map && mediaItem['uri'] is String) {
+      return mediaItem['uri'] as String;
+    }
+    return item['uri'] is String ? item['uri'] as String : null;
   }
 }

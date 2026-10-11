@@ -235,6 +235,7 @@ class PlayerScreen extends StatelessWidget {
                   PlayerQueueSheet(
                     repository: repository,
                     playerId: player.id,
+                    initialMediaUri: player.mediaUri,
                     onQueueCleared: onQueueCleared,
                   ),
             ),
