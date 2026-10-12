@@ -4,6 +4,7 @@ import '../data/music_assistant_repository.dart';
 import '../domain/player_queue_snapshot.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
+import 'design_system/glass_tokens.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerQueueSheet extends StatefulWidget {
@@ -143,33 +144,100 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   Future<void> _confirmClearQueue() async {
     if (_isClearingQueue || _isRemovingQueueItem) return;
+    
+    final media = MediaQuery.of(context);
     final shouldClear = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF202A2D),
-        title: const Text(
-          'Clear queue?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'This will remove all items from the queue.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'CLEAR QUEUE',
-              style: TextStyle(color: Color(0xFFFF8E7C)),
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.all(12),
+        child: SizedBox(
+          width: media.size.width * 0.94,
+          child: GlassSurface(
+            borderRadius: GlassTokens.radiusLarge,
+            padding: const EdgeInsets.all(20),
+            tint: const Color(0x33232A30),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFFF8E7C),
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Clear queue?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This will remove all items from the queue.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: GlassTokens.textSecondary,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 46,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(false),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white70,
+                              side: const BorderSide(color: GlassTokens.border),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
+                              ),
+                            ),
+                            child: const Text('CANCEL'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 46,
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF8E7C),
+                              foregroundColor: const Color(0xFF11161C),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
+                              ),
+                            ),
+                            child: const Text('CLEAR QUEUE'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
+    
     if (shouldClear != true || !mounted) return;
 
     setState(() => _isClearingQueue = true);
