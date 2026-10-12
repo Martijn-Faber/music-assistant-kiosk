@@ -26,6 +26,7 @@ class _SessionGateState extends State<SessionGate> {
   String? _selectedPlayerId;
   void Function()? _unsubscribeFromPlayers;
   bool _isLoading = true;
+  bool _isConnecting = false;
   String? _connectionError;
   String? _playerError;
   String? _playerActionError;
@@ -119,7 +120,7 @@ class _SessionGateState extends State<SessionGate> {
     String password,
   ) async {
     setState(() {
-      _isLoading = true;
+      _isConnecting = true;
       _connectionError = null;
     });
 
@@ -170,7 +171,9 @@ class _SessionGateState extends State<SessionGate> {
       await repository?.disconnect();
       if (mounted) setState(() => _connectionError = error.toString());
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isConnecting = false);
+      }
     }
   }
 
@@ -430,7 +433,7 @@ class _SessionGateState extends State<SessionGate> {
     final repository = _repository;
     if (repository == null) {
       return ConnectionScreen(
-        isLoading: _isLoading,
+        isLoading: _isConnecting,
         error: _connectionError,
         onConnect: _connect,
       );

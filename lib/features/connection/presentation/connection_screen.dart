@@ -84,18 +84,27 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   String get _serverUrl {
     final host = _hostController.text.trim();
-    final port = int.parse(_portController.text.trim());
+    final portText = _portController.text.trim();
+    final port = int.tryParse(portText);
+
+    // 1. Als de host al een volledige URL is (bijv. https://musicassistant.famim.dev)
     final suppliedUri = Uri.tryParse(host);
     if (suppliedUri != null &&
         (suppliedUri.scheme == 'http' || suppliedUri.scheme == 'https') &&
         suppliedUri.host.isNotEmpty) {
-      return Uri(
-        scheme: suppliedUri.scheme,
-        host: suppliedUri.host,
-        port: suppliedUri.hasPort ? suppliedUri.port : port,
-      ).toString();
+      if (port != null) {
+        return suppliedUri.replace(port: port).toString();
+      }
+      return suppliedUri.toString();
     }
-    return Uri(scheme: 'http', host: host, port: port).toString();
+
+    // 2. Handmatige invoer zonder volledige URL (bijv. een IP-adres of kaal domein)
+    // Als er geen schema in de host staat, gaan we uit van http (of https als je dat wilt)
+    return Uri(
+      scheme: 'http',
+      host: host,
+      port: port, // Als 'port' null is, laat Uri() automatisch de poort weg!
+    ).toString();
   }
 
   void _selectServer(DiscoveredMusicAssistantServer server) {
@@ -121,17 +130,31 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   void _continueToLogin() {
     final host = _hostController.text.trim();
-    final port = int.tryParse(_portController.text.trim());
-    if (host.isEmpty || port == null || port < 1 || port > 65535) {
-      setState(() => _serverInputError = 'Enter a valid hostname and port.');
+    final portText = _portController.text.trim();
+    
+    if (host.isEmpty) {
+      setState(() => _serverInputError = 'Vul een geldig adres in.');
       return;
     }
+
+    // Als de poort ingevuld is, moet het wel een geldig getal zijn
+    if (portText.isNotEmpty) {
+      final port = int.tryParse(portText);
+      if (port == null || port < 1 || port > 65535) {
+        setState(() => _serverInputError = 'Voer een geldig poortnummer in (1-65535).');
+        return;
+      }
+    }
+
     try {
       _serverUrl;
     } on FormatException {
-      setState(() => _serverInputError = 'Enter a valid hostname and port.');
+      setState(() => _serverInputError = 'Voer een geldig adres in.');
       return;
     }
+
+    print(_serverUrl);
+
     FocusScope.of(context).unfocus();
     _loginBackStep = 1;
     setState(() {
