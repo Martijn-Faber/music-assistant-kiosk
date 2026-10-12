@@ -42,13 +42,13 @@ class PlayerNamePill extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: GlassPill(
         constraints: const BoxConstraints(maxWidth: 280),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
               CupertinoIcons.hifispeaker,
-              size: 16,
+              size: 20,
               color: Color(0xFFE9F0EB),
             ),
             const SizedBox(width: 8),
