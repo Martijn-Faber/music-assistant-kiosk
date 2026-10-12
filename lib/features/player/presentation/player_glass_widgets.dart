@@ -42,7 +42,7 @@ class PlayerNamePill extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: GlassPill(
         constraints: const BoxConstraints(maxWidth: 280),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

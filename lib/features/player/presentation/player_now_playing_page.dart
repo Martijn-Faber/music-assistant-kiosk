@@ -189,7 +189,7 @@ class NowPlayingPage extends StatelessWidget {
               player.available == false
                   ? CupertinoIcons.exclamationmark_circle
                   : CupertinoIcons.waveform,
-              size: 15,
+              size: 16,
               color: player.available == false
                   ? const Color(0xFFFF8E7C)
                   : Colors.white,
