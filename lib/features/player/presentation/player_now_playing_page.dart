@@ -226,6 +226,10 @@ class NowPlayingPage extends StatelessWidget {
     final album = player.album?.trim();
     final hasArtist = artist?.isNotEmpty == true;
     final hasAlbum = album?.isNotEmpty == true;
+    final hasSeekBar =
+        player.mediaType?.toLowerCase() != 'radio' &&
+        player.durationSeconds != null &&
+        player.durationSeconds! > 0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: centered
@@ -264,10 +268,35 @@ class NowPlayingPage extends StatelessWidget {
             ),
           ),
         ],
-        if (player.durationSeconds != null && player.durationSeconds! > 0) ...[
-          SizedBox(height: compact ? 12 : 18),
-          _TrackProgressBar(player: player, centered: centered),
-        ],
+        AnimatedSize(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) => SizeTransition(
+              sizeFactor: animation,
+              axisAlignment: -1,
+              child: FadeTransition(opacity: animation, child: child),
+            ),
+            child: hasSeekBar
+                ? Padding(
+                    key: const ValueKey('seek-bar-visible'),
+                    padding: EdgeInsets.only(top: compact ? 12 : 18),
+                    child: _TrackProgressBar(
+                      player: player,
+                      centered: centered,
+                    ),
+                  )
+                : const SizedBox(
+                    key: ValueKey('seek-bar-hidden'),
+                    width: 0,
+                    height: 0,
+                  ),
+          ),
+        ),
         if (playerActionError != null) ...[
           const SizedBox(height: 8),
           Text(
@@ -282,7 +311,6 @@ class NowPlayingPage extends StatelessWidget {
             style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: 11),
           ),
         ],
-        // _buildPaletteTestView(player),
       ],
     );
   }
@@ -660,75 +688,6 @@ class NothingPlayingPage extends StatelessWidget {
         Text(
           'Swipe to choose something to play',
           style: TextStyle(color: Color(0xFFD8E0DB), fontSize: 12),
-        ),
-      ],
-    ),
-  );
-}
-
-// Test widget om het server-kleurenpalet direct op het scherm te tonen
-Widget _buildPaletteTestView(PlayerSummary? player) {
-  final palette = player?.palette;
-  if (palette == null || palette.isEmpty) {
-    return const Padding(
-      padding: EdgeInsets.all(8.0),
-      child: Text('Geen palet beschikbaar', style: TextStyle(color: Colors.white70, fontSize: 12)),
-    );
-  }
-
-  print('Nieuw ontvangen palet:');
-
-  return Container(
-    padding: const EdgeInsets.all(12),
-    margin: const EdgeInsets.symmetric(vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.black45,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.white24),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          'Server Kleurenpalet Test',
-          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: palette.entries.map((entry) {
-            final rgb = entry.value;
-            Color color = Colors.transparent;
-            if (rgb is List && rgb.length >= 3) {
-              color = Color.fromARGB(
-                255,
-                (rgb[0] as num).toInt().clamp(0, 255),
-                (rgb[1] as num).toInt().clamp(0, 255),
-                (rgb[2] as num).toInt().clamp(0, 255),
-              );
-            }
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  entry.key,
-                  style: const TextStyle(color: Colors.white70, fontSize: 9),
-                ),
-              ],
-            );
-          }).toList(),
         ),
       ],
     ),

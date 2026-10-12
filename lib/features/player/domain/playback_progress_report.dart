@@ -9,6 +9,7 @@ class PlaybackProgressReport {
     this.artist,
     this.album,
     this.imageUrl,
+    this.mediaType,
   });
 
   final String uri;
@@ -20,6 +21,7 @@ class PlaybackProgressReport {
   final String? artist;
   final String? album;
   final String? imageUrl;
+  final String? mediaType;
 
   factory PlaybackProgressReport.fromMap(Map<String, dynamic> data) {
     final duration = data['duration'];
@@ -45,6 +47,9 @@ class PlaybackProgressReport {
       album: data['album'] is String ? data['album'] as String : null,
       imageUrl: data['image_url'] is String
           ? data['image_url'] as String
+          : null,
+      mediaType: data['media_type'] is String
+          ? data['media_type'] as String
           : null,
     );
   }

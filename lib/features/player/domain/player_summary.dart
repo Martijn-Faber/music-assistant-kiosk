@@ -9,6 +9,7 @@ class PlayerSummary {
     this.volumeLevel,
     this.title,
     this.mediaUri,
+    this.mediaType,
     this.artist,
     this.album,
     this.imageUrl,
@@ -26,6 +27,7 @@ class PlayerSummary {
   final int? volumeLevel;
   final String? title;
   final String? mediaUri;
+  final String? mediaType;
   final String? artist;
   final String? album;
   final String? imageUrl;
@@ -47,6 +49,7 @@ class PlayerSummary {
     volumeLevel: value,
     title: title,
     mediaUri: mediaUri,
+    mediaType: mediaType,
     artist: artist,
     album: album,
     imageUrl: imageUrl,
@@ -77,6 +80,7 @@ class PlayerSummary {
       volumeLevel: volumeLevel,
       title: report.name,
       mediaUri: report.uri,
+      mediaType: report.mediaType ?? (newItem ? null : mediaType),
       artist: report.artist ?? (newItem ? null : artist),
       album: report.album ?? (newItem ? null : album),
       imageUrl: report.imageUrl ?? (newItem ? null : imageUrl),
@@ -120,6 +124,7 @@ class PlayerSummary {
       volumeLevel: volumeLevel is num ? volumeLevel.toInt() : null,
       title: _mapString(media, 'title'),
       mediaUri: _mapString(media, 'uri'),
+      mediaType: _mapString(media, 'media_type'),
       artist: _mapString(media, 'artist'),
       album: _mapString(media, 'album'),
       imageUrl: _mapString(media, 'image_url'),
