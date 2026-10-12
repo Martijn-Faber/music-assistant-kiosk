@@ -41,36 +41,11 @@ class NowPlayingPage extends StatelessWidget {
                 .toDouble();
       final artwork = SizedBox.square(
         dimension: artworkSize,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            ArtworkImage(
-              imageUrl: player.imageUrl,
-              serverUrl: repository.serverUrl,
-              token: repository.token,
-              size: artworkSize,
-            ),
-            Positioned(
-              right: 12,
-              bottom: 12,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onShowQueue,
-                  borderRadius: BorderRadius.circular(999),
-                  child: const GlassPill(
-                    padding: EdgeInsets.all(11),
-                    tint: Color(0x66202730),
-                    child: Icon(
-                      CupertinoIcons.music_note_list,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: ArtworkImage(
+          imageUrl: player.imageUrl,
+          serverUrl: repository.serverUrl,
+          token: repository.token,
+          size: artworkSize,
         ),
       );
       final details = _details(
@@ -80,8 +55,11 @@ class NowPlayingPage extends StatelessWidget {
         artworkSize,
         centered: !wide,
       );
+      final sideInset = compact ? 22.0 : desktop ? 64.0 : 48.0;
       if (wide) {
-        return Padding(
+        return Stack(
+          children: [
+          Padding(
           padding: EdgeInsets.symmetric(
             horizontal: compact
                 ? 22
@@ -122,14 +100,21 @@ class NowPlayingPage extends StatelessWidget {
               ),
             ),
           ),
-        );
-      }
-      return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(28, 28, 28, 86),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [artwork, const SizedBox(height: 18), details],
         ),
+        Positioned(top: 14, right: sideInset, child: _queueButton()),
+        ]);
+      }
+      return Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(28, 64, 28, 86),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [artwork, const SizedBox(height: 18), details],
+            ),
+          ),
+          Positioned(top: 12, right: 28, child: _queueButton()),
+        ],
       );
     },
   );
@@ -157,7 +142,7 @@ class NowPlayingPage extends StatelessWidget {
             ),
             LayoutId(
               id: _TrackInfoPillLayoutDelegate.pill,
-              child: _qualityVolumePill(context),
+        child: _qualityVolumePill(context),
             ),
           ],
         ),
@@ -173,6 +158,20 @@ class NowPlayingPage extends StatelessWidget {
       ],
     );
   }
+
+  Widget _queueButton() => Material(
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(999),
+    child: InkWell(
+      onTap: onShowQueue,
+      borderRadius: BorderRadius.circular(999),
+      child: const GlassPill(
+        padding: EdgeInsets.all(9),
+        tint: Color(0x22202730),
+        child: Icon(CupertinoIcons.music_note_list, color: Colors.white, size: 16),
+      ),
+    ),
+  );
 
   Widget _qualityVolumePill(BuildContext context) => Material(
     color: Colors.transparent,
