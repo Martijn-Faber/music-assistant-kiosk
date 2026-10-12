@@ -211,11 +211,13 @@ class PlayerScreen extends StatelessWidget {
 
     final hasCurrentTrack = player.title?.trim().isNotEmpty ?? false;
     final isPlaying = player.playbackState.toLowerCase() == 'playing';
+    final pagerKey = GlobalKey<_PlayerPagesState>();
     final idleHome = IdlePlayerPage(
       key: ValueKey('${repository.serverUrl}:$selectedPlayerId'),
       repository: repository,
       player: player,
       onBrowseRadio: () => _startRadio(context, player),
+      onPlaybackStarted: () => pagerKey.currentState?._openPlayerPage(),
     );
     final isIdle = !hasCurrentTrack && !isPlaying;
     final nowPlayingLabel = hasCurrentTrack
@@ -252,6 +254,7 @@ class PlayerScreen extends StatelessWidget {
             error: error,
           );
     return _PlayerPages(
+      key: pagerKey,
       isIdle: isIdle,
       playerName: player.name,
       groupMemberCount: player.groupMemberCount,
@@ -521,6 +524,7 @@ class _NothingPlayingView extends StatelessWidget {
 
 class _PlayerPages extends StatefulWidget {
   const _PlayerPages({
+    super.key,
     required this.isIdle,
     required this.playerName,
     required this.groupMemberCount,

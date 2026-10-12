@@ -15,11 +15,13 @@ class IdlePlayerPage extends StatefulWidget {
     required this.repository,
     required this.player,
     required this.onBrowseRadio,
+    required this.onPlaybackStarted,
   });
 
   final MusicAssistantRepository repository;
   final PlayerSummary player;
   final VoidCallback onBrowseRadio;
+  final VoidCallback onPlaybackStarted;
 
   @override
   State<IdlePlayerPage> createState() => _IdlePlayerPageState();
@@ -56,6 +58,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     setState(() => _startingStationId = station.id);
     try {
       await widget.repository.playRadio(widget.player.id, station);
+      widget.onPlaybackStarted();
     } catch (error, stackTrace) {
       debugPrint('Could not start radio "${station.name}": $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -70,6 +73,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     setState(() => _startingPlaylistUri = playlist.uri);
     try {
       await widget.repository.playPlaylist(widget.player.id, playlist);
+      widget.onPlaybackStarted();
     } catch (_) {
       _showPlayError();
     } finally {
