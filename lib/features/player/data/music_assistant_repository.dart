@@ -73,6 +73,37 @@ class MusicAssistantRepository {
     return Map<String, dynamic>.from(response);
   }
 
+  Future<Map<String, dynamic>> fetchMediaItem(String uri) async {
+    final response = await _client.sendCommand(
+      'music/item_by_uri',
+      args: {'uri': uri},
+    );
+    if (response is! Map) {
+      throw const FormatException('The server returned invalid media info.');
+    }
+    return Map<String, dynamic>.from(response);
+  }
+
+  Future<void> setFavorite(String uri, bool favorite) async {
+    if (favorite) {
+      await _client.sendCommand(
+        'music/favorites/add_item',
+        args: {'item': uri},
+      );
+      return;
+    }
+    final item = await fetchMediaItem(uri);
+    final itemId = item['item_id'];
+    final mediaType = item['media_type'];
+    if (itemId is! String || mediaType is! String) {
+      throw const FormatException('The media item cannot be removed from favorites.');
+    }
+    await _client.sendCommand(
+      'music/favorites/remove_item',
+      args: {'media_type': mediaType, 'library_item_id': itemId},
+    );
+  }
+
   Future<String?> fetchQualityLabel(String playerId) async {
     return (await fetchPlaybackQualityInfo(playerId))?.qualityLabel;
   }

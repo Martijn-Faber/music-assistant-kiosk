@@ -101,7 +101,7 @@ class NowPlayingPage extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(top: 14, right: sideInset, child: _queueButton()),
+        Positioned(top: 14, right: sideInset, child: _headerActions()),
         ]);
       }
       return Stack(
@@ -113,7 +113,7 @@ class NowPlayingPage extends StatelessWidget {
               children: [artwork, const SizedBox(height: 18), details],
             ),
           ),
-          Positioned(top: 12, right: 28, child: _queueButton()),
+          Positioned(top: 12, right: 28, child: _headerActions()),
         ],
       );
     },
@@ -159,18 +159,28 @@ class NowPlayingPage extends StatelessWidget {
     );
   }
 
-  Widget _queueButton() => Material(
-    color: Colors.transparent,
-    borderRadius: BorderRadius.circular(999),
-    child: InkWell(
-      onTap: onShowQueue,
-      borderRadius: BorderRadius.circular(999),
-      child: const GlassPill(
-        padding: EdgeInsets.all(9),
-        tint: Color(0x22202730),
-        child: Icon(CupertinoIcons.music_note_list, color: Colors.white, size: 16),
+  Widget _headerActions() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _FavoriteButton(
+        repository: repository,
+        uri: player.mediaUri,
       ),
-    ),
+      const SizedBox(width: 8),
+      Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onShowQueue,
+          borderRadius: BorderRadius.circular(999),
+          child: const GlassPill(
+            padding: EdgeInsets.all(12),
+            tint: Color(0x22202730),
+            child: Icon(CupertinoIcons.music_note_list, color: Colors.white, size: 20),
+          ),
+        ),
+      ),
+    ],
   );
 
   Widget _qualityVolumePill(BuildContext context) => Material(
@@ -500,6 +510,84 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
     final remainder = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
   }
+}
+
+class _FavoriteButton extends StatefulWidget {
+  const _FavoriteButton({required this.repository, required this.uri});
+
+  final MusicAssistantRepository repository;
+  final String? uri;
+
+  @override
+  State<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends State<_FavoriteButton> {
+  bool? _favorite;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final uri = widget.uri;
+    if (uri == null || uri.isEmpty) return;
+    try {
+      final item = await widget.repository.fetchMediaItem(uri);
+      if (mounted) setState(() => _favorite = item['favorite'] == true);
+    } catch (_) {}
+  }
+
+  Future<void> _toggle() async {
+    final uri = widget.uri;
+    final current = _favorite;
+    if (uri == null || current == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await widget.repository.setFavorite(uri, !current);
+      if (mounted) setState(() => _favorite = !current);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update favorite.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(999),
+    child: InkWell(
+      onTap: _favorite == null || _busy ? null : _toggle,
+      borderRadius: BorderRadius.circular(999),
+      child: GlassPill(
+        padding: const EdgeInsets.all(12),
+        tint: const Color(0x22202730),
+        child: _busy
+            ? const SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                _favorite == true
+                    ? CupertinoIcons.heart_fill
+                    : CupertinoIcons.heart,
+                color: Colors.white,
+                size: 20,
+              ),
+      ),
+    ),
+  );
 }
 
 class _PlaybackQualityDialog extends StatelessWidget {
