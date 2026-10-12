@@ -523,8 +523,10 @@ class _FavoriteButton extends StatefulWidget {
 }
 
 class _FavoriteButtonState extends State<_FavoriteButton> {
+  static final Map<String, bool> _favoriteCache = {};
   bool? _favorite;
   bool _busy = false;
+  int _loadRevision = 0;
 
   @override
   void initState() {
@@ -535,10 +537,26 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
   Future<void> _load() async {
     final uri = widget.uri;
     if (uri == null || uri.isEmpty) return;
+    final revision = ++_loadRevision;
+    final cached = _favoriteCache[uri];
+    if (cached != null && mounted) setState(() => _favorite = cached);
     try {
       final item = await widget.repository.fetchMediaItem(uri);
-      if (mounted) setState(() => _favorite = item['favorite'] == true);
+      final isFavorite = item['favorite'] == true;
+      _favoriteCache[uri] = isFavorite;
+      if (mounted && revision == _loadRevision && widget.uri == uri) {
+        setState(() => _favorite = isFavorite);
+      }
     } catch (_) {}
+  }
+
+  @override
+  void didUpdateWidget(covariant _FavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uri != widget.uri) {
+      _favorite = null;
+      _load();
+    }
   }
 
   Future<void> _toggle() async {
@@ -548,6 +566,7 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
     setState(() => _busy = true);
     try {
       await widget.repository.setFavorite(uri, !current);
+      _favoriteCache[uri] = !current;
       if (mounted) setState(() => _favorite = !current);
     } catch (_) {
       if (mounted) {
