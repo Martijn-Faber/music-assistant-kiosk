@@ -89,11 +89,16 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
               ),
             ),
             const SizedBox(height: 36),
-            GestureDetector(
-              onTap: widget.nowPlayingLabel == null
-                  ? null
-                  : widget.onNowPlayingTap,
-              child: GlassPill(
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: widget.nowPlayingLabel == null
+                    ? null
+                    : widget.onNowPlayingTap,
+                borderRadius: BorderRadius.circular(999),
+                child: GlassPill(
                 constraints: const BoxConstraints(maxWidth: 360),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 15,
@@ -124,6 +129,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             ),
