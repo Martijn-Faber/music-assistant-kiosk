@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -24,8 +25,27 @@ class AlbumBackdrop extends StatefulWidget {
   State<AlbumBackdrop> createState() => _AlbumBackdropState();
 }
 
-class _AlbumBackdropState extends State<AlbumBackdrop> {
-  static const _fallbackColor = Color(0xFF263333);
+class _AlbumBackdropState extends State<AlbumBackdrop>
+    with SingleTickerProviderStateMixin {
+  static const _fallbackColor = Color(0xFF101819);
+
+  late AnimationController _animController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Een rustige, trage cyclus van 45 seconden
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 45),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   Color _colorFromRgb(List<dynamic>? rgb, Color fallback) {
     if (rgb == null || rgb.length < 3) return fallback;
@@ -45,61 +65,89 @@ class _AlbumBackdropState extends State<AlbumBackdrop> {
       token: widget.token,
     );
 
-    // Haal de kleuren direct uit het serverpalet indien aanwezig
-    final backgroundDarkRgb = widget.palette?['background_dark'];
-    final accentRgb = widget.palette?['accent'] ?? widget.palette?['primary'];
+    final bgDarkRgb = widget.palette?['background_dark'];
+    final accentRgb = widget.palette?['accent'];
+    final primaryRgb = widget.palette?['primary'];
 
-    print(accentRgb);
+    final baseColor = _colorFromRgb(bgDarkRgb, _fallbackColor);
+    final accentColor = _colorFromRgb(accentRgb, baseColor);
+    final primaryColor = _colorFromRgb(primaryRgb, accentColor);
 
-    final dominantColor = _colorFromRgb(backgroundDarkRgb, _fallbackColor);
-    final vibrantColor = _colorFromRgb(accentRgb, dominantColor);
+    return AnimatedBuilder(
+      animation: _animController,
+      builder: (context, child) {
+        final angle = _animController.value * 2 * math.pi;
 
-    final vibrantHsl = HSLColor.fromColor(vibrantColor);
-    final dominantHsl = HSLColor.fromColor(dominantColor);
+        // GEHELE GETALLEN als vermenigvuldigers (1 en 2) garanderen 
+        // dat het begin en het einde wiskundig exact op elkaar aansluiten zonder hikken.
+        final scaleX = 1.08 + (0.10 * math.sin(angle));
+        final scaleY = 1.08 + (0.10 * math.cos(angle * 2));
 
-    final colorWash = vibrantHsl
-        .withSaturation(vibrantHsl.saturation.clamp(0.72, 0.96).toDouble())
-        .withLightness(vibrantHsl.lightness.clamp(0.3, 0.62).toDouble())
-        .toColor();
-    final deepWash = dominantHsl
-        .withSaturation(dominantHsl.saturation.clamp(0.48, 0.88).toDouble())
-        .withLightness(dominantHsl.lightness.clamp(0.2, 0.42).toDouble())
-        .toColor();
+        // Vloeiende panning met gehele frequenties
+        final offsetX = math.cos(angle) * 16.0;
+        final offsetY = math.sin(angle * 2) * 12.0;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const ColoredBox(color: Color(0xFF101819)),
-        if (provider != null)
-          Positioned.fill(
-            child: RepaintBoundary(
-              child: ImageFiltered(
-                imageFilter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: Image(
-                  image: ResizeImage(provider, width: 320, height: 320),
-                  fit: BoxFit.cover,
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Basis kleur uit het serverpalet
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 800),
+              color: baseColor,
+            ),
+
+            // 2. Naadloos morphing en bewegend achtergrondbeeld
+            if (provider != null)
+              Positioned.fill(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..translate(offsetX, offsetY)
+                    ..scale(scaleX, scaleY),
+                  child: RepaintBoundary(
+                    child: ImageFiltered(
+                      imageFilter: ui.ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                      child: Image(
+                        image: ResizeImage(provider, width: 320, height: 320),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            // 3. Sfeervolle kleurovergang gebaseerd op het palet
+            Positioned.fill(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 800),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _withAlpha(accentColor, 140),
+                      _withAlpha(primaryColor, 90),
+                      _withAlpha(baseColor, 230),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        Positioned.fill(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 700),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  _withAlpha(colorWash, 214),
-                  _withAlpha(deepWash, 174),
-                  const Color(0x80101819),
-                ],
+
+            // 4. Donkere deklaag voor leesbaarheid
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Color(0x55090D12),
+                ),
               ),
             ),
-          ),
-        ),
-        widget.child,
-      ],
+
+            // 5. De rest van de UI
+            widget.child,
+          ],
+        );
+      },
     );
   }
 
