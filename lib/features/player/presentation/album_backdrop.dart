@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:palette_generator_plus/palette_generator_plus.dart';
 
 import 'artwork_image.dart';
 
@@ -11,12 +10,14 @@ class AlbumBackdrop extends StatefulWidget {
     required this.imageUrl,
     required this.serverUrl,
     required this.token,
+    this.palette,
     required this.child,
   });
 
   final String? imageUrl;
   final String serverUrl;
   final String token;
+  final Map<String, dynamic>? palette;
   final Widget child;
 
   @override
@@ -26,72 +27,14 @@ class AlbumBackdrop extends StatefulWidget {
 class _AlbumBackdropState extends State<AlbumBackdrop> {
   static const _fallbackColor = Color(0xFF263333);
 
-  Color _dominantColor = _fallbackColor;
-  Color _vibrantColor = _fallbackColor;
-  int _paletteRequest = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _extractPalette();
-  }
-
-  @override
-  void didUpdateWidget(covariant AlbumBackdrop oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.imageUrl != widget.imageUrl ||
-        oldWidget.serverUrl != widget.serverUrl ||
-        oldWidget.token != widget.token) {
-      _paletteRequest++;
-      _dominantColor = _fallbackColor;
-      _vibrantColor = _fallbackColor;
-      _extractPalette();
-    }
-  }
-
-  Future<void> _extractPalette() async {
-    final request = ++_paletteRequest;
-    final provider = artworkImageProvider(
-      imageUrl: widget.imageUrl,
-      serverUrl: widget.serverUrl,
-      token: widget.token,
+  Color _colorFromRgb(List<dynamic>? rgb, Color fallback) {
+    if (rgb == null || rgb.length < 3) return fallback;
+    return Color.fromARGB(
+      255,
+      (rgb[0] as num).toInt().clamp(0, 255),
+      (rgb[1] as num).toInt().clamp(0, 255),
+      (rgb[2] as num).toInt().clamp(0, 255),
     );
-    if (provider == null) {
-      if (mounted) {
-        setState(() {
-          _dominantColor = _fallbackColor;
-          _vibrantColor = _fallbackColor;
-        });
-      }
-      return;
-    }
-
-    try {
-      final palette = await PaletteGenerator.fromImageProvider(
-        ResizeImage(provider, width: 24, height: 24),
-        size: const Size(24, 24),
-        maximumColorCount: 5,
-        timeout: const Duration(seconds: 4),
-      );
-      if (!mounted || request != _paletteRequest) return;
-      setState(() {
-        _dominantColor =
-            palette.dominantColor?.color ??
-            palette.mutedColor?.color ??
-            _fallbackColor;
-        _vibrantColor =
-            palette.vibrantColor?.color ??
-            palette.lightVibrantColor?.color ??
-            _dominantColor;
-      });
-    } catch (_) {
-      if (mounted && request == _paletteRequest) {
-        setState(() {
-          _dominantColor = _fallbackColor;
-          _vibrantColor = _fallbackColor;
-        });
-      }
-    }
   }
 
   @override
@@ -101,8 +44,19 @@ class _AlbumBackdropState extends State<AlbumBackdrop> {
       serverUrl: widget.serverUrl,
       token: widget.token,
     );
-    final vibrantHsl = HSLColor.fromColor(_vibrantColor);
-    final dominantHsl = HSLColor.fromColor(_dominantColor);
+
+    // Haal de kleuren direct uit het serverpalet indien aanwezig
+    final backgroundDarkRgb = widget.palette?['background_dark'];
+    final accentRgb = widget.palette?['accent'] ?? widget.palette?['primary'];
+
+    print(accentRgb);
+
+    final dominantColor = _colorFromRgb(backgroundDarkRgb, _fallbackColor);
+    final vibrantColor = _colorFromRgb(accentRgb, dominantColor);
+
+    final vibrantHsl = HSLColor.fromColor(vibrantColor);
+    final dominantHsl = HSLColor.fromColor(dominantColor);
+
     final colorWash = vibrantHsl
         .withSaturation(vibrantHsl.saturation.clamp(0.72, 0.96).toDouble())
         .withLightness(vibrantHsl.lightness.clamp(0.3, 0.62).toDouble())
@@ -150,9 +104,9 @@ class _AlbumBackdropState extends State<AlbumBackdrop> {
   }
 
   Color _withAlpha(Color color, int alpha) => Color.fromARGB(
-    alpha,
-    (color.r * 255).round().clamp(0, 255).toInt(),
-    (color.g * 255).round().clamp(0, 255).toInt(),
-    (color.b * 255).round().clamp(0, 255).toInt(),
-  );
+        alpha,
+        (color.r * 255).round().clamp(0, 255).toInt(),
+        (color.g * 255).round().clamp(0, 255).toInt(),
+        (color.b * 255).round().clamp(0, 255).toInt(),
+      );
 }

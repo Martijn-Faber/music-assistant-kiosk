@@ -12,6 +12,7 @@ class PlayerSummary {
     this.artist,
     this.album,
     this.imageUrl,
+    this.palette,
     this.groupMembers = const [],
     this.durationSeconds,
     this.elapsedTimeSeconds,
@@ -28,6 +29,7 @@ class PlayerSummary {
   final String? artist;
   final String? album;
   final String? imageUrl;
+  final Map<String, dynamic>? palette;
   final List<String>? groupMembers;
   final int? durationSeconds;
   final double? elapsedTimeSeconds;
@@ -48,6 +50,7 @@ class PlayerSummary {
     artist: artist,
     album: album,
     imageUrl: imageUrl,
+    palette: palette,
     groupMembers: groupMembers,
     durationSeconds: durationSeconds,
     elapsedTimeSeconds: elapsedTimeSeconds,
@@ -77,6 +80,7 @@ class PlayerSummary {
       artist: report.artist ?? (newItem ? null : artist),
       album: report.album ?? (newItem ? null : album),
       imageUrl: report.imageUrl ?? (newItem ? null : imageUrl),
+      palette: palette,
       groupMembers: groupMembers,
       durationSeconds: report.durationSeconds,
       elapsedTimeSeconds: report.secondsPlayed,
@@ -92,6 +96,10 @@ class PlayerSummary {
 
     final rawMedia = data['current_media'];
     final media = rawMedia is Map ? rawMedia : null;
+
+    final rawPalette = media?['palette'];
+    final palette = rawPalette is Map ? Map<String, dynamic>.from(rawPalette) : null;
+
     final available = data['available'];
     final volumeLevel = data['group_volume'] ?? data['volume_level'];
     final rawGroupMembers = data['group_members'] ?? data['group_childs'];
@@ -115,6 +123,7 @@ class PlayerSummary {
       artist: _mapString(media, 'artist'),
       album: _mapString(media, 'album'),
       imageUrl: _mapString(media, 'image_url'),
+      palette: palette,
       groupMembers: groupMembers,
       durationSeconds: duration is num ? duration.toInt() : null,
       elapsedTimeSeconds: elapsedTime is num ? elapsedTime.toDouble() : null,

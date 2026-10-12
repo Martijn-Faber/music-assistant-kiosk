@@ -72,6 +72,22 @@ class ArtworkImage extends StatelessWidget {
   }
 }
 
+// NetworkImage? artworkImageProvider({
+//   required String? imageUrl,
+//   required String serverUrl,
+//   required String token,
+// }) {
+//   final uri = _resolveArtworkUri(imageUrl, serverUrl);
+//   if (uri == null) return null;
+
+//   final serverUri = Uri.tryParse(serverUrl);
+//   final useAuthorization = serverUri != null && uri.origin == serverUri.origin;
+//   return NetworkImage(
+//     uri.toString(),
+//     headers: useAuthorization ? {'Authorization': 'Bearer $token'} : null,
+//   );
+// }
+
 NetworkImage? artworkImageProvider({
   required String? imageUrl,
   required String serverUrl,
@@ -81,23 +97,51 @@ NetworkImage? artworkImageProvider({
   if (uri == null) return null;
 
   final serverUri = Uri.tryParse(serverUrl);
-  final useAuthorization = serverUri != null && uri.origin == serverUri.origin;
+  // Stuur altijd de bearer token mee als de aanvraag naar onze eigen serverUrl gaat
+  final useAuthorization = serverUri != null && uri.host == serverUri.host;
+  
   return NetworkImage(
     uri.toString(),
     headers: useAuthorization ? {'Authorization': 'Bearer $token'} : null,
   );
 }
 
+// Uri? _resolveArtworkUri(String? value, String baseUrl) {
+//   if (value == null || value.trim().isEmpty) return null;
+//   final uri = Uri.tryParse(value.trim());
+//   if (uri == null) return null;
+//   if (uri.hasScheme) {
+//     return {'http', 'https'}.contains(uri.scheme) ? uri : null;
+//   }
+
+//   final baseUri = Uri.tryParse(baseUrl);
+//   if (baseUri == null) return null;
+//   final resolved = baseUri.resolveUri(uri);
+//   return {'http', 'https'}.contains(resolved.scheme) ? resolved : null;
+// }
+
 Uri? _resolveArtworkUri(String? value, String baseUrl) {
   if (value == null || value.trim().isEmpty) return null;
-  final uri = Uri.tryParse(value.trim());
-  if (uri == null) return null;
-  if (uri.hasScheme) {
-    return {'http', 'https'}.contains(uri.scheme) ? uri : null;
-  }
-
+  final trimmed = value.trim();
   final baseUri = Uri.tryParse(baseUrl);
   if (baseUri == null) return null;
-  final resolved = baseUri.resolveUri(uri);
+
+  // Als de URL een imageproxy pad bevat (ongeacht welk lokaal IP of domein er voor staat),
+  // herschrijven we hem direct naar je actieve baseUrl (Cloudflare Tunnel)!
+  final parsedValue = Uri.tryParse(trimmed);
+  if (parsedValue != null && parsedValue.path.contains('imageproxy')) {
+    final resolved = baseUri.replace(
+      path: parsedValue.path,
+      queryParameters: parsedValue.queryParameters.isNotEmpty ? parsedValue.queryParameters : null,
+    );
+    return {'http', 'https'}.contains(resolved.scheme) ? resolved : null;
+  }
+
+  // Standaard afhandeling voor overige absolute of relatieve URLs
+  if (parsedValue != null && parsedValue.hasScheme) {
+    return {'http', 'https'}.contains(parsedValue.scheme) ? parsedValue : null;
+  }
+
+  final resolved = baseUri.resolve(trimmed);
   return {'http', 'https'}.contains(resolved.scheme) ? resolved : null;
 }

@@ -78,6 +78,7 @@ class PlayerScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF101819),
       body: AlbumBackdrop(
         imageUrl: isIdle ? null : player?.imageUrl,
+        palette: player?.palette,
         serverUrl: repository.serverUrl,
         token: repository.token,
         child: Stack(
