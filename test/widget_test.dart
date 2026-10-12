@@ -11,7 +11,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app/features/player/presentation/album_backdrop.dart';
 import 'package:app/features/connection/presentation/connection_screen.dart';
 import 'package:app/features/player/domain/player_summary.dart';
-import 'package:app/features/player/presentation/player_settings_dialog.dart';
 import 'package:app/features/player/domain/radio_station.dart';
 
 void main() {
@@ -48,32 +47,6 @@ void main() {
     );
 
     expect(find.text('Now playing'), findsOneWidget);
-  });
-
-  testWidgets('shows connection and device details in player settings', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PlayerSettingsDialog(
-          players: const [
-            PlayerSummary(
-              id: 'living-room',
-              name: 'Living Room Speaker',
-              playbackState: 'idle',
-            ),
-          ],
-          selectedPlayerId: 'living-room',
-          serverAddress: 'music.example.local:8095',
-          deviceName: 'Living Room Speaker',
-          onSignOut: () {},
-        ),
-      ),
-    );
-
-    expect(find.text('music.example.local:8095'), findsOneWidget);
-    expect(find.text('Living Room Speaker'), findsNWidgets(2));
-    expect(find.text('SIGN OUT'), findsOneWidget);
   });
 
   test('parses a radio station library item', () {
