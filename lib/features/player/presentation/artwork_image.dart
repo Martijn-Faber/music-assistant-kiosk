@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 class ArtworkImage extends StatelessWidget {
@@ -54,19 +56,33 @@ class ArtworkImage extends StatelessWidget {
   }
 
   Widget _placeholder({bool loading = false}) {
-    return ColoredBox(
-      color: const Color(0xFF192526),
-      child: Center(
-        child: loading
-            ? const SizedBox.square(
-                dimension: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(
-                Icons.album_outlined,
-                size: 52,
-                color: Color(0xFF83918E),
-              ),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF242832).withValues(alpha: 0.44),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: loading
+                ? SizedBox.square(
+                    dimension: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white.withValues(alpha: 0.78),
+                    ),
+                  )
+                : Icon(
+                    Icons.album_outlined,
+                    size: 48,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+          ),
+        ),
       ),
     );
   }
