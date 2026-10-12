@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -97,7 +98,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: const Icon(CupertinoIcons.xmark, color: Colors.white70),
                 ),
               ],
             ),
@@ -140,7 +141,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                           Row(
                             children: [
                               const Icon(
-                                Icons.speaker_outlined,
+                                CupertinoIcons.hifispeaker,
                                 size: 19,
                                 color: Colors.white70,
                               ),

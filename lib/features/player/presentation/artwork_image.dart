@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class ArtworkImage extends StatelessWidget {
@@ -77,7 +78,7 @@ class ArtworkImage extends StatelessWidget {
                     ),
                   )
                 : Icon(
-                    Icons.album_outlined,
+                    CupertinoIcons.music_albums,
                     size: 48,
                     color: Colors.white.withValues(alpha: 0.5),
                   ),

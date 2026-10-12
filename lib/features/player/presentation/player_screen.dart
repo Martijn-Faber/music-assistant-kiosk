@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -132,7 +133,7 @@ class PlayerScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+            volume == 0 ? CupertinoIcons.speaker_slash : CupertinoIcons.speaker_2,
             color: Colors.white,
             size: 18,
           ),
@@ -360,8 +361,8 @@ class PlayerScreen extends StatelessWidget {
             children: [
               Icon(
                 player.available == false
-                    ? Icons.error_outline_rounded
-                    : Icons.graphic_eq_rounded,
+                    ? CupertinoIcons.exclamationmark_circle
+                    : CupertinoIcons.waveform,
                 size: 15,
                 color: player.available == false
                     ? const Color(0xFFFF8E7C)
@@ -377,7 +378,7 @@ class PlayerScreen extends StatelessWidget {
               if (player.volumeLevel != null) ...[
                 const SizedBox(width: 14),
                 const Icon(
-                  Icons.volume_up_outlined,
+                  CupertinoIcons.speaker_2,
                   size: 15,
                   color: Colors.white,
                 ),
@@ -495,7 +496,7 @@ class _NothingPlayingView extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.graphic_eq_rounded, size: 42, color: Color(0xDDE9F0EB)),
+        Icon(CupertinoIcons.waveform, size: 42, color: Color(0xDDE9F0EB)),
         SizedBox(height: 12),
         Text(
           'Nothing is playing',

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'player_glass_widgets.dart';
@@ -104,8 +105,8 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                   children: [
                     Icon(
                       widget.nowPlayingLabel == null
-                          ? Icons.radio_rounded
-                          : Icons.music_note_rounded,
+                          ? CupertinoIcons.antenna_radiowaves_left_right
+                          : CupertinoIcons.music_note,
                       size: 16,
                       color: Color(0xFFE9F0EB),
                     ),

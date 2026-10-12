@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../player/presentation/design_system/glass_tokens.dart';
@@ -340,7 +341,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                 ),
               )
             : const Icon(
-                Icons.wifi_find_rounded,
+                CupertinoIcons.wifi,
                 color: Colors.white70,
                 size: 27,
               ),
@@ -364,8 +365,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       else if (!_isDiscovering) ...[
         _StatusMessage(
           icon: _discoveryError == null
-              ? Icons.search_off_rounded
-              : Icons.error_outline_rounded,
+              ? CupertinoIcons.search
+              : CupertinoIcons.exclamationmark_circle,
           message:
               _discoveryError ?? 'No servers found. You can add one manually.',
         ),
@@ -373,7 +374,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       ],
       if (_isDiscovering) ...[
         const _StatusMessage(
-          icon: Icons.more_horiz_rounded,
+          icon: CupertinoIcons.ellipsis,
           message: 'This usually takes a few seconds.',
         ),
         const SizedBox(height: 18),
@@ -382,7 +383,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         Center(
           child: TextButton.icon(
             onPressed: _findServers,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
+            icon: const Icon(CupertinoIcons.refresh, size: 18),
             label: const Text('Search again'),
             style: TextButton.styleFrom(foregroundColor: Colors.white70),
           ),
@@ -413,7 +414,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         subtitle: 'Enter the hostname or IP address and port.',
         compact: _compactLayout,
         leading: const Icon(
-          Icons.dns_outlined,
+          CupertinoIcons.desktopcomputer,
           color: Colors.white70,
           size: 27,
         ),
@@ -423,7 +424,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         controller: _hostController,
         label: 'Hostname or IP',
         hintText: 'music-assistant.local',
-        icon: Icons.language_rounded,
+        icon: CupertinoIcons.globe,
         keyboardType: TextInputType.url,
         compact: _compactLayout,
       ),
@@ -431,7 +432,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       _GlassTextField(
         controller: _portController,
         label: 'Port',
-        icon: Icons.settings_ethernet_rounded,
+        icon: CupertinoIcons.wifi,
         keyboardType: TextInputType.number,
         compact: _compactLayout,
       ),
@@ -446,7 +447,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       SizedBox(height: _compactLayout ? 14 : 24),
       _PrimaryButton(
         label: 'Continue',
-        icon: Icons.arrow_forward_rounded,
+        icon: CupertinoIcons.forward,
         onPressed: _continueToLogin,
         compact: _compactLayout,
       ),
@@ -516,7 +517,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         controller: _usernameController,
         focusNode: _usernameFocus,
         label: 'Username',
-        icon: Icons.person_outline_rounded,
+        icon: CupertinoIcons.person,
         textInputAction: TextInputAction.next,
         onSubmitted: (_) => _passwordFocus.requestFocus(),
         compact: _compactLayout,
@@ -532,7 +533,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         controller: _passwordController,
         focusNode: _passwordFocus,
         label: 'Password',
-        icon: Icons.lock_outline_rounded,
+        icon: CupertinoIcons.lock,
         obscureText: _obscurePassword,
         textInputAction: TextInputAction.done,
         compact: _compactLayout,
@@ -551,8 +552,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           }),
           icon: Icon(
             _obscurePassword
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+                ? CupertinoIcons.eye
+                : CupertinoIcons.eye_slash,
             size: 20,
           ),
         ),
@@ -576,7 +577,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       ),
       _PrimaryButton(
         label: widget.isLoading ? 'Connecting' : 'Connect',
-        icon: widget.isLoading ? null : Icons.arrow_forward_rounded,
+        icon: widget.isLoading ? null : CupertinoIcons.forward,
         isLoading: widget.isLoading,
         onPressed: widget.isLoading ? null : _submit,
         compact: _compactLayout,
@@ -630,7 +631,7 @@ class _BackButton extends StatelessWidget {
     child: IconButton(
       onPressed: onPressed,
       tooltip: 'Back',
-      icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+      icon: const Icon(CupertinoIcons.back, color: Colors.white),
       constraints: BoxConstraints.tightFor(
         width: compact ? 40 : 48,
         height: compact ? 40 : 48,
@@ -665,7 +666,7 @@ class _ServerOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.dns_rounded, size: 21, color: Colors.white70),
+            const Icon(CupertinoIcons.desktopcomputer, size: 21, color: Colors.white70),
             const SizedBox(width: 13),
             Expanded(
               child: Column(
@@ -692,7 +693,7 @@ class _ServerOption extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             const Icon(
-              Icons.chevron_right_rounded,
+              CupertinoIcons.chevron_right,
               color: Colors.white70,
               size: 24,
             ),
@@ -880,7 +881,7 @@ class _ErrorMessage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          Icons.error_outline_rounded,
+          CupertinoIcons.exclamationmark_circle,
           color: Color(0xFFFFA39B),
           size: compact ? 15 : 18,
         ),

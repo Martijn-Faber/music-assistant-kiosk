@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -61,7 +62,7 @@ class NowPlayingPage extends StatelessWidget {
                     padding: EdgeInsets.all(11),
                     tint: Color(0x66202730),
                     child: Icon(
-                      Icons.queue_music_rounded,
+                      CupertinoIcons.music_note_list,
                       color: Colors.white,
                       size: 22,
                     ),
@@ -186,8 +187,8 @@ class NowPlayingPage extends StatelessWidget {
           children: [
             Icon(
               player.available == false
-                  ? Icons.error_outline_rounded
-                  : Icons.graphic_eq_rounded,
+                  ? CupertinoIcons.exclamationmark_circle
+                  : CupertinoIcons.waveform,
               size: 15,
               color: player.available == false
                   ? const Color(0xFFFF8E7C)
@@ -544,7 +545,7 @@ class _PlaybackQualityDialog extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    icon: const Icon(CupertinoIcons.xmark, color: Colors.white70),
                   ),
                 ],
               ),
@@ -674,7 +675,7 @@ class NothingPlayingPage extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.graphic_eq_rounded, size: 42, color: Color(0xDDE9F0EB)),
+        Icon(CupertinoIcons.waveform, size: 42, color: Color(0xDDE9F0EB)),
         SizedBox(height: 12),
         Text(
           'Nothing is playing',

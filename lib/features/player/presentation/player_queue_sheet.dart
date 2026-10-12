@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -165,7 +166,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                 children: [
                   const Center(
                     child: Icon(
-                      Icons.warning_amber_rounded,
+                      CupertinoIcons.exclamationmark_triangle,
                       color: Color(0xFFFF8E7C),
                       size: 40,
                     ),
@@ -382,7 +383,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.queue_music_rounded, color: Colors.white),
+                    const Icon(CupertinoIcons.music_note_list, color: Colors.white),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(
@@ -411,7 +412,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               ),
                             )
                           : const Icon(
-                              Icons.all_inclusive_rounded,
+                              CupertinoIcons.repeat,
                               color: Colors.white,
                             ),
                       icon: _isTogglingAutoplay
@@ -423,7 +424,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               ),
                             )
                           : const Icon(
-                              Icons.all_inclusive_rounded,
+                              CupertinoIcons.repeat,
                               color: Colors.white70,
                             ),
                       style: IconButton.styleFrom(
@@ -446,14 +447,14 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               ),
                             )
                           : const Icon(
-                              Icons.delete_sweep_outlined,
+                              CupertinoIcons.trash,
                               color: Colors.white70,
                             ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(
-                        Icons.close_rounded,
+                        CupertinoIcons.xmark,
                         color: Colors.white70,
                       ),
                     ),
@@ -753,7 +754,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                                     ),
                                               )
                                             : Icon(
-                                                Icons.remove_from_queue_rounded,
+                                                CupertinoIcons.minus_circle,
                                                 color: Colors.white,
                                                 size:
                                                     ((constraints.maxWidth *

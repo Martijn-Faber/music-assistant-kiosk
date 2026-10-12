@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/radio_station.dart';
@@ -51,7 +52,7 @@ class _RadioStationPickerDialogState extends State<RadioStationPickerDialog> {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(
-                    Icons.radio_outlined,
+                    CupertinoIcons.antenna_radiowaves_left_right,
                     color: Color(0xFFB6E36A),
                   ),
                   title: Text(

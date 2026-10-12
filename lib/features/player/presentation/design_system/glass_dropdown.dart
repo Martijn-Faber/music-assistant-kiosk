@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'glass_surface.dart';
@@ -42,7 +43,7 @@ class GlassDropdown<T> extends StatelessWidget {
           menuMaxHeight: 320,
           borderRadius: BorderRadius.circular(16),
           dropdownColor: const Color(0xFF263333),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
+          icon: const Icon(CupertinoIcons.chevron_down, size: 22),
           iconEnabledColor: Colors.white,
           style: const TextStyle(color: Colors.white, fontSize: 16),
           selectedItemBuilder: (context) => items

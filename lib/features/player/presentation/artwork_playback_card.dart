@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// Artwork-backed card used for actions that start playback.
@@ -86,7 +87,7 @@ class _PlayBadge extends StatelessWidget {
       ],
     ),
     child: Icon(
-      Icons.play_arrow_rounded,
+      CupertinoIcons.play,
       size: 18,
       color: enabled ? Colors.white : const Color(0xFF7C8581),
     ),

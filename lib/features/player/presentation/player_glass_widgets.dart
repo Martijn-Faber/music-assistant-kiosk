@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'design_system/glass_pill.dart';
@@ -46,7 +47,7 @@ class PlayerNamePill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
-              Icons.speaker_outlined,
+              CupertinoIcons.hifispeaker,
               size: 16,
               color: Color(0xFFE9F0EB),
             ),

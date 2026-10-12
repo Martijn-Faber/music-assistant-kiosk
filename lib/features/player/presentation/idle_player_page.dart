@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -115,7 +116,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                       children: [
                         _buildSectionHeader(
                           title: 'START MET RADIO',
-                          icon: Icons.radio_rounded,
+                          icon: CupertinoIcons.antenna_radiowaves_left_right,
                           trailing: InkWell(
                             onTap: widget.onBrowseRadio,
                             child: const Padding(
@@ -161,7 +162,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                       children: [
                         _buildSectionHeader(
                           title: 'JOUW PLAYLISTS',
-                          icon: Icons.playlist_play_rounded,
+                          icon: CupertinoIcons.music_note_list,
                         ),
                         const SizedBox(height: 8),
                         Expanded(
@@ -292,13 +293,13 @@ class _HeroRadioCard extends StatelessWidget {
       token: repository.token,
     );
     if (provider == null) {
-      return const _PlaceholderTile(icon: Icons.radio_rounded);
+      return const _PlaceholderTile(icon: CupertinoIcons.antenna_radiowaves_left_right);
     }
     return Image(
       image: provider,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) =>
-          const _PlaceholderTile(icon: Icons.radio_rounded),
+          const _PlaceholderTile(icon: CupertinoIcons.antenna_radiowaves_left_right),
     );
   }
 }
@@ -380,12 +381,6 @@ class _PlaylistRow extends StatelessWidget {
                       ),
                     ),
                   )
-                else
-                  const Icon(
-                    Icons.play_circle_fill_rounded,
-                    color: Color(0xFFE9F0EB),
-                    size: 26,
-                  ),
               ],
             ),
           ),
@@ -410,7 +405,7 @@ class _PlaylistRow extends StatelessWidget {
 }
 
 class _PlaceholderTile extends StatelessWidget {
-  const _PlaceholderTile({this.icon = Icons.queue_music_rounded});
+  const _PlaceholderTile({this.icon = CupertinoIcons.music_note_list});
 
   final IconData icon;
 

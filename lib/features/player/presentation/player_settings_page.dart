@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/player_summary.dart';
@@ -104,17 +105,17 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   const GlassSectionLabel('CONNECTED TO'),
                   const SizedBox(height: 8),
                   GlassInfoRow(
-                    icon: Icons.dns_outlined,
+                    icon: CupertinoIcons.desktopcomputer,
                     value: widget.serverAddress,
                   ),
                   const SizedBox(height: 8),
                   GlassInfoRow(
-                    icon: Icons.speaker_outlined,
+                    icon: CupertinoIcons.hifispeaker,
                     value: widget.deviceName ?? 'No player selected',
                   ),
                   const SizedBox(height: 24),
                   GlassOutlineButton(
-                    icon: Icons.logout_rounded,
+                    icon: CupertinoIcons.power,
                     label: 'SIGN OUT',
                     onPressed: widget.onSignOut,
                   ),
