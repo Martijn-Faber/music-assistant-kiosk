@@ -27,8 +27,11 @@ class GlassSegmentedControl extends StatelessWidget {
             child: Semantics(
               button: true,
               selected: index == selectedIndex,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
                 onTap: () => onSelected(index),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
@@ -53,6 +56,7 @@ class GlassSegmentedControl extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
                 ),
               ),
             ),
