@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/features/player/presentation/album_backdrop.dart';
 import 'package:app/features/connection/presentation/connection_screen.dart';
-import 'package:app/features/player/domain/player_summary.dart';
 import 'package:app/features/player/domain/radio_station.dart';
 
 void main() {

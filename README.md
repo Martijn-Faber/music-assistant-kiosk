@@ -1,17 +1,17 @@
-# app
+# Living Room Music Assistant
 
-A new Flutter project.
+A Flutter client for controlling Music Assistant from a living room display. The app connects to a Music Assistant server, discovers servers on the local network, and provides playback, queue, volume, and player controls.
 
-## Getting Started
+## Requirements
 
-This project is a starting point for a Flutter application.
+- Flutter and Dart versions matching the constraints in `pubspec.yaml`
+- A reachable Music Assistant server
 
-A few resources to get you started if this is your first Flutter project:
+## Run
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```sh
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The Android app uses immersive mode and keeps the screen awake for kiosk use. On first launch, enter the Music Assistant server address and account credentials. The session is saved securely on the device.
