@@ -32,16 +32,6 @@ class ArtworkPlaybackCard extends StatelessWidget {
           children: [
             artwork,
             if (isLoading) const ColoredBox(color: Color(0x77000000)),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00000000), Color(0xE6000000)],
-                  stops: [0.2, 1],
-                ),
-              ),
-            ),
             Positioned(
               top: 8,
               right: 8,

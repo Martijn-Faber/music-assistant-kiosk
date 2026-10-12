@@ -46,7 +46,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     ]);
     return _IdleContent(
       station: (results[0] as List<RadioStation>).firstOrNull,
-      playlists: (results[1] as List<Playlist>).take(5).toList(),
+      playlists: results[1] as List<Playlist>,
     );
   }
 
@@ -89,7 +89,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     final isBusy = _startingStationId != null || _startingPlaylistUri != null;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 42, 16, 24),
+      padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -108,14 +108,13 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // --- LINKERKOLOM: Vaste Favoriete Radio (Eén Grote Hero Card) ---
                   Expanded(
-                    flex: 5,
+                    flex: 6,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader(
-                          title: 'RADIO',
+                          title: 'START MET RADIO',
                           icon: Icons.radio_rounded,
                           trailing: InkWell(
                             onTap: widget.onBrowseRadio,
@@ -155,14 +154,13 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
 
                   const SizedBox(width: 16),
 
-                  // --- RECHTERKOLOM: Favoriete Afspeellijsten ---
                   Expanded(
-                    flex: 5,
+                    flex: 4,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader(
-                          title: 'PLAYLISTS',
+                          title: 'JOUW PLAYLISTS',
                           icon: Icons.playlist_play_rounded,
                         ),
                         const SizedBox(height: 8),
@@ -172,7 +170,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                                   padding: EdgeInsets.zero,
                                   itemCount: playlists.length,
                                   separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 8),
                                   itemBuilder: (context, index) {
                                     final playlist = playlists[index];
                                     return _PlaylistRow(
@@ -236,7 +234,7 @@ class _IdleContent {
   final List<Playlist> playlists;
 }
 
-/// Grote Hero card voor je vaste radiostation
+/// Primary quick-start action for the favorite radio station.
 class _HeroRadioCard extends StatelessWidget {
   const _HeroRadioCard({
     required this.station,
@@ -267,24 +265,6 @@ class _HeroRadioCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Container(
-                  //   padding:
-                  //       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  //   decoration: BoxDecoration(
-                  //     color: const Color(0x77000000),
-                  //     borderRadius: BorderRadius.circular(4),
-                  //   ),
-                  //   child: const Text(
-                  //     'SNEL STARTEN',
-                  //     style: TextStyle(
-                  //       color: Color(0xFF8CE1B2),
-                  //       fontSize: 8,
-                  //       fontWeight: FontWeight.w900,
-                  //       letterSpacing: 0.6,
-                  //     ),
-                  //   ),
-                  // ),
-                  // const SizedBox(height: 6),
                   Text(
                     station.name,
                     maxLines: 2,
@@ -339,73 +319,75 @@ class _PlaylistRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      borderRadius: 10,
-      padding: EdgeInsets.zero,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: _artwork(),
+        splashColor: Colors.white.withValues(alpha: 0.12),
+        highlightColor: Colors.white.withValues(alpha: 0.06),
+        child: GlassSurface(
+          borderRadius: 10,
+          padding: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(width: 52, height: 52, child: _artwork()),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      playlist.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFF1F4EA),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (playlist.owner != null) ...[
-                      const SizedBox(height: 2),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        playlist.owner!,
+                        playlist.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Color(0xFFAAB7B4),
-                          fontSize: 10,
+                          color: Color(0xFFF1F4EA),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
+                      if (playlist.owner != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          playlist.owner!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFAAB7B4),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ),
-              if (isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFFE9F0EB),
-                    ),
                   ),
-                )
-              else
-                const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Color(0xFFE9F0EB),
-                  size: 22,
                 ),
-            ],
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFE9F0EB),
+                      ),
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.play_circle_fill_rounded,
+                    color: Color(0xFFE9F0EB),
+                    size: 26,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

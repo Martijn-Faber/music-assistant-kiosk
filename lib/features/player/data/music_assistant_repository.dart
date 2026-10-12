@@ -283,27 +283,31 @@ class MusicAssistantRepository {
 
   Future<List<Playlist>> fetchPlaylists() async {
     try {
-      // Vervang dit door jouw specifieke API/WebSocket call naar Music Assistant
-      // bijv. via de WebSocket 'music/playlists' of REST endpoint
-      final response = await _client.sendCommand('music/playlists');
-      if (response is List) {
-        return response
-            .map((item) => Playlist.fromJson(item as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      print('Fout bij ophalen afspeellijsten: $e');
+      final response = await _client.sendCommand(
+        'music/playlists/library_items',
+        args: {'favorite': true},
+      );
+      final rawItems = switch (response) {
+        List<dynamic> items => items,
+        Map<dynamic, dynamic> result when result['items'] is List =>
+          result['items'] as List<dynamic>,
+        _ => const <dynamic>[],
+      };
+      return [
+        for (final item in rawItems.whereType<Map>())
+          Playlist.fromJson(Map<String, dynamic>.from(item)),
+      ].where((playlist) => playlist.uri.isNotEmpty).toList();
+    } catch (_) {
       return [];
     }
   }
 
   Future<void> playPlaylist(String playerId, Playlist playlist) async {
-    // Stuur het commando naar Music Assistant om de playlist op de speler te starten
-    // await _client.sendCommand('/api/players/$playerId/play_media', {
-    //   'media_id': playlist.uri,
-    //   'media_type': 'playlist',
-    // });
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    await _client.playerQueues.playMedia(
+      queue?.queueId ?? playerId,
+      playlist.uri,
+    );
   }
 
   void Function() listenToPlayerEvents({
