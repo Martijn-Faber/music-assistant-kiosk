@@ -2,11 +2,11 @@ import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 
 import '../domain/player_summary.dart';
-import '../domain/playback_progress_report.dart';
 import '../domain/player_queue_snapshot.dart';
 import '../domain/playback_quality_info.dart';
 import '../domain/recent_media_item.dart';
 import '../domain/radio_station.dart';
+import '../domain/playlist.dart';
 
 class MusicAssistantRepository {
   MusicAssistantRepository._(this._client);
@@ -281,30 +281,37 @@ class MusicAssistantRepository {
     );
   }
 
+  Future<List<Playlist>> fetchPlaylists() async {
+    try {
+      // Vervang dit door jouw specifieke API/WebSocket call naar Music Assistant
+      // bijv. via de WebSocket 'music/playlists' of REST endpoint
+      final response = await _client.sendCommand('music/playlists');
+      if (response is List) {
+        return response
+            .map((item) => Playlist.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Fout bij ophalen afspeellijsten: $e');
+      return [];
+    }
+  }
+
+  Future<void> playPlaylist(String playerId, Playlist playlist) async {
+    // Stuur het commando naar Music Assistant om de playlist op de speler te starten
+    // await _client.sendCommand('/api/players/$playerId/play_media', {
+    //   'media_id': playlist.uri,
+    //   'media_type': 'playlist',
+    // });
+  }
+
   void Function() listenToPlayerEvents({
     required void Function(PlayerSummary player) onChanged,
     required void Function(String playerId) onRemoved,
-    required void Function(String playerId, PlaybackProgressReport report)
-    onProgress,
   }) {
     return _client.subscribe(
       (event) {
-        if (event.type == EventType.mediaItemPlayed) {
-          final data = event.data;
-          if (data is! Map) return;
-          final playerId = data['player_id'];
-          if (playerId is! String || playerId.isEmpty) return;
-          try {
-            onProgress(
-              playerId,
-              PlaybackProgressReport.fromMap(Map<String, dynamic>.from(data)),
-            );
-          } on FormatException {
-            return;
-          }
-          return;
-        }
-
         if (event.type == EventType.playerRemoved) {
           final playerId = event.objectId;
           if (playerId != null) onRemoved(playerId);
@@ -328,7 +335,6 @@ class MusicAssistantRepository {
         EventType.playerAdded,
         EventType.playerUpdated,
         EventType.playerRemoved,
-        EventType.mediaItemPlayed,
       },
     );
   }

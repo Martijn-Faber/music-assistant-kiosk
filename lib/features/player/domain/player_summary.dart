@@ -1,5 +1,3 @@
-import 'playback_progress_report.dart';
-
 class PlayerSummary {
   const PlayerSummary({
     required this.id,
@@ -68,29 +66,6 @@ class PlayerSummary {
     volumeLevel: volumeLevel,
     groupMembers: groupMembers,
   );
-
-  PlayerSummary withPlaybackProgress(PlaybackProgressReport report) {
-    final newItem =
-        mediaUri != report.uri && (mediaUri != null || title != report.name);
-    return PlayerSummary(
-      id: id,
-      name: name,
-      playbackState: report.isPlaying ? 'playing' : 'paused',
-      available: available,
-      volumeLevel: volumeLevel,
-      title: report.name,
-      mediaUri: report.uri,
-      mediaType: report.mediaType ?? (newItem ? null : mediaType),
-      artist: report.artist ?? (newItem ? null : artist),
-      album: report.album ?? (newItem ? null : album),
-      imageUrl: report.imageUrl ?? (newItem ? null : imageUrl),
-      palette: palette,
-      groupMembers: groupMembers,
-      durationSeconds: report.durationSeconds,
-      elapsedTimeSeconds: report.secondsPlayed,
-      elapsedTimeLastUpdated: DateTime.now().millisecondsSinceEpoch / 1000,
-    );
-  }
 
   factory PlayerSummary.fromMap(Map<String, dynamic> data) {
     final id = data['player_id'];

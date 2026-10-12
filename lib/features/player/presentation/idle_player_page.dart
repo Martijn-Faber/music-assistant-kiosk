@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
-import '../domain/recent_media_item.dart';
+import '../domain/playlist.dart';
 import '../domain/radio_station.dart';
 import 'artwork_image.dart';
 import 'artwork_playback_card.dart';
@@ -26,36 +26,32 @@ class IdlePlayerPage extends StatefulWidget {
 
 class _IdlePlayerPageState extends State<IdlePlayerPage> {
   late Future<_IdleContent> _content;
-  late final PageController _pageController;
-  int _sectionIndex = 0;
-  int _cardIndex = 0;
   String? _startingStationId;
-  String? _startingRecentUri;
+  String? _startingPlaylistUri;
 
   @override
   void initState() {
     super.initState();
     _content = _loadContent();
-    _pageController = PageController();
   }
 
   Future<_IdleContent> _loadContent() async {
     final results = await Future.wait<Object>([
       widget.repository.fetchRadioStations().catchError(
-        (_) => <RadioStation>[],
-      ),
-      widget.repository.fetchRecentlyPlayed().catchError(
-        (_) => <RecentMediaItem>[],
-      ),
+            (_) => <RadioStation>[],
+          ),
+      widget.repository.fetchPlaylists().catchError(
+            (_) => <Playlist>[],
+          ),
     ]);
     return _IdleContent(
-      stations: (results[0] as List<RadioStation>).take(5).toList(),
-      recentItems: (results[1] as List<RecentMediaItem>).take(5).toList(),
+      station: (results[0] as List<RadioStation>).firstOrNull,
+      playlists: (results[1] as List<Playlist>).take(5).toList(),
     );
   }
 
   Future<void> _playStation(RadioStation station) async {
-    if (_startingStationId != null || _startingRecentUri != null) return;
+    if (_startingStationId != null || _startingPlaylistUri != null) return;
     setState(() => _startingStationId = station.id);
     try {
       await widget.repository.playRadio(widget.player.id, station);
@@ -68,305 +64,181 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     }
   }
 
-  Future<void> _playRecent(RecentMediaItem item) async {
-    if (_startingStationId != null || _startingRecentUri != null) return;
-    setState(() => _startingRecentUri = item.uri);
+  Future<void> _playPlaylist(Playlist playlist) async {
+    if (_startingStationId != null || _startingPlaylistUri != null) return;
+    setState(() => _startingPlaylistUri = playlist.uri);
     try {
-      await widget.repository.playRecentItem(widget.player.id, item);
+      await widget.repository.playPlaylist(widget.player.id, playlist);
     } catch (_) {
       _showPlayError();
     } finally {
-      if (mounted) setState(() => _startingRecentUri = null);
+      if (mounted) setState(() => _startingPlaylistUri = null);
     }
   }
 
   void _showPlayError() {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Could not start playback.')));
-  }
-
-  void _selectSection(int index) {
-    if (_sectionIndex == index) return;
-    if (_pageController.hasClients) _pageController.jumpToPage(0);
-    setState(() {
-      _sectionIndex = index;
-      _cardIndex = 0;
-    });
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Kon afspelen niet starten.')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final playerAvailable = widget.player.available != false;
+    final isBusy = _startingStationId != null || _startingPlaylistUri != null;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 56, 24, 62),
+      padding: const EdgeInsets.fromLTRB(16, 42, 16, 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 620),
-          child: Column(
-            children: [
-              Row(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: FutureBuilder<_IdleContent>(
+            future: _content,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const _LoadingCards();
+              }
+
+              final content = snapshot.data ??
+                  const _IdleContent(station: null, playlists: []);
+              final mainStation = content.station;
+              final playlists = content.playlists;
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // --- LINKERKOLOM: Vaste Favoriete Radio (Eén Grote Hero Card) ---
                   Expanded(
-                    child: _IdleSectionButton(
-                      label: 'RADIO',
-                      icon: Icons.radio_outlined,
-                      selected: _sectionIndex == 0,
-                      onTap: () => _selectSection(0),
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader(
+                          title: 'RADIO',
+                          icon: Icons.radio_rounded,
+                          trailing: InkWell(
+                            onTap: widget.onBrowseRadio,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
+                              child: Text(
+                                'ALLE ZENDERS',
+                                style: TextStyle(
+                                  color: Color(0xFFE9F0EB),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: mainStation != null
+                              ? _HeroRadioCard(
+                                  station: mainStation,
+                                  repository: widget.repository,
+                                  isLoading:
+                                      _startingStationId == mainStation.id,
+                                  onTap: playerAvailable && !isBusy
+                                      ? () => _playStation(mainStation)
+                                      : null,
+                                )
+                              : const _EmptyPlaceholder(
+                                  message: 'Geen favoriete radio ingesteld',
+                                ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 9),
+
+                  const SizedBox(width: 16),
+
+                  // --- RECHTERKOLOM: Favoriete Afspeellijsten ---
                   Expanded(
-                    child: _IdleSectionButton(
-                      label: 'RECENTLY PLAYED',
-                      icon: Icons.history_rounded,
-                      selected: _sectionIndex == 1,
-                      onTap: () => _selectSection(1),
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader(
+                          title: 'PLAYLISTS',
+                          icon: Icons.playlist_play_rounded,
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: playlists.isNotEmpty
+                              ? ListView.separated(
+                                  padding: EdgeInsets.zero,
+                                  itemCount: playlists.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 6),
+                                  itemBuilder: (context, index) {
+                                    final playlist = playlists[index];
+                                    return _PlaylistRow(
+                                      playlist: playlist,
+                                      repository: widget.repository,
+                                      isLoading:
+                                          _startingPlaylistUri == playlist.uri,
+                                      onTap: playerAvailable && !isBusy
+                                          ? () => _playPlaylist(playlist)
+                                          : null,
+                                    );
+                                  },
+                                )
+                              : const _EmptyPlaceholder(
+                                  message: 'Geen afspeellijsten gevonden',
+                                ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: FutureBuilder<_IdleContent>(
-                  future: _content,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const _LoadingCards();
-                    }
-                    final content =
-                        snapshot.data ??
-                        const _IdleContent(stations: [], recentItems: []);
-                    if (_sectionIndex == 0) {
-                      return _FavoriteRadioTab(
-                        stations: content.stations.take(3).toList(),
-                        repository: widget.repository,
-                        playerAvailable: widget.player.available != false,
-                        startingStationId: _startingStationId,
-                        isStarting: _startingStationId != null ||
-                            _startingRecentUri != null,
-                        onPlayStation: _playStation,
-                        onBrowseRadio: widget.onBrowseRadio,
-                      );
-                    }
-                    final items = content.recentItems;
-                    if (items.isEmpty) {
-                      return Center(
-                        child: _EmptyRow(
-                          message: 'Recently played music will show up here.',
-                        ),
-                      );
-                    }
-                    return PageView.builder(
-                      key: ValueKey(_sectionIndex),
-                      controller: _pageController,
-                      itemCount: items.length,
-                      onPageChanged: (index) =>
-                          setState(() => _cardIndex = index),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        final available = widget.player.available != false;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 4,
-                          ),
-                          child: _RecentCard(
-                            item: item,
-                            repository: widget.repository,
-                            isLoading: _startingRecentUri == item.uri,
-                            onTap: available &&
-                                    _startingStationId == null &&
-                                    _startingRecentUri == null
-                                ? () => _playRecent(item)
-                                : null,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              if (_sectionIndex != 0) const SizedBox(height: 8),
-              FutureBuilder<_IdleContent>(
-                future: _content,
-                builder: (context, snapshot) {
-                  if (_sectionIndex == 0) return const SizedBox.shrink();
-                  final items = snapshot.data?.recentItems;
-                  final count = items?.length ?? 0;
-                  if (count < 2) return const SizedBox(height: 14);
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      PageDot(active: _cardIndex == 0),
-                      if (count > 1) ...[
-                        const SizedBox(width: 7),
-                        PageDot(active: _cardIndex == 1),
-                      ],
-                      if (count > 2) ...[
-                        const SizedBox(width: 7),
-                        PageDot(active: _cardIndex == 2),
-                      ],
-                      if (count > 3) ...[
-                        const SizedBox(width: 7),
-                        PageDot(active: _cardIndex == 3),
-                      ],
-                      if (count > 4) ...[
-                        const SizedBox(width: 7),
-                        PageDot(active: _cardIndex == 4),
-                      ],
-                      const SizedBox(width: 9),
-                      Text(
-                        '${_cardIndex + 1} / $count',
-                        style: const TextStyle(
-                          color: Color(0xFFAAB7B4),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required IconData icon,
+    Widget? trailing,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFFCFD7D3)),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFFCFD7D3),
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
+        ),
+        if (trailing != null) ...[
+          const Spacer(),
+          trailing,
+        ],
+      ],
+    );
+  }
 }
 
 class _IdleContent {
-  const _IdleContent({required this.stations, required this.recentItems});
+  const _IdleContent({required this.station, required this.playlists});
 
-  final List<RadioStation> stations;
-  final List<RecentMediaItem> recentItems;
+  final RadioStation? station;
+  final List<Playlist> playlists;
 }
 
-class _FavoriteRadioTab extends StatelessWidget {
-  const _FavoriteRadioTab({
-    required this.stations,
-    required this.repository,
-    required this.playerAvailable,
-    required this.startingStationId,
-    required this.isStarting,
-    required this.onPlayStation,
-    required this.onBrowseRadio,
-  });
-
-  final List<RadioStation> stations;
-  final MusicAssistantRepository repository;
-  final bool playerAvailable;
-  final String? startingStationId;
-  final bool isStarting;
-  final Future<void> Function(RadioStation) onPlayStation;
-  final VoidCallback onBrowseRadio;
-
-  @override
-  Widget build(BuildContext context) => Stack(
-    fit: StackFit.expand,
-    children: [
-      if (stations.isEmpty)
-        Center(
-          child: _EmptyRow(
-            message: 'No radio stations in your Music Assistant library yet.',
-          ),
-        )
-      else
-        Row(
-          children: [
-            for (var index = 0; index < stations.length; index++) ...[
-              if (index > 0) const SizedBox(width: 8),
-              Expanded(
-                child: _RadioCard(
-                  station: stations[index],
-                  repository: repository,
-                  isLoading: startingStationId == stations[index].id,
-                  onTap: playerAvailable && !isStarting
-                      ? () => onPlayStation(stations[index])
-                      : null,
-                ),
-              ),
-            ],
-          ],
-        ),
-      Positioned(
-        right: 8,
-        top: 8,
-        child: GlassPill(
-          padding: EdgeInsets.zero,
-          child: TextButton.icon(
-            onPressed: onBrowseRadio,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-            label: const Text('ALL RADIO'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFE9F0EB),
-              backgroundColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              textStyle: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ),
-    ],
-  );
-}
-
-class _IdleSectionButton extends StatelessWidget {
-  const _IdleSectionButton({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => GlassSurface(
-    borderRadius: 12,
-    padding: EdgeInsets.zero,
-    tint: selected ? const Color(0x44FFFFFF) : const Color(0x22202725),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        height: 40,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: const Color(0xFFE9F0EB)),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: TextStyle(
-                color: const Color(0xFFE9F0EB),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-class _RadioCard extends StatelessWidget {
-  const _RadioCard({
+/// Grote Hero card voor je vaste radiostation
+class _HeroRadioCard extends StatelessWidget {
+  const _HeroRadioCard({
     required this.station,
     required this.repository,
     required this.onTap,
@@ -379,27 +251,59 @@ class _RadioCard extends StatelessWidget {
   final bool isLoading;
 
   @override
-  Widget build(BuildContext context) => ArtworkPlaybackCard(
-    artwork: _artwork(),
-    isLoading: isLoading,
-    onTap: onTap,
-    content: Positioned(
-      left: 11,
-      right: 42,
-      bottom: 10,
-      child: Text(
-        station.name,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Color(0xFFF1F4EA),
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
+  Widget build(BuildContext context) {
+    return ArtworkPlaybackCard(
+      artwork: _artwork(),
+      isLoading: isLoading,
+      onTap: onTap,
+      content: Positioned(
+        left: 14,
+        right: 14,
+        bottom: 14,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Container(
+                  //   padding:
+                  //       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  //   decoration: BoxDecoration(
+                  //     color: const Color(0x77000000),
+                  //     borderRadius: BorderRadius.circular(4),
+                  //   ),
+                  //   child: const Text(
+                  //     'SNEL STARTEN',
+                  //     style: TextStyle(
+                  //       color: Color(0xFF8CE1B2),
+                  //       fontSize: 8,
+                  //       fontWeight: FontWeight.w900,
+                  //       letterSpacing: 0.6,
+                  //     ),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 6),
+                  Text(
+                    station.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFF1F4EA),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      shadows: [Shadow(color: Colors.black87, blurRadius: 6)],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _artwork() {
     final provider = artworkImageProvider(
@@ -408,97 +312,149 @@ class _RadioCard extends StatelessWidget {
       token: repository.token,
     );
     if (provider == null) {
-      return const _ArtworkPlaceholder(icon: Icons.radio_rounded);
+      return const _PlaceholderTile(icon: Icons.radio_rounded);
     }
     return Image(
       image: provider,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) =>
-          const _ArtworkPlaceholder(icon: Icons.radio_rounded),
+          const _PlaceholderTile(icon: Icons.radio_rounded),
     );
   }
 }
 
-class _RecentCard extends StatelessWidget {
-  const _RecentCard({
-    required this.item,
+/// Overzichtelijke rij voor favoriete afspeellijsten
+class _PlaylistRow extends StatelessWidget {
+  const _PlaylistRow({
+    required this.playlist,
     required this.repository,
     required this.onTap,
     required this.isLoading,
   });
 
-  final RecentMediaItem item;
+  final Playlist playlist;
   final MusicAssistantRepository repository;
   final VoidCallback? onTap;
   final bool isLoading;
 
   @override
-  Widget build(BuildContext context) => ArtworkPlaybackCard(
-    artwork: _artwork(),
-    isLoading: isLoading,
-    onTap: onTap,
-    content: Positioned(
-      left: 11,
-      right: 10,
-      bottom: 10,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            item.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFF1F4EA),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
-            ),
-          ),
-          if (item.artist != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              item.artist!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFD8E0DB),
-                fontSize: 10,
-                shadows: [Shadow(color: Colors.black54, blurRadius: 5)],
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      borderRadius: 10,
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: _artwork(),
+                ),
               ),
-            ),
-          ],
-        ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      playlist.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFF1F4EA),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (playlist.owner != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        playlist.owner!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFAAB7B4),
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFE9F0EB),
+                    ),
+                  ),
+                )
+              else
+                const Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Color(0xFFE9F0EB),
+                  size: 22,
+                ),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _artwork() {
     final provider = artworkImageProvider(
-      imageUrl: item.imageUrl,
+      imageUrl: playlist.imageUrl,
       serverUrl: repository.serverUrl,
       token: repository.token,
     );
-    if (provider == null) return const _ArtworkPlaceholder();
+    if (provider == null) return const _PlaceholderTile();
     return Image(
       image: provider,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => const _ArtworkPlaceholder(),
+      errorBuilder: (_, _, _) => const _PlaceholderTile(),
     );
   }
 }
 
-class _ArtworkPlaceholder extends StatelessWidget {
-  const _ArtworkPlaceholder({this.icon = Icons.music_note_rounded});
+class _PlaceholderTile extends StatelessWidget {
+  const _PlaceholderTile({this.icon = Icons.queue_music_rounded});
 
   final IconData icon;
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: Color(0xFF263333),
-    child: Center(child: Icon(icon, color: const Color(0xFFCFD7D3), size: 30)),
-  );
+        color: const Color(0xFF263333),
+        child:
+            Center(child: Icon(icon, color: const Color(0xFFCFD7D3), size: 20)),
+      );
+}
+
+class _EmptyPlaceholder extends StatelessWidget {
+  const _EmptyPlaceholder({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => GlassSurface(
+        borderRadius: 10,
+        child: Center(
+          child: Text(
+            message,
+            style: const TextStyle(color: Color(0xFFAAB7B4), fontSize: 11),
+          ),
+        ),
+      );
 }
 
 class _LoadingCards extends StatelessWidget {
@@ -506,48 +462,12 @@ class _LoadingCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Center(
-    child: SizedBox.square(
-      dimension: 20,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: Color(0xFFE9F0EB),
-      ),
-    ),
-  );
-}
-
-class _EmptyRow extends StatelessWidget {
-  const _EmptyRow({required this.message, this.action, this.onPressed});
-
-  final String message;
-  final String? action;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-    decoration: BoxDecoration(
-      color: const Color(0x661B2727),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(color: Color(0xFFAAB7B4), fontSize: 11),
+        child: SizedBox.square(
+          dimension: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFFE9F0EB),
           ),
         ),
-        if (action != null)
-          TextButton(
-            onPressed: onPressed,
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFE9F0EB),
-            ),
-            child: Text(action!, style: const TextStyle(fontSize: 10)),
-          ),
-      ],
-    ),
-  );
+      );
 }

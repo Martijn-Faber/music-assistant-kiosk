@@ -221,10 +221,11 @@ class _SessionGateState extends State<SessionGate> {
         final previousPlayer = _players
             .where((item) => item.id == player.id)
             .firstOrNull;
-        final updatedPlayer =
+        final playerWithVolume =
             player.volumeLevel == null && previousPlayer?.volumeLevel != null
             ? player.withVolumeLevel(previousPlayer!.volumeLevel)
             : player;
+        final updatedPlayer = playerWithVolume;
         final trackChanged =
             previousPlayer == null ||
             previousPlayer.title != updatedPlayer.title ||
@@ -272,14 +273,6 @@ class _SessionGateState extends State<SessionGate> {
           unawaited(_sessionStorage.saveSelectedPlayerId(null));
           unawaited(_setVolumeControlEnabled(false));
         }
-      },
-      onProgress: (playerId, report) {
-        if (!mounted) return;
-        final index = _players.indexWhere((player) => player.id == playerId);
-        if (index == -1) return;
-        setState(() {
-          _players[index] = _players[index].withPlaybackProgress(report);
-        });
       },
     );
   }
@@ -380,11 +373,12 @@ class _SessionGateState extends State<SessionGate> {
       final currentPlayer = _players
           .where((player) => player.id == playerId)
           .firstOrNull;
-      final playerToStore =
+      final playerWithVolume =
           refreshedPlayer.volumeLevel == null &&
               currentPlayer?.volumeLevel != null
           ? refreshedPlayer.withVolumeLevel(currentPlayer!.volumeLevel)
           : refreshedPlayer;
+      final playerToStore = playerWithVolume;
 
       setState(() {
         final index = _players.indexWhere((player) => player.id == playerId);

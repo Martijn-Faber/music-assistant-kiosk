@@ -71,7 +71,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         });
       },
       onRemoved: (_) {},
-      onProgress: (_, _) {},
     );
   }
 
