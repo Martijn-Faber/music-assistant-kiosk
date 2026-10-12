@@ -65,6 +65,14 @@ class MusicAssistantRepository {
         .toList();
   }
 
+  Future<Map<String, dynamic>> fetchServerInfo() async {
+    final response = await _client.sendCommand('info');
+    if (response is! Map) {
+      throw const FormatException('The server returned invalid info.');
+    }
+    return Map<String, dynamic>.from(response);
+  }
+
   Future<String?> fetchQualityLabel(String playerId) async {
     return (await fetchPlaybackQualityInfo(playerId))?.qualityLabel;
   }

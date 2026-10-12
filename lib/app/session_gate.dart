@@ -23,6 +23,7 @@ class _SessionGateState extends State<SessionGate> {
 
   MusicAssistantRepository? _repository;
   List<PlayerSummary> _players = [];
+  Map<String, dynamic>? _serverInfo;
   String? _selectedPlayerId;
   void Function()? _unsubscribeFromPlayers;
   bool _isLoading = true;
@@ -68,6 +69,7 @@ class _SessionGateState extends State<SessionGate> {
         token: savedSession.token,
       );
       final players = await repository.fetchPlayers();
+      final serverInfo = await repository.fetchServerInfo();
       if (!mounted) {
         await repository.disconnect();
         return;
@@ -80,6 +82,7 @@ class _SessionGateState extends State<SessionGate> {
       setState(() {
         _repository = repository;
         _players = players;
+        _serverInfo = serverInfo;
         _selectedPlayerId = selectedPlayerId;
       });
       _listenToPlayerChanges(repository);
@@ -136,6 +139,7 @@ class _SessionGateState extends State<SessionGate> {
         password: password,
       );
       final players = await repository.fetchPlayers();
+      final serverInfo = await repository.fetchServerInfo();
       final savedPlayerId = await _sessionStorage.readSelectedPlayerId();
       await _sessionStorage.saveCredentials(
         serverUrl: normalizedServerUrl,
@@ -153,6 +157,7 @@ class _SessionGateState extends State<SessionGate> {
       setState(() {
         _repository = repository;
         _players = players;
+        _serverInfo = serverInfo;
         _selectedPlayerId = selectedPlayerId;
       });
       _listenToPlayerChanges(repository);
@@ -189,6 +194,7 @@ class _SessionGateState extends State<SessionGate> {
     setState(() {
       _repository = null;
       _players = [];
+      _serverInfo = null;
       _selectedPlayerId = null;
       _qualityLabel = null;
       _connectionError = null;
@@ -435,6 +441,7 @@ class _SessionGateState extends State<SessionGate> {
 
     return PlayerScreen(
       repository: repository,
+      serverInfo: _serverInfo,
       players: _players,
       selectedPlayerId: _selectedPlayerId,
       qualityLabel: _qualityLabel,

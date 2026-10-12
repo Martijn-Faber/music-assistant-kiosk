@@ -20,6 +20,7 @@ class PlayerScreen extends StatelessWidget {
   const PlayerScreen({
     super.key,
     required this.repository,
+    required this.serverInfo,
     required this.players,
     required this.selectedPlayerId,
     required this.qualityLabel,
@@ -34,6 +35,7 @@ class PlayerScreen extends StatelessWidget {
   });
 
   final MusicAssistantRepository repository;
+  final Map<String, dynamic>? serverInfo;
   final List<PlayerSummary> players;
   final String? selectedPlayerId;
   final String? qualityLabel;
@@ -180,6 +182,7 @@ class PlayerScreen extends StatelessWidget {
 
   Widget _playerContent(BuildContext context, PlayerSummary? player) {
     final settingsPage = PlayerSettingsPage(
+      serverInfo: serverInfo,
       players: players,
       selectedPlayerId: selectedPlayerId,
       serverAddress:

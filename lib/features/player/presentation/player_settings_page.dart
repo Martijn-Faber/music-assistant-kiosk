@@ -11,6 +11,7 @@ class PlayerSettingsPage extends StatefulWidget {
     required this.players,
     required this.selectedPlayerId,
     required this.serverAddress,
+    required this.serverInfo,
     required this.deviceName,
     required this.clock24HourFormat,
     required this.onClock24HourFormatChanged,
@@ -21,6 +22,7 @@ class PlayerSettingsPage extends StatefulWidget {
   final List<PlayerSummary> players;
   final String? selectedPlayerId;
   final String serverAddress;
+  final Map<String, dynamic>? serverInfo;
   final String? deviceName;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
@@ -113,6 +115,23 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     icon: CupertinoIcons.hifispeaker,
                     value: widget.deviceName ?? 'No player selected',
                   ),
+                  if (widget.serverInfo case final info?) ...[
+                    const SizedBox(height: 20),
+                    const GlassSectionLabel('MUSIC ASSISTANT SERVER'),
+                    const SizedBox(height: 8),
+                    for (final entry in [
+                      ('Name', info['name']),
+                      ('Version', info['server_version']),
+                      ('Status', info['status']),
+                    ])
+                      if (entry.$2 is String && (entry.$2 as String).isNotEmpty) ...[
+                        GlassInfoRow(
+                          icon: CupertinoIcons.info,
+                          value: '${entry.$1}: ${entry.$2}',
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                  ],
                   const SizedBox(height: 24),
                   GlassOutlineButton(
                     icon: CupertinoIcons.power,
