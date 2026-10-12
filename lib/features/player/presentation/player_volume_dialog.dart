@@ -22,12 +22,38 @@ class PlayerVolumeDialog extends StatefulWidget {
 class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
   late Future<List<PlayerSummary>> _targets;
   final Map<String, int> _volumeLevels = {};
+  final Map<String, DateTime> _ignoreVolumeEventsUntil = {};
+  final Set<String> _adjustingPlayerIds = {};
   String? _savingPlayerId;
+  late final void Function() _unsubscribe;
 
   @override
   void initState() {
     super.initState();
     _targets = _loadTargets();
+    final targetIds = {widget.player.id, ...?widget.player.groupMembers};
+    _unsubscribe = widget.repository.listenToPlayerEvents(
+      onChanged: (player) {
+        if (!targetIds.contains(player.id) ||
+            player.volumeLevel == null ||
+            !mounted ||
+            _adjustingPlayerIds.contains(player.id) ||
+            (_ignoreVolumeEventsUntil[player.id]?.isAfter(DateTime.now()) ??
+                false)) {
+          return;
+        }
+        setState(() {
+          _volumeLevels[player.id] = player.volumeLevel!.clamp(0, 100);
+        });
+      },
+      onRemoved: (_) {},
+    );
+  }
+
+  @override
+  void dispose() {
+    _unsubscribe();
+    super.dispose();
   }
 
   Future<List<PlayerSummary>> _loadTargets() async {
@@ -44,17 +70,26 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
               .toList();
     final resolvedTargets = targets.isEmpty ? [widget.player] : targets;
     for (final target in resolvedTargets) {
-      _volumeLevels[target.id] =
-          target.volumeLevel?.clamp(0, 100).toInt() ?? 0;
+      _volumeLevels.putIfAbsent(
+        target.id,
+        () => target.volumeLevel?.clamp(0, 100).toInt() ?? 0,
+      );
     }
     return resolvedTargets;
   }
 
   Future<void> _saveVolume(String playerId, double value) async {
     final volume = value.round().clamp(0, 100).toInt();
-    setState(() => _savingPlayerId = playerId);
+    setState(() {
+      _savingPlayerId = playerId;
+      _adjustingPlayerIds.add(playerId);
+      _volumeLevels[playerId] = volume;
+    });
     try {
       await widget.repository.setPlayerVolume(playerId, volume);
+      _ignoreVolumeEventsUntil[playerId] = DateTime.now().add(
+        const Duration(seconds: 2),
+      );
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,7 +99,12 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
         );
       }
     } finally {
-      if (mounted) setState(() => _savingPlayerId = null);
+      if (mounted) {
+        setState(() {
+          _savingPlayerId = null;
+          _adjustingPlayerIds.remove(playerId);
+        });
+      }
     }
   }
 
@@ -182,6 +222,9 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             value: volume.toDouble(),
                             min: 0,
                             max: 100,
+                            onChangeStart: (_) => setState(
+                              () => _adjustingPlayerIds.add(target.id),
+                            ),
                             onChanged: (value) => setState(
                               () => _volumeLevels[target.id] = value.round(),
                             ),

@@ -80,7 +80,9 @@ class PlayerSummary {
     final palette = rawPalette is Map ? Map<String, dynamic>.from(rawPalette) : null;
 
     final available = data['available'];
-    final volumeLevel = data['group_volume'] ?? data['volume_level'];
+    // Prefer the player's own level; group_volume can be shared across a
+    // synchronized group and make independent speaker controls look linked.
+    final volumeLevel = data['volume_level'] ?? data['group_volume'];
     final rawGroupMembers = data['group_members'] ?? data['group_childs'];
     final elapsedTime = data['elapsed_time'] ?? media?['elapsed_time'];
     final elapsedTimeLastUpdated =
