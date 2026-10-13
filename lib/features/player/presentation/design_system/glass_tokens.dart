@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
 abstract final class GlassTokens {
+  static const background = Color(0xFF101819);
+  static const error = Color(0xFFFFA39B);
+  static const errorText = Color(0xFFFFC0BA);
+  static const errorSurface = Color(0x26FF776F);
+  static const errorBorder = Color(0x66FF938A);
   static const textPrimary = Color(0xFFF1F4EA);
   static const textSecondary = Color(0xFFD8E0DB);
   static const textMuted = Color(0xFFCBD4D0);

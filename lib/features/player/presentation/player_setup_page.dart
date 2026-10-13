@@ -46,7 +46,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFF101819),
+    backgroundColor: GlassTokens.background,
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -56,20 +56,10 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Choose your player',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFF1F4EA),
-                    fontSize: 25,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Select the speaker or group this device should control.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFFD8E0DB), fontSize: 13),
+                const GlassPageHeading(
+                  title: 'Choose your player',
+                  subtitle:
+                      'Select the speaker or group this device should control.',
                 ),
                 const SizedBox(height: 20),
                 if (widget.players.isEmpty)
@@ -84,21 +74,23 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                         final player = widget.players[index];
                         final selected = player.id == _selectedPlayerId;
                         return GlassSurface(
-                          borderRadius: 18,
+                          borderRadius: GlassTokens.radiusLarge,
                           padding: EdgeInsets.zero,
                           tint: selected
-                              ? const Color(0x334C5B5B)
-                              : const Color(0x22232A30),
+                              ? GlassTokens.selected
+                              : GlassTokens.surfaceTint,
                           border: Border.all(
                             color: selected
-                                ? const Color(0xCCFFFFFF)
-                                : const Color(0x55FFFFFF),
+                                ? GlassTokens.textPrimary
+                                : GlassTokens.border,
                             width: selected ? 1.2 : 0.8,
                           ),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(
+                                GlassTokens.radiusLarge,
+                              ),
                               onTap: _isSaving
                                   ? null
                                   : () => setState(
@@ -114,7 +106,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                                     Icon(
                                       CupertinoIcons.hifispeaker,
                                       size: 22,
-                                      color: Colors.white,
+                                      color: GlassTokens.textPrimary,
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
@@ -127,7 +119,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
-                                              color: Colors.white,
+                                              color: GlassTokens.textPrimary,
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -141,7 +133,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                                               child: Text(
                                                 '${player.groupMembers!.length} speakers',
                                                 style: const TextStyle(
-                                                  color: Colors.white70,
+                                                  color: GlassTokens.textSecondary,
                                                   fontSize: 12,
                                                 ),
                                               ),
@@ -152,7 +144,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                                     if (selected)
                                       const Icon(
                                         CupertinoIcons.checkmark_circle_fill,
-                                        color: Colors.white,
+                                        color: GlassTokens.textPrimary,
                                         size: 22,
                                       ),
                                   ],
@@ -170,59 +162,19 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                     widget.error!,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Color(0xFFFFA39B),
+                      color: GlassTokens.error,
                       fontSize: 12,
                     ),
                   ),
                 ],
                 const SizedBox(height: 14),
-                SizedBox(
-                  height: 54,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: _selectedPlayerId == null || _isSaving
-                          ? null
-                          : _continue,
-                      child: GlassSurface(
-                        borderRadius: 18,
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        tint: _selectedPlayerId == null
-                            ? const Color(0x1AFFFFFF)
-                            : const Color(0x333B4748),
-                        showShadow: false,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (_isSaving)
-                              const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            else
-                              const Icon(
-                                CupertinoIcons.arrow_right,
-                                color: Colors.white,
-                                size: 19,
-                              ),
-                            const SizedBox(width: 10),
-                            Text(
-                              _isSaving ? 'SAVING' : 'CONTINUE',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                GlassActionButton(
+                  label: _isSaving ? 'Saving' : 'Continue',
+                  icon: CupertinoIcons.arrow_right,
+                  isLoading: _isSaving,
+                  onPressed: _selectedPlayerId == null || _isSaving
+                      ? null
+                      : _continue,
                 ),
               ],
             ),
@@ -236,31 +188,19 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
-          CupertinoIcons.speaker_slash,
-          color: Colors.white70,
-          size: 28,
-        ),
+        const Icon(CupertinoIcons.speaker_slash, color: GlassTokens.textSecondary, size: 28),
         const SizedBox(height: 12),
         const Text(
           'No players found on this server.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white, fontSize: 14),
+          style: TextStyle(color: GlassTokens.textPrimary, fontSize: 14),
         ),
         const SizedBox(height: 14),
-        TextButton.icon(
+        GlassInlineButton(
           onPressed: widget.isRefreshing ? null : widget.onRefresh,
-          icon: widget.isRefreshing
-              ? const SizedBox.square(
-                  dimension: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(CupertinoIcons.refresh, size: 17),
-          label: const Text('Refresh players'),
-          style: TextButton.styleFrom(foregroundColor: Colors.white),
+          icon: CupertinoIcons.refresh,
+          label: 'Refresh players',
+          isLoading: widget.isRefreshing,
         ),
       ],
     ),
