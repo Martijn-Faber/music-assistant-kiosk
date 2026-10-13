@@ -18,11 +18,15 @@ class ConnectionScreen extends StatefulWidget {
     required this.isLoading,
     required this.error,
     required this.onConnect,
+    this.playerSetupPage,
+    this.showPlayerSetup = false,
   });
 
   final bool isLoading;
   final String? error;
   final ConnectionSubmit onConnect;
+  final Widget? playerSetupPage;
+  final bool showPlayerSetup;
 
   @override
   State<ConnectionScreen> createState() => _ConnectionScreenState();
@@ -50,9 +54,12 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_findServers());
-    });
+    _step = widget.showPlayerSetup ? 3 : 0;
+    if (!widget.showPlayerSetup) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_findServers());
+      });
+    }
   }
 
   @override
@@ -230,6 +237,11 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       final token = await session.token;
       if (!mounted || generation != _authGeneration) return;
       await widget.onConnect(serverUrl, token);
+      if (!mounted || generation != _authGeneration) return;
+      setState(() {
+        _transitionDirection = 1;
+        _step = 3;
+      });
     } catch (error) {
       if (!mounted || generation != _authGeneration) return;
       setState(() {
@@ -281,7 +293,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                       ),
                     ),
                   ),
-                  child: _step == 0
+                  child: _step == 3 && widget.playerSetupPage != null
+                      ? widget.playerSetupPage!
+                      : _step == 0
                       ? _stepViewport(
                           _discoveryPage(),
                           key: 'discovery',
@@ -296,7 +310,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               if (MediaQuery.viewInsetsOf(context).bottom == 0)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 14),
-                  child: _StepIndicator(activeStep: _step == 2 ? 1 : 0),
+                  child: _StepIndicator(
+                    activeStep: _step == 3 ? 2 : (_step == 2 ? 1 : 0),
+                    count: 3,
+                  ),
                 ),
             ],
           ),
@@ -655,15 +672,16 @@ class _WaitingForAuthorization extends StatelessWidget {
 }
 
 class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.activeStep});
+  const _StepIndicator({required this.activeStep, required this.count});
 
   final int activeStep;
+  final int count;
 
   @override
   Widget build(BuildContext context) => Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      for (var index = 0; index < 2; index++) ...[
+      for (var index = 0; index < count; index++) ...[
         AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           width: index == activeStep ? 22 : 6,
@@ -675,7 +693,7 @@ class _StepIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(99),
           ),
         ),
-        if (index != 1) const SizedBox(width: 7),
+        if (index != count - 1) const SizedBox(width: 7),
       ],
     ],
   );

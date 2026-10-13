@@ -464,21 +464,21 @@ class _SessionGateState extends State<SessionGate> {
   @override
   Widget build(BuildContext context) {
     final repository = _repository;
-    if (repository == null) {
+    if (repository == null || _needsPlayerSetup) {
       return ConnectionScreen(
         isLoading: _isConnecting,
         error: _connectionError,
         onConnect: _connect,
-      );
-    }
-
-    if (_needsPlayerSetup) {
-      return PlayerSetupPage(
-        players: _players,
-        isRefreshing: _isRefreshingSetupPlayers,
-        error: _playerSetupError,
-        onRefresh: _refreshSetupPlayers,
-        onComplete: _selectPlayer,
+        showPlayerSetup: _needsPlayerSetup,
+        playerSetupPage: repository == null
+            ? null
+            : PlayerSetupPage(
+                players: _players,
+                isRefreshing: _isRefreshingSetupPlayers,
+                error: _playerSetupError,
+                onRefresh: _refreshSetupPlayers,
+                onComplete: _selectPlayer,
+              ),
       );
     }
 
