@@ -543,8 +543,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     'Scan to sign in',
                     style: TextStyle(
                       color: GlassTokens.textPrimary,
-                      fontSize: 18,
+                      fontSize: _compactLayout ? 23 : 26,
+                      height: 1.12,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: -0.5,
                     ),
                   ),
                   SizedBox(height: 8),
@@ -553,7 +555,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     style: TextStyle(
                       color: GlassTokens.textSecondary,
                       fontSize: 13,
-                      height: 1.45,
+                      height: 1.4,
                     ),
                   ),
                   SizedBox(height: 14),
