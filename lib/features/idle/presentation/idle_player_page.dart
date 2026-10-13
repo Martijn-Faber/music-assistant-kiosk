@@ -10,7 +10,6 @@ import 'package:app/features/player/domain/radio_station.dart';
 import '../../../design_system/glass_card.dart';
 import '../../../design_system/glass_surface.dart';
 import '../../player/presentation/artwork_image.dart';
-import '../../player/presentation/artwork_playback_card.dart';
 
 class IdlePlayerPage extends StatefulWidget {
   const IdlePlayerPage({
@@ -34,11 +33,37 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   late Future<_IdleContent> _content;
   String? _startingStationId;
   String? _startingPlaylistUri;
+  final ScrollController _playlistScrollController = ScrollController();
+  bool _fadePlaylistTop = false;
+  bool _fadePlaylistBottom = false;
 
   @override
   void initState() {
     super.initState();
+    _playlistScrollController.addListener(_updatePlaylistFades);
     _content = _loadContent();
+  }
+
+  void _updatePlaylistFades() {
+    if (!_playlistScrollController.hasClients) return;
+    final position = _playlistScrollController.position;
+    if (!position.hasContentDimensions) return;
+    final fadeTop = position.pixels > 1;
+    final fadeBottom = position.extentAfter > 1;
+    if (fadeTop != _fadePlaylistTop || fadeBottom != _fadePlaylistBottom) {
+      setState(() {
+        _fadePlaylistTop = fadeTop;
+        _fadePlaylistBottom = fadeBottom;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _playlistScrollController
+      ..removeListener(_updatePlaylistFades)
+      ..dispose();
+    super.dispose();
   }
 
   Future<_IdleContent> _loadContent() async {
@@ -51,7 +76,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
           ),
     ]);
     return _IdleContent(
-      station: (results[0] as List<RadioStation>).firstOrNull,
+      stations: (results[0] as List<RadioStation>).take(3).toList(),
       playlists: results[1] as List<Playlist>,
     );
   }
@@ -109,8 +134,8 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
               }
 
               final content = snapshot.data ??
-                  const _IdleContent(station: null, playlists: []);
-              final mainStation = content.station;
+                  const _IdleContent(stations: [], playlists: []);
+              final stations = content.stations;
               final playlists = content.playlists;
 
               return Row(
@@ -142,15 +167,24 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                         ),
                         const SizedBox(height: 8),
                         Expanded(
-                          child: mainStation != null
-                              ? _HeroRadioCard(
-                                  station: mainStation,
-                                  repository: widget.repository,
-                                  isLoading:
-                                      _startingStationId == mainStation.id,
-                                  onTap: playerAvailable && !isBusy
-                                      ? () => _playStation(mainStation)
-                                      : null,
+                          child: stations.isNotEmpty
+                              ? Column(
+                                  children: [
+                                    for (var i = 0; i < stations.length; i++) ...[
+                                      if (i > 0) const SizedBox(height: 8),
+                                      Expanded(
+                                        child: _HeroRadioCard(
+                                          station: stations[i],
+                                          repository: widget.repository,
+                                          isLoading: _startingStationId ==
+                                              stations[i].id,
+                                          onTap: playerAvailable && !isBusy
+                                              ? () => _playStation(stations[i])
+                                              : null,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 )
                               : const _EmptyPlaceholder(
                                   message: 'Geen favoriete radio ingesteld',
@@ -174,23 +208,81 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                         const SizedBox(height: 8),
                         Expanded(
                           child: playlists.isNotEmpty
-                              ? ListView.separated(
-                                  padding: EdgeInsets.zero,
-                                  itemCount: playlists.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 8),
-                                  itemBuilder: (context, index) {
-                                    final playlist = playlists[index];
-                                    return _PlaylistRow(
-                                      playlist: playlist,
-                                      repository: widget.repository,
-                                      isLoading:
-                                          _startingPlaylistUri == playlist.uri,
-                                      onTap: playerAvailable && !isBusy
-                                          ? () => _playPlaylist(playlist)
-                                          : null,
-                                    );
-                                  },
+                              ? Stack(
+                                  children: [
+                                    NotificationListener<ScrollMetricsNotification>(
+                                      onNotification: (_) {
+                                        _updatePlaylistFades();
+                                        return false;
+                                      },
+                                      child: TweenAnimationBuilder<double>(
+                                        tween: Tween(
+                                          begin: _fadePlaylistTop ? 1 : 0,
+                                          end: _fadePlaylistTop ? 1 : 0,
+                                        ),
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        builder: (context, topFade, child) =>
+                                            TweenAnimationBuilder<double>(
+                                          tween: Tween(
+                                            begin: _fadePlaylistBottom ? 1 : 0,
+                                            end: _fadePlaylistBottom ? 1 : 0,
+                                          ),
+                                          duration: const Duration(
+                                            milliseconds: 180,
+                                          ),
+                                          builder: (context, bottomFade, child) =>
+                                              ShaderMask(
+                                            blendMode: BlendMode.dstIn,
+                                            shaderCallback: (bounds) =>
+                                                LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: [
+                                                    Color.lerp(
+                                                      Colors.white,
+                                                      Colors.transparent,
+                                                      topFade,
+                                                    )!,
+                                                    Colors.white,
+                                                    Colors.white,
+                                                    Color.lerp(
+                                                      Colors.white,
+                                                      Colors.transparent,
+                                                      bottomFade,
+                                                    )!,
+                                                  ],
+                                                  stops: const [0, 0.16, 0.84, 1],
+                                                ).createShader(bounds),
+                                            child: child,
+                                          ),
+                                          child: child,
+                                        ),
+                                        child: ListView.separated(
+                                          controller: _playlistScrollController,
+                                          padding: EdgeInsets.zero,
+                                          itemCount: playlists.length,
+                                          separatorBuilder: (_, __) =>
+                                              const SizedBox(height: 8),
+                                          itemBuilder: (context, index) {
+                                            final playlist = playlists[index];
+                                            return _PlaylistRow(
+                                              playlist: playlist,
+                                              repository: widget.repository,
+                                              isLoading:
+                                                  _startingPlaylistUri ==
+                                                      playlist.uri,
+                                              onTap: playerAvailable && !isBusy
+                                                  ? () =>
+                                                        _playPlaylist(playlist)
+                                                  : null,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 )
                               : const _EmptyPlaceholder(
                                   message: 'Geen afspeellijsten gevonden',
@@ -236,9 +328,9 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
 }
 
 class _IdleContent {
-  const _IdleContent({required this.station, required this.playlists});
+  const _IdleContent({required this.stations, required this.playlists});
 
-  final RadioStation? station;
+  final List<RadioStation> stations;
   final List<Playlist> playlists;
 }
 
@@ -258,38 +350,67 @@ class _HeroRadioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArtworkPlaybackCard(
-      artwork: _artwork(),
-      isLoading: isLoading,
+    final metadata = station.media['metadata'];
+    final palette = station.media['palette'] ??
+        (metadata is Map ? metadata['palette'] : null);
+    final accent = _accentFromPalette(palette);
+    return GlassCard(
       onTap: onTap,
-      content: Positioned(
-        left: 14,
-        right: 14,
-        bottom: 14,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    station.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFF1F4EA),
-                      fontSize: GlassTokens.fontSize16,
-                      fontWeight: FontWeight.w800,
-                      shadows: [Shadow(color: Colors.black87, blurRadius: 6)],
-                    ),
-                  ),
-                ],
+      padding: const EdgeInsets.all(8),
+      tint: Color.lerp(const Color(0xFF18201F), accent, 0.48)!,
+      blurSigma: 0,
+      child: Row(
+        children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(width: 72, height: 72, child: _artwork()),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  station.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFF1F4EA),
+                    fontSize: GlassTokens.fontSize16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (isLoading)
+                const SizedBox.square(
+                  dimension: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              else
+                Icon(
+                  CupertinoIcons.play_fill,
+                  size: GlassTokens.iconSizeS,
+                  color: onTap == null
+                      ? const Color(0x667F8985)
+                      : GlassTokens.textPrimary,
+                ),
+              const SizedBox(width: 8),
+            ],
       ),
+    );
+  }
+
+  Color _accentFromPalette(dynamic rawPalette) {
+    if (rawPalette is! Map) return const Color(0xFF35413E);
+    final rgb = rawPalette['accent'] ?? rawPalette['primary'];
+    if (rgb is! List || rgb.length < 3 || rgb.take(3).any((v) => v is! num)) {
+      return const Color(0xFF35413E);
+    }
+    return Color.fromARGB(
+      255,
+      (rgb[0] as num).toInt().clamp(0, 255),
+      (rgb[1] as num).toInt().clamp(0, 255),
+      (rgb[2] as num).toInt().clamp(0, 255),
     );
   }
 
