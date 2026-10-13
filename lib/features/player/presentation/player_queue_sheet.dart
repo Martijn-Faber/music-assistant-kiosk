@@ -345,7 +345,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
           borderRadius: 28,
           padding: EdgeInsets.zero,
           tint: const Color(0xBB141D20),
-
           showShadow: false,
           border: const Border(
             top: BorderSide(color: Color(0x66FFFFFF), width: 0.8),

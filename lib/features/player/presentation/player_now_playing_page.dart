@@ -434,7 +434,10 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   void _updateTimer() {
     _timer?.cancel();
     if (_isPlaying && (widget.player.durationSeconds ?? 0) > 0) {
-      _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
+      // The visible time labels only have one-second precision. Let Flutter
+      // animate the bar between those updates instead of rebuilding this
+      // widget tree four times per second.
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() => _now = DateTime.now());
       });
     }
@@ -460,13 +463,18 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
       children: [
         SizedBox(
           width: double.infinity,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 4,
-              color: Colors.white,
-              backgroundColor: const Color(0x55FFFFFF),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: progress, end: progress),
+            duration: const Duration(seconds: 1),
+            curve: Curves.linear,
+            builder: (context, animatedProgress, _) => ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: animatedProgress,
+                minHeight: 4,
+                color: Colors.white,
+                backgroundColor: const Color(0x55FFFFFF),
+              ),
             ),
           ),
         ),
