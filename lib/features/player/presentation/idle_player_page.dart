@@ -1,10 +1,13 @@
 import 'package:flutter/cupertino.dart';
+import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
 import '../domain/playlist.dart';
 import '../domain/radio_station.dart';
+import '../../../design_system/glass_card.dart';
 import 'artwork_image.dart';
 import 'artwork_playback_card.dart';
 import 'player_glass_widgets.dart';
@@ -130,7 +133,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                                 'ALLE ZENDERS',
                                 style: TextStyle(
                                   color: Color(0xFFE9F0EB),
-                                  fontSize: 10,
+                                  fontSize: GlassTokens.fontSize10,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -212,13 +215,13 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: const Color(0xFFCFD7D3)),
+        Icon(icon, size: GlassTokens.iconSizeXs, color: const Color(0xFFCFD7D3)),
         const SizedBox(width: 6),
         Text(
           title,
           style: const TextStyle(
             color: Color(0xFFCFD7D3),
-            fontSize: 10,
+            fontSize: GlassTokens.fontSize10,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.8,
           ),
@@ -276,7 +279,7 @@ class _HeroRadioCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFFF1F4EA),
-                      fontSize: 16,
+                      fontSize: GlassTokens.fontSize16,
                       fontWeight: FontWeight.w800,
                       shadows: [Shadow(color: Colors.black87, blurRadius: 6)],
                     ),
@@ -324,20 +327,10 @@ class _PlaylistRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: Colors.white.withValues(alpha: 0.12),
-        highlightColor: Colors.white.withValues(alpha: 0.06),
-        child: GlassSurface(
-          borderRadius: 10,
-          padding: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
+    return GlassCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(10),
+      child: Row(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -355,7 +348,7 @@ class _PlaylistRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFF1F4EA),
-                          fontSize: 14,
+                          fontSize: GlassTokens.fontSize14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -367,7 +360,7 @@ class _PlaylistRow extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFFAAB7B4),
-                            fontSize: 11,
+                            fontSize: GlassTokens.fontSize11,
                           ),
                         ),
                       ],
@@ -387,9 +380,6 @@ class _PlaylistRow extends StatelessWidget {
                   )
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -417,7 +407,13 @@ class _PlaceholderTile extends StatelessWidget {
   Widget build(BuildContext context) => ColoredBox(
         color: const Color(0xFF263333),
         child:
-            Center(child: Icon(icon, color: const Color(0xFFCFD7D3), size: 20)),
+            Center(
+              child: Icon(
+                icon,
+                color: const Color(0xFFCFD7D3),
+                size: GlassTokens.iconSizeM,
+              ),
+            ),
       );
 }
 
@@ -432,7 +428,7 @@ class _EmptyPlaceholder extends StatelessWidget {
         child: Center(
           child: Text(
             message,
-            style: const TextStyle(color: Color(0xFFAAB7B4), fontSize: 11),
+            style: const TextStyle(color: Color(0xFFAAB7B4), fontSize: GlassTokens.fontSize11),
           ),
         ),
       );

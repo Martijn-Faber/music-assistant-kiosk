@@ -5,7 +5,7 @@ import '../data/music_assistant_repository.dart';
 import '../domain/player_queue_snapshot.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
-import 'design_system/glass_tokens.dart';
+import '../../../design_system/glass_tokens.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerQueueSheet extends StatefulWidget {
@@ -168,7 +168,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     child: Icon(
                       CupertinoIcons.exclamationmark_triangle,
                       color: Color(0xFFFF8E7C),
-                      size: 40,
+                      size: GlassTokens.iconSizeXl,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -177,7 +177,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: GlassTokens.fontSize22,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.5,
                     ),
@@ -188,7 +188,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: GlassTokens.textSecondary,
-                      fontSize: 14,
+                      fontSize: GlassTokens.fontSize14,
                       height: 1.4,
                     ),
                   ),
@@ -390,7 +390,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         'Queue',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 22,
+                          fontSize: GlassTokens.fontSize22,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

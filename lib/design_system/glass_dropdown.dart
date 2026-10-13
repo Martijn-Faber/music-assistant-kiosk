@@ -43,15 +43,18 @@ class GlassDropdown<T> extends StatelessWidget {
           menuMaxHeight: 320,
           borderRadius: BorderRadius.circular(16),
           dropdownColor: const Color(0xFF263333),
-          icon: const Icon(CupertinoIcons.chevron_down, size: 22),
+          icon: const Icon(
+            CupertinoIcons.chevron_down,
+            size: GlassTokens.iconSizeM,
+          ),
           iconEnabledColor: Colors.white,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize16),
           selectedItemBuilder: (context) => items
               .map(
                 (item) => Align(
                   alignment: Alignment.centerLeft,
                   child: DefaultTextStyle.merge(
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize16),
                     child: item.child,
                   ),
                 ),

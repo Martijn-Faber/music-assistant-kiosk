@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../../design_system/glass_card.dart';
+import '../../../design_system/glass_tokens.dart';
+
 /// Artwork-backed card used for actions that start playback.
 ///
 /// Owns the shared tap target, artwork treatment, loading feedback, play badge,
@@ -22,13 +25,12 @@ class ArtworkPlaybackCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     width: double.infinity,
-    child: Material(
-      color: const Color(0xFF1B2727),
-      borderRadius: BorderRadius.circular(13),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
+    child: GlassCard(
+      onTap: onTap,
+      tint: const Color(0xFF1B2727),
+      padding: EdgeInsets.zero,
+      blurSigma: 0,
+      child: Stack(
           fit: StackFit.expand,
           children: [
             artwork,
@@ -52,7 +54,7 @@ class ArtworkPlaybackCard extends StatelessWidget {
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
+                    borderRadius: BorderRadius.circular(GlassTokens.cardRadius),
                     border: Border.all(color: const Color(0x44FFFFFF)),
                   ),
                 ),
@@ -60,7 +62,6 @@ class ArtworkPlaybackCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     ),
   );
 }
@@ -88,7 +89,7 @@ class _PlayBadge extends StatelessWidget {
     ),
     child: Icon(
       CupertinoIcons.play,
-      size: 18,
+      size: GlassTokens.iconSizeS,
       color: enabled ? Colors.white : const Color(0xFF7C8581),
     ),
   );

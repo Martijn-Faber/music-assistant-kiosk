@@ -6,7 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../data/qr_auth_service.dart';
 import '../../player/data/music_assistant_repository.dart';
-import '../../player/presentation/design_system/glass_design_system.dart';
+import '../../../design_system/glass_design_system.dart';
 import '../data/music_assistant_server_discovery.dart';
 import 'onboarding_components.dart';
 
@@ -531,7 +531,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 12),
+            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize12),
           ),
         ),
       ],
@@ -547,13 +547,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               children: [
                 Icon(
                   CupertinoIcons.exclamationmark_circle,
-                  size: 17,
+                  size: GlassTokens.iconSizeS,
                   color: GlassTokens.error,
                 ),
                 const SizedBox(width: 7),
                 Text(
                   'Music Assistant is not responding',
-                  style: const TextStyle(color: GlassTokens.error, fontSize: 12),
+                  style: const TextStyle(color: GlassTokens.error, fontSize: GlassTokens.fontSize12),
                 ),
               ],
             ),
@@ -585,7 +585,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     'Use your phone to scan this code and sign in to Home Assistant. Keep your phone and clock on the same Wi-Fi network.',
                     style: TextStyle(
                       color: GlassTokens.textSecondary,
-                      fontSize: 13,
+                      fontSize: GlassTokens.fontSize13,
                       height: 1.4,
                     ),
                   ),
@@ -618,7 +618,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           child: Text(
             widget.isLoading ? 'Connecting to Music Assistant…' : 'Preparing sign-in…',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 13),
+            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize13),
           ),
         ),
       ] else if (_authError != null || widget.error != null) ...[

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:app/design_system/glass_tokens.dart';
 
 import 'player_glass_widgets.dart';
 
@@ -63,7 +65,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                 time,
                 style: const TextStyle(
                   color: Color(0xFFF1F4EA),
-                  fontSize: 88,
+                  fontSize: GlassTokens.fontSizeClock,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -3,
                   height: 1,
@@ -83,7 +85,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFFD8E0DB),
-                fontSize: 18,
+                fontSize: GlassTokens.fontSize18,
                 fontWeight: FontWeight.w500,
                 shadows: [Shadow(color: Color(0x44000000), blurRadius: 8)],
               ),
@@ -112,7 +114,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                       widget.nowPlayingLabel == null
                           ? CupertinoIcons.antenna_radiowaves_left_right
                           : CupertinoIcons.music_note,
-                      size: 16,
+                      size: GlassTokens.iconSizeS,
                       color: Color(0xFFE9F0EB),
                     ),
                     SizedBox(width: 8),
@@ -123,7 +125,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Color(0xFFE9F0EB),
-                          fontSize: 12,
+                          fontSize: GlassTokens.fontSize12,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

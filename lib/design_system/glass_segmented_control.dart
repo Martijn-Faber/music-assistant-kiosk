@@ -49,7 +49,7 @@ class GlassSegmentedControl extends StatelessWidget {
                         color: index == selectedIndex
                             ? Colors.white
                             : GlassTokens.textMuted,
-                        fontSize: 12,
+                        fontSize: GlassTokens.fontSize12,
                         fontWeight: index == selectedIndex
                             ? FontWeight.w600
                             : FontWeight.w400,

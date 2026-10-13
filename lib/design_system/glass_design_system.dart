@@ -1,4 +1,5 @@
 export 'glass_action_button.dart';
+export 'glass_card.dart';
 export 'glass_dropdown.dart';
 export 'glass_icon_button.dart';
 export 'glass_inline_button.dart';
@@ -8,6 +9,7 @@ export 'glass_pill.dart';
 export 'glass_outline_button.dart';
 export 'glass_section_label.dart';
 export 'glass_segmented_control.dart';
+export 'glass_slider.dart';
 export 'glass_surface.dart';
 export 'glass_text_field.dart';
 export 'glass_tokens.dart';

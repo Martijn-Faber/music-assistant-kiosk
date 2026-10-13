@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/player_summary.dart';
-import 'design_system/glass_design_system.dart';
+import '../../../design_system/glass_design_system.dart';
 
 /// Settings as a regular pager destination, sized for the kiosk display.
 class PlayerSettingsPage extends StatefulWidget {
@@ -62,7 +62,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     'Settings',
                     style: TextStyle(
                       color: Color(0xFFF1F4EA),
-                      fontSize: 28,
+                      fontSize: GlassTokens.fontSize28,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

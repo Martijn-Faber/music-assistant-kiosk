@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/player_summary.dart';
-import 'design_system/glass_design_system.dart';
+import '../../../design_system/glass_design_system.dart';
 
 class PlayerSetupPage extends StatefulWidget {
   const PlayerSetupPage({
@@ -73,9 +73,11 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                       itemBuilder: (context, index) {
                         final player = widget.players[index];
                         final selected = player.id == _selectedPlayerId;
-                        return GlassSurface(
-                          borderRadius: GlassTokens.radiusLarge,
-                          padding: EdgeInsets.zero,
+                        return GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 15,
+                          ),
                           tint: selected
                               ? GlassTokens.selected
                               : GlassTokens.surfaceTint,
@@ -85,72 +87,54 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                                 : GlassTokens.border,
                             width: selected ? 1.2 : 0.8,
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(
-                                GlassTokens.radiusLarge,
-                              ),
-                              onTap: _isSaving
-                                  ? null
-                                  : () => setState(
-                                      () => _selectedPlayerId = player.id,
-                                    ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 15,
+                          onTap: _isSaving
+                              ? null
+                              : () => setState(
+                                  () => _selectedPlayerId = player.id,
                                 ),
-                                child: Row(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                CupertinoIcons.hifispeaker,
+                                size: GlassTokens.iconSizeM,
+                                color: GlassTokens.textPrimary,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(
-                                      CupertinoIcons.hifispeaker,
-                                      size: 22,
-                                      color: GlassTokens.textPrimary,
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            player.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: GlassTokens.textPrimary,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          if (player.groupMembers?.isNotEmpty ==
-                                              true)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: 3,
-                                              ),
-                                              child: Text(
-                                                '${player.groupMembers!.length} speakers',
-                                                style: const TextStyle(
-                                                  color: GlassTokens.textSecondary,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
+                                    Text(
+                                      player.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: GlassTokens.textPrimary,
+                                        fontSize: GlassTokens.fontSize16,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    if (selected)
-                                      const Icon(
-                                        CupertinoIcons.checkmark_circle_fill,
-                                        color: GlassTokens.textPrimary,
-                                        size: 22,
+                                    if (player.groupMembers?.isNotEmpty == true)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 3),
+                                        child: Text(
+                                          '${player.groupMembers!.length} speakers',
+                                          style: const TextStyle(
+                                            color: GlassTokens.textSecondary,
+                                            fontSize: GlassTokens.fontSize12,
+                                          ),
+                                        ),
                                       ),
                                   ],
                                 ),
                               ),
-                            ),
+                              if (selected)
+                                const Icon(
+                                  CupertinoIcons.checkmark_circle_fill,
+                                  color: GlassTokens.textPrimary,
+                                  size: GlassTokens.iconSizeM,
+                                ),
+                            ],
                           ),
                         );
                       },
@@ -163,7 +147,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: GlassTokens.error,
-                      fontSize: 12,
+                      fontSize: GlassTokens.fontSize12,
                     ),
                   ),
                 ],
@@ -188,12 +172,16 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(CupertinoIcons.speaker_slash, color: GlassTokens.textSecondary, size: 28),
+        const Icon(
+          CupertinoIcons.speaker_slash,
+          color: GlassTokens.textSecondary,
+          size: GlassTokens.iconSizeL,
+        ),
         const SizedBox(height: 12),
         const Text(
           'No players found on this server.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: GlassTokens.textPrimary, fontSize: 14),
+          style: TextStyle(color: GlassTokens.textPrimary, fontSize: GlassTokens.fontSize14),
         ),
         const SizedBox(height: 14),
         GlassInlineButton(

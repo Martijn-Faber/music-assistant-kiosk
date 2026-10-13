@@ -20,19 +20,13 @@ class GlassActionButton extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => Opacity(
-    opacity: onPressed == null && !isLoading ? 0.56 : 1,
-    child: GlassSurface(
-      borderRadius: GlassTokens.radiusLarge,
-      padding: EdgeInsets.zero,
-      tint: GlassTokens.surfaceTint,
-      showShadow: false,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(GlassTokens.radiusLarge),
-          child: SizedBox(
+  Widget build(BuildContext context) => GlassInteractiveSurface(
+    borderRadius: GlassTokens.radiusLarge,
+    padding: EdgeInsets.zero,
+    tint: GlassTokens.surfaceTint,
+    showShadow: false,
+    onTap: onPressed,
+    child: SizedBox(
             height: compact ? 46 : 54,
             child: Center(
               child: Row(
@@ -47,13 +41,13 @@ class GlassActionButton extends StatelessWidget {
                       ),
                     )
                   else if (icon != null)
-                    Icon(icon, size: 19, color: GlassTokens.textPrimary),
+                    Icon(icon, size: GlassTokens.iconSizeM, color: GlassTokens.textPrimary),
                   if (icon != null || isLoading) const SizedBox(width: 10),
                   Text(
                     label,
                     style: const TextStyle(
                       color: GlassTokens.textPrimary,
-                      fontSize: 14,
+                      fontSize: GlassTokens.fontSize14,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                     ),
@@ -62,8 +56,5 @@ class GlassActionButton extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
-    ),
   );
 }

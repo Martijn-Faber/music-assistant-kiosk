@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/playback_quality_info.dart';
@@ -176,7 +178,11 @@ class NowPlayingPage extends StatelessWidget {
           child: const GlassPill(
             padding: EdgeInsets.all(12),
             tint: Color(0x22202730),
-            child: Icon(CupertinoIcons.music_note_list, color: Colors.white, size: 20),
+            child: Icon(
+              CupertinoIcons.music_note_list,
+              color: Colors.white,
+              size: GlassTokens.iconSizeM,
+            ),
           ),
         ),
       ),
@@ -198,7 +204,7 @@ class NowPlayingPage extends StatelessWidget {
               player.available == false
                   ? CupertinoIcons.exclamationmark_circle
                   : CupertinoIcons.waveform,
-              size: 16,
+              size: GlassTokens.iconSizeS,
               color: player.available == false
                   ? const Color(0xFFFF8E7C)
                   : Colors.white,
@@ -208,7 +214,7 @@ class NowPlayingPage extends StatelessWidget {
               player.available == false
                   ? 'UNAVAILABLE'
                   : qualityLabel ?? 'QUALITY UNKNOWN',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize12),
             ),
 
 
@@ -311,14 +317,14 @@ class NowPlayingPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             playerActionError!,
-            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: 11),
+            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: GlassTokens.fontSize11),
           ),
         ],
         if (error != null) ...[
           const SizedBox(height: 6),
           Text(
             error!,
-            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: 11),
+            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: GlassTokens.fontSize11),
           ),
         ],
       ],
@@ -500,7 +506,7 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
 
   TextStyle get _timeStyle => const TextStyle(
     color: Color(0xCCD8E0DB),
-    fontSize: 10,
+    fontSize: GlassTokens.fontSize10,
     fontWeight: FontWeight.w500,
     fontFeatures: [FontFeature.tabularFigures()],
   );
@@ -602,7 +608,7 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
                     ? CupertinoIcons.heart_fill
                     : CupertinoIcons.heart,
                 color: Colors.white,
-                size: 20,
+                size: GlassTokens.iconSizeM,
               ),
       ),
     ),
@@ -644,7 +650,7 @@ class _PlaybackQualityDialog extends StatelessWidget {
                       'Playback details',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: GlassTokens.fontSize20,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -660,7 +666,7 @@ class _PlaybackQualityDialog extends StatelessWidget {
                   trackTitle!,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                  style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize15),
                 ),
                 if (artist?.trim().isNotEmpty == true)
                   Padding(
@@ -749,7 +755,7 @@ class _PlaybackQualityDialog extends StatelessWidget {
               Expanded(
                 child: Text(
                   row.key,
-                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  style: const TextStyle(color: Colors.white60, fontSize: GlassTokens.fontSize13),
                 ),
               ),
               const SizedBox(width: 16),
@@ -757,7 +763,7 @@ class _PlaybackQualityDialog extends StatelessWidget {
                 child: Text(
                   row.value,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize13),
                 ),
               ),
             ],
@@ -781,20 +787,20 @@ class NothingPlayingPage extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(CupertinoIcons.waveform, size: 42, color: Color(0xDDE9F0EB)),
+        Icon(CupertinoIcons.waveform, size: GlassTokens.iconSizeXl, color: Color(0xDDE9F0EB)),
         SizedBox(height: 12),
         Text(
           'Nothing is playing',
           style: TextStyle(
             color: Color(0xFFF1F4EA),
-            fontSize: 20,
+            fontSize: GlassTokens.fontSize20,
             fontWeight: FontWeight.w600,
           ),
         ),
         SizedBox(height: 6),
         Text(
           'Swipe to choose something to play',
-          style: TextStyle(color: Color(0xFFD8E0DB), fontSize: 12),
+          style: TextStyle(color: Color(0xFFD8E0DB), fontSize: GlassTokens.fontSize12),
         ),
       ],
     ),

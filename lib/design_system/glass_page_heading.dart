@@ -22,7 +22,7 @@ class GlassPageHeading extends StatelessWidget {
         textAlign: TextAlign.center,
         style: TextStyle(
           color: GlassTokens.textPrimary,
-          fontSize: compact ? 23 : 26,
+          fontSize: compact ? GlassTokens.fontSize23 : GlassTokens.fontSize26,
           height: 1.12,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.5,
@@ -37,7 +37,7 @@ class GlassPageHeading extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: GlassTokens.textSecondary,
-            fontSize: 13,
+            fontSize: GlassTokens.fontSize13,
             height: 1.4,
           ),
         ),

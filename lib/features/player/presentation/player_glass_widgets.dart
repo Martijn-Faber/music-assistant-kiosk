@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
+import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:app/design_system/glass_tokens.dart';
 
-import 'design_system/glass_pill.dart';
+import '../../../design_system/glass_pill.dart';
 
-export 'design_system/glass_surface.dart';
-export 'design_system/glass_pill.dart';
+export '../../../design_system/glass_surface.dart';
+export '../../../design_system/glass_pill.dart';
 
 class PageDot extends StatelessWidget {
   const PageDot({required this.active});
@@ -48,7 +50,7 @@ class PlayerNamePill extends StatelessWidget {
           children: [
             const Icon(
               CupertinoIcons.hifispeaker,
-              size: 20,
+              size: GlassTokens.iconSizeM,
               color: Color(0xFFE9F0EB),
             ),
             const SizedBox(width: 8),
@@ -57,7 +59,7 @@ class PlayerNamePill extends StatelessWidget {
                 text: TextSpan(
                   style: const TextStyle(
                     color: Color(0xFFE9F0EB),
-                    fontSize: 12,
+                    fontSize: GlassTokens.fontSize12,
                     fontWeight: FontWeight.w600,
                   ),
                   children: [
@@ -70,7 +72,7 @@ class PlayerNamePill extends StatelessWidget {
                           ' +$groupMemberCount',
                           style: const TextStyle(
                             color: Color(0xFFE9F0EB),
-                            fontSize: 9,
+                            fontSize: GlassTokens.fontSize9,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

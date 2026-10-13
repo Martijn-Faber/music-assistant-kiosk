@@ -16,14 +16,14 @@ class GlassInfoRow extends StatelessWidget {
     tint: GlassTokens.surfaceTintSubtle,
     child: Row(
       children: [
-        Icon(icon, size: 19, color: GlassTokens.textSecondary),
+        Icon(icon, size: GlassTokens.iconSizeM, color: GlassTokens.textSecondary),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFFE9F0EB), fontSize: 14),
+            style: const TextStyle(color: Color(0xFFE9F0EB), fontSize: GlassTokens.fontSize14),
           ),
         ),
       ],

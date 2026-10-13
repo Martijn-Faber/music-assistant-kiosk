@@ -10,12 +10,16 @@ class GlassPill extends StatelessWidget {
     this.padding = const EdgeInsets.all(8),
     this.constraints,
     this.tint = const Color(0x33232A30),
+    this.showShadow = true,
+    this.blurSigma = 16,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final BoxConstraints? constraints;
   final Color tint;
+  final bool showShadow;
+  final double blurSigma;
 
   @override
   Widget build(BuildContext context) => GlassSurface(
@@ -23,6 +27,8 @@ class GlassPill extends StatelessWidget {
     padding: padding,
     constraints: constraints,
     tint: tint,
+    showShadow: showShadow,
+    blurSigma: blurSigma,
     child: child,
   );
 }

@@ -12,7 +12,7 @@ class GlassSectionLabel extends StatelessWidget {
     label,
     style: const TextStyle(
       color: GlassTokens.textMuted,
-      fontSize: 11,
+      fontSize: GlassTokens.fontSize11,
       letterSpacing: 1.1,
     ),
   );

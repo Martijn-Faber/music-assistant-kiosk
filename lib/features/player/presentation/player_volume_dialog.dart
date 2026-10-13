@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
+import '../../../design_system/glass_design_system.dart'
+    show GlassSlider, GlassTokens;
 import 'player_glass_widgets.dart';
 
 class PlayerVolumeDialog extends StatefulWidget {
@@ -131,7 +133,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     'Speakers & volume',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: GlassTokens.fontSize20,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -182,7 +184,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             children: [
                               const Icon(
                                 CupertinoIcons.hifispeaker,
-                                size: 19,
+                                size: GlassTokens.iconSizeM,
                                 color: Colors.white70,
                               ),
                               const SizedBox(width: 9),
@@ -193,7 +195,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 15,
+                                    fontSize: GlassTokens.fontSize15,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -212,13 +214,13 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                 '${volume}%',
                                 style: const TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 13,
+                                  fontSize: GlassTokens.fontSize13,
                                   fontFeatures: [FontFeature.tabularFigures()],
                                 ),
                               ),
                             ],
                           ),
-                          Slider(
+                          GlassSlider(
                             value: volume.toDouble(),
                             min: 0,
                             max: 100,

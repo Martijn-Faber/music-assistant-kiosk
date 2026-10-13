@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../player/presentation/design_system/glass_design_system.dart';
+import '../../../design_system/glass_design_system.dart';
 import '../data/music_assistant_server_discovery.dart';
 
 class OnboardingWaitingPill extends StatelessWidget {
@@ -10,8 +10,7 @@ class OnboardingWaitingPill extends StatelessWidget {
   final bool opened;
 
   @override
-  Widget build(BuildContext context) => GlassSurface(
-    borderRadius: 99,
+  Widget build(BuildContext context) => GlassPill(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
     tint: GlassTokens.surfaceTintSubtle,
     showShadow: false,
@@ -38,11 +37,11 @@ class OnboardingWaitingPill extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
             else
-              const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: Colors.white),
+              const Icon(CupertinoIcons.checkmark_circle_fill, size: GlassTokens.iconSizeXs, color: Colors.white),
             const SizedBox(width: 9),
             Text(
               opened ? 'Complete sign-in on your phone' : 'Waiting for your phone',
-              style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 12),
+              style: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize12),
             ),
           ],
         ),
@@ -88,52 +87,51 @@ class DiscoveredServerCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GlassSurface(
-    borderRadius: GlassTokens.radiusLarge,
-    padding: EdgeInsets.zero,
+  Widget build(BuildContext context) => GlassCard(
+    constraints: const BoxConstraints(minHeight: 72),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     tint: GlassTokens.surfaceTint,
-    showShadow: false,
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(GlassTokens.radiusLarge),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 72),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                const Icon(CupertinoIcons.desktopcomputer, size: 21, color: GlassTokens.textSecondary),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        server.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: GlassTokens.textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        server.serverVersion.isEmpty
-                            ? '${server.host}:${server.port}'
-                            : '${server.host}:${server.port} · v${server.serverVersion}',
-                        style: const TextStyle(color: GlassTokens.textMuted, fontSize: 12),
-                      ),
-                    ],
-                  ),
+    onTap: onTap,
+    child: Row(
+      children: [
+        const Icon(
+          CupertinoIcons.desktopcomputer,
+          size: GlassTokens.iconSizeM,
+          color: GlassTokens.textSecondary,
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                server.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: GlassTokens.textPrimary,
+                  fontSize: GlassTokens.fontSize15,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(width: 10),
-                const Icon(CupertinoIcons.chevron_right, color: GlassTokens.textSecondary, size: 20),
-              ],
-            ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                server.serverVersion.isEmpty
+                    ? '${server.host}:${server.port}'
+                    : '${server.host}:${server.port} · v${server.serverVersion}',
+                style: const TextStyle(color: GlassTokens.textMuted, fontSize: GlassTokens.fontSize12),
+              ),
+            ],
           ),
         ),
-      ),
+        const SizedBox(width: 10),
+        const Icon(
+          CupertinoIcons.chevron_right,
+          color: GlassTokens.textSecondary,
+          size: GlassTokens.iconSizeM,
+        ),
+      ],
     ),
   );
 }
@@ -153,13 +151,13 @@ class OnboardingStatusMessage extends StatelessWidget {
     child: Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 17, color: GlassTokens.textMuted),
+        Icon(icon, size: GlassTokens.iconSizeS, color: GlassTokens.textMuted),
         const SizedBox(width: 9),
         Flexible(
           child: Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 12),
+            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize12),
           ),
         ),
       ],
@@ -197,7 +195,7 @@ class OnboardingErrorMessage extends StatelessWidget {
             message,
             maxLines: compact ? 1 : null,
             overflow: compact ? TextOverflow.ellipsis : null,
-            style: const TextStyle(color: GlassTokens.errorText, fontSize: 13, height: 1.35),
+            style: const TextStyle(color: GlassTokens.errorText, fontSize: GlassTokens.fontSize13, height: 1.35),
           ),
         ),
       ],

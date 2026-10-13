@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
@@ -137,7 +139,7 @@ class PlayerScreen extends StatelessWidget {
           Icon(
             volume == 0 ? CupertinoIcons.speaker_slash : CupertinoIcons.speaker_2,
             color: Colors.white,
-            size: 18,
+            size: GlassTokens.iconSizeS,
           ),
           const SizedBox(width: 12),
           if (volume == null)
@@ -171,7 +173,7 @@ class PlayerScreen extends StatelessWidget {
             volume == null ? '—' : '$volume%',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: GlassTokens.fontSize12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -369,7 +371,7 @@ class PlayerScreen extends StatelessWidget {
                 player.available == false
                     ? CupertinoIcons.exclamationmark_circle
                     : CupertinoIcons.waveform,
-                size: 15,
+                size: GlassTokens.iconSizeXs,
                 color: player.available == false
                     ? const Color(0xFFFF8E7C)
                     : Colors.white,
@@ -379,19 +381,19 @@ class PlayerScreen extends StatelessWidget {
                 player.available == false
                     ? 'UNAVAILABLE'
                     : qualityLabel ?? 'QUALITY UNKNOWN',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize12),
               ),
               if (player.volumeLevel != null) ...[
                 const SizedBox(width: 14),
                 const Icon(
                   CupertinoIcons.speaker_2,
-                  size: 15,
+                  size: GlassTokens.iconSizeXs,
                   color: Colors.white,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${player.volumeLevel}%',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize12),
                 ),
               ],
             ],
@@ -401,14 +403,14 @@ class PlayerScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             playerActionError!,
-            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: 11),
+            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: GlassTokens.fontSize11),
           ),
         ],
         if (error != null) ...[
           const SizedBox(height: 6),
           Text(
             error!,
-            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: 11),
+            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: GlassTokens.fontSize11),
           ),
         ],
       ],
@@ -502,20 +504,20 @@ class _NothingPlayingView extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(CupertinoIcons.waveform, size: 42, color: Color(0xDDE9F0EB)),
+        Icon(CupertinoIcons.waveform, size: GlassTokens.iconSizeXl, color: Color(0xDDE9F0EB)),
         SizedBox(height: 12),
         Text(
           'Nothing is playing',
           style: TextStyle(
             color: Color(0xFFF1F4EA),
-            fontSize: 20,
+            fontSize: GlassTokens.fontSize20,
             fontWeight: FontWeight.w600,
           ),
         ),
         SizedBox(height: 6),
         Text(
           'Swipe to choose something to play',
-          style: TextStyle(color: Color(0xFFD8E0DB), fontSize: 12),
+          style: TextStyle(color: Color(0xFFD8E0DB), fontSize: GlassTokens.fontSize12),
         ),
       ],
     ),

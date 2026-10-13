@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../../design_system/glass_tokens.dart';
+
 class ArtworkImage extends StatelessWidget {
   const ArtworkImage({
     super.key,
@@ -79,7 +81,7 @@ class ArtworkImage extends StatelessWidget {
                   )
                 : Icon(
                     CupertinoIcons.music_albums,
-                    size: 48,
+                    size: GlassTokens.iconSizeXl,
                     color: Colors.white.withValues(alpha: 0.5),
                   ),
           ),

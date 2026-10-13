@@ -44,15 +44,15 @@ class GlassTextField extends StatelessWidget {
       textInputAction: textInputAction,
       obscureText: obscureText,
       onSubmitted: onSubmitted,
-      style: const TextStyle(color: GlassTokens.textPrimary, fontSize: 14),
+      style: const TextStyle(color: GlassTokens.textPrimary, fontSize: GlassTokens.fontSize14),
       cursorColor: GlassTokens.textPrimary,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
-        hintStyle: const TextStyle(color: GlassTokens.textMuted, fontSize: 12),
-        labelStyle: const TextStyle(color: GlassTokens.textSecondary, fontSize: 13),
+        hintStyle: const TextStyle(color: GlassTokens.textMuted, fontSize: GlassTokens.fontSize12),
+        labelStyle: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize13),
         floatingLabelStyle: const TextStyle(color: GlassTokens.textPrimary),
-        prefixIcon: Icon(icon, size: 19, color: GlassTokens.textSecondary),
+        prefixIcon: Icon(icon, size: GlassTokens.iconSizeM, color: GlassTokens.textSecondary),
         prefixIconConstraints: compact
             ? const BoxConstraints(minWidth: 38, minHeight: 38)
             : null,
