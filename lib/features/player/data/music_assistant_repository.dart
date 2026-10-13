@@ -35,24 +35,22 @@ class MusicAssistantRepository {
     }
   }
 
-  static Future<MusicAssistantRepository> login({
-    required String serverUrl,
-    required String username,
-    required String password,
-  }) async {
-    final (_, token) = await music_auth.loginWithToken(
-      serverUrl,
-      username,
-      password,
-      tokenName: 'Living Room Clock',
-    );
-    return _connect(serverUrl, token);
-  }
-
   static Future<MusicAssistantRepository> resume({
     required String serverUrl,
     required String token,
   }) => _connect(serverUrl, token);
+
+  static Future<MusicAssistantRepository> connectWithLoginToken({
+    required String serverUrl,
+    required String loginToken,
+  }) async {
+    final token = await music_auth.createLongLivedToken(
+      serverUrl,
+      loginToken,
+      tokenName: 'Living Room Clock',
+    );
+    return _connect(serverUrl, token);
+  }
 
   static Future<MusicAssistantRepository> _connect(
     String serverUrl,

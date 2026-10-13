@@ -9,6 +9,7 @@ import '../features/connection/presentation/connection_screen.dart';
 import '../features/player/data/music_assistant_repository.dart';
 import '../features/player/domain/player_summary.dart';
 import '../features/player/presentation/player_screen.dart';
+import '../features/player/presentation/player_setup_page.dart';
 
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key});
@@ -28,6 +29,9 @@ class _SessionGateState extends State<SessionGate> {
   void Function()? _unsubscribeFromPlayers;
   bool _isLoading = true;
   bool _isConnecting = false;
+  bool _needsPlayerSetup = false;
+  bool _isRefreshingSetupPlayers = false;
+  String? _playerSetupError;
   String? _connectionError;
   String? _playerError;
   String? _playerActionError;
@@ -84,6 +88,7 @@ class _SessionGateState extends State<SessionGate> {
         _players = players;
         _serverInfo = serverInfo;
         _selectedPlayerId = selectedPlayerId;
+        _needsPlayerSetup = selectedPlayerId == null;
       });
       _listenToPlayerChanges(repository);
       await _setVolumeControlEnabled(selectedPlayerId != null);
@@ -117,11 +122,7 @@ class _SessionGateState extends State<SessionGate> {
     unawaited(_sessionStorage.saveClock24HourFormat(format));
   }
 
-  Future<void> _connect(
-    String serverUrl,
-    String username,
-    String password,
-  ) async {
+  Future<void> _connect(String serverUrl, String token) async {
     setState(() {
       _isConnecting = true;
       _connectionError = null;
@@ -133,14 +134,13 @@ class _SessionGateState extends State<SessionGate> {
         RegExp(r'/$'),
         '',
       );
-      repository = await MusicAssistantRepository.login(
+      repository = await MusicAssistantRepository.connectWithLoginToken(
         serverUrl: normalizedServerUrl,
-        username: username,
-        password: password,
+        loginToken: token,
       );
       final players = await repository.fetchPlayers();
       final serverInfo = await repository.fetchServerInfo();
-      final savedPlayerId = await _sessionStorage.readSelectedPlayerId();
+      await _sessionStorage.saveSelectedPlayerId(null);
       await _sessionStorage.saveCredentials(
         serverUrl: normalizedServerUrl,
         token: repository.token,
@@ -150,20 +150,16 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      final selectedPlayerId =
-          players.any((player) => player.id == savedPlayerId)
-          ? savedPlayerId
-          : null;
       setState(() {
         _repository = repository;
         _players = players;
         _serverInfo = serverInfo;
-        _selectedPlayerId = selectedPlayerId;
+        _selectedPlayerId = null;
+        _needsPlayerSetup = true;
+        _playerSetupError = null;
       });
       _listenToPlayerChanges(repository);
-      await _setVolumeControlEnabled(selectedPlayerId != null);
-      if (selectedPlayerId != null)
-        unawaited(_refreshQuality(selectedPlayerId));
+      await _setVolumeControlEnabled(false);
     } on MissingPluginException {
       await repository?.disconnect();
       if (mounted) {
@@ -172,9 +168,11 @@ class _SessionGateState extends State<SessionGate> {
               'Secure storage is not loaded. Fully stop and relaunch the app from Flutter.',
         );
       }
+      rethrow;
     } catch (error) {
       await repository?.disconnect();
       if (mounted) setState(() => _connectionError = error.toString());
+      rethrow;
     } finally {
       if (mounted) {
         setState(() => _isConnecting = false);
@@ -209,13 +207,41 @@ class _SessionGateState extends State<SessionGate> {
       if (!mounted) return;
       setState(() {
         _selectedPlayerId = playerId;
+        _needsPlayerSetup = false;
+        _playerSetupError = null;
         _qualityLabel = null;
         _playerError = null;
       });
       await _setVolumeControlEnabled(true);
       unawaited(_refreshQuality(playerId));
     } catch (error) {
-      if (mounted) setState(() => _playerError = error.toString());
+      if (mounted) {
+        setState(() {
+          _playerError = error.toString();
+          _playerSetupError = error.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshSetupPlayers() async {
+    final repository = _repository;
+    if (repository == null || _isRefreshingSetupPlayers) return;
+    setState(() {
+      _isRefreshingSetupPlayers = true;
+      _playerSetupError = null;
+    });
+    try {
+      final players = await repository.fetchPlayers();
+      if (mounted && identical(repository, _repository)) {
+        setState(() => _players = players);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _playerSetupError = 'Could not load players. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshingSetupPlayers = false);
     }
   }
 
@@ -344,10 +370,17 @@ class _SessionGateState extends State<SessionGate> {
     String playerId, {
     required bool increase,
   }) async {
-    // Music Assistant owns the volume step (which may vary by player/group).
-    // Keep the displayed value server-authoritative instead of guessing a
-    // local percentage that will be corrected by the next event/fetch.
-    await repository.adjustVolume(playerId, increase: increase);
+    final player = _players.where((item) => item.id == playerId).firstOrNull;
+    final currentVolume = player?.volumeLevel ??
+        (await repository.fetchPlayers())
+            .where((item) => item.id == playerId)
+            .firstOrNull
+            ?.volumeLevel;
+    if (currentVolume == null) return;
+    final nextVolume = (currentVolume + (increase ? 5 : -5))
+        .clamp(0, 100)
+        .toInt();
+    await repository.setPlayerVolume(playerId, nextVolume);
   }
 
   Future<void> _refreshPlayerAfterVolumeChange(
@@ -436,6 +469,16 @@ class _SessionGateState extends State<SessionGate> {
         isLoading: _isConnecting,
         error: _connectionError,
         onConnect: _connect,
+      );
+    }
+
+    if (_needsPlayerSetup) {
+      return PlayerSetupPage(
+        players: _players,
+        isRefreshing: _isRefreshingSetupPlayers,
+        error: _playerSetupError,
+        onRefresh: _refreshSetupPlayers,
+        onComplete: _selectPlayer,
       );
     }
 

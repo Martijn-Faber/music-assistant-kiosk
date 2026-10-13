@@ -2,13 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
+import '../data/qr_auth_service.dart';
 import '../../player/data/music_assistant_repository.dart';
 import '../../player/presentation/design_system/glass_design_system.dart';
 import '../data/music_assistant_server_discovery.dart';
 
 typedef ConnectionSubmit =
-    Future<void> Function(String serverUrl, String username, String password);
+    Future<void> Function(String serverUrl, String token);
 
 class ConnectionScreen extends StatefulWidget {
   const ConnectionScreen({
@@ -29,15 +31,14 @@ class ConnectionScreen extends StatefulWidget {
 class _ConnectionScreenState extends State<ConnectionScreen> {
   final _hostController = TextEditingController();
   final _portController = TextEditingController(text: '8095');
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _usernameFocus = FocusNode();
-  final _passwordFocus = FocusNode();
   final _discovery = MusicAssistantServerDiscovery();
 
   List<DiscoveredMusicAssistantServer> _servers = [];
   bool _isDiscovering = false;
-  bool _obscurePassword = true;
+  QrAuthSession? _authSession;
+  bool _isPreparingAuth = false;
+  String? _authError;
+  int _authGeneration = 0;
   int _step = 0; // 0: discovery, 1: manual entry, 2: sign in.
   int _transitionDirection = 1;
   int _loginBackStep = 0;
@@ -59,10 +60,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     _serverPingTimer?.cancel();
     _hostController.dispose();
     _portController.dispose();
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _usernameFocus.dispose();
-    _passwordFocus.dispose();
+    unawaited(_authSession?.close());
     super.dispose();
   }
 
@@ -114,6 +112,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     _portController.text = server.port.toString();
     _loginBackStep = 0;
     FocusScope.of(context).unfocus();
+    _startServerMonitoring();
     _goToStep(2);
   }
 
@@ -124,16 +123,18 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   void _goToStep(int nextStep) {
     if (nextStep == _step) return;
+    if (_step == 2) _cancelQrAuth();
     setState(() {
       _transitionDirection = nextStep > _step ? 1 : -1;
       _step = nextStep;
     });
+    if (nextStep == 2) unawaited(_startQrAuth());
   }
 
   Future<void> _continueToLogin() async {
     final host = _hostController.text.trim();
     final portText = _portController.text.trim();
-    
+
     if (host.isEmpty) {
       setState(() => _serverInputError = 'Enter a valid server address.');
       return;
@@ -163,7 +164,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       _transitionDirection = 1;
       _step = 2;
     });
+    _startServerMonitoring();
+    unawaited(_startQrAuth());
+  }
+
+  void _startServerMonitoring() {
     _serverPingTimer?.cancel();
+    _serverAlive = null;
     unawaited(_pingServer());
     _serverPingTimer = Timer.periodic(
       const Duration(seconds: 30),
@@ -181,13 +188,61 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     }
   }
 
-  Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
-    await widget.onConnect(
-      _serverUrl,
-      _usernameController.text.trim(),
-      _passwordController.text,
-    );
+  Future<void> _startQrAuth() async {
+    final generation = ++_authGeneration;
+    final serverUrl = _serverUrl;
+    await _authSession?.close();
+    if (!mounted || _step != 2) return;
+    setState(() {
+      _authSession = null;
+      _isPreparingAuth = true;
+      _authError = null;
+    });
+    try {
+      final session = await QrAuthSession.start(serverUrl);
+      if (!mounted || generation != _authGeneration || _step != 2) {
+        await session.close();
+        return;
+      }
+      setState(() {
+        _authSession = session;
+        _isPreparingAuth = false;
+      });
+      unawaited(_finishQrAuth(session, generation, serverUrl));
+    } catch (error) {
+      if (!mounted || generation != _authGeneration) return;
+      setState(() {
+        _isPreparingAuth = false;
+        _authError = error.toString();
+      });
+    }
+  }
+
+  Future<void> _finishQrAuth(
+    QrAuthSession session,
+    int generation,
+    String serverUrl,
+  ) async {
+    try {
+      final token = await session.token;
+      if (!mounted || generation != _authGeneration) return;
+      await widget.onConnect(serverUrl, token);
+    } catch (error) {
+      if (!mounted || generation != _authGeneration) return;
+      setState(() {
+        _authSession = null;
+        _authError = widget.error ?? error.toString();
+      });
+    } finally {
+      await session.close();
+    }
+  }
+
+  void _cancelQrAuth() {
+    _authGeneration++;
+    final session = _authSession;
+    _authSession = null;
+    if (session != null) unawaited(session.close());
   }
 
   @override
@@ -301,8 +356,6 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             media.padding.vertical <
         560;
   }
-
-  bool get _keyboardOpen => MediaQuery.viewInsetsOf(context).bottom > 0;
 
   Widget _pageHeading({
     required String title,
@@ -432,41 +485,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Row(
-        children: [
-          Expanded(
-            child: SizedBox(
-              height: _compactLayout ? 40 : 48,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: GlassIconButton(
-                      icon: CupertinoIcons.back,
-                      tooltip: 'Back',
-                      onPressed: widget.isLoading
-                          ? null
-                          : () => _goToStep(_loginBackStep),
-                      size: _compactLayout ? 40 : 48,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 52),
-                    child: GlassPageHeading(
-                      title: 'Sign in',
-                      subtitle: '',
-                      compact: true,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
       if (!_compactLayout) ...[
-        const SizedBox(height: 4),
+        const SizedBox(height: 12),
         GlassSurface(
           borderRadius: GlassTokens.radiusMedium,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -477,126 +497,129 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: GlassTokens.textSecondary,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 12),
           ),
         ),
       ],
-      if (_serverAlive != null) ...[
-        const SizedBox(height: 8),
+      if (_serverAlive == false) ...[
+        const SizedBox(height: 9),
         Center(
           child: GlassSurface(
             borderRadius: GlassTokens.radiusMedium,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             showShadow: false,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _serverAlive!
-                      ? CupertinoIcons.checkmark_circle_fill
-                      : CupertinoIcons.exclamationmark_circle,
-                  size: 15,
-                  color: _serverAlive!
-                      ? GlassTokens.textPrimary
-                      : GlassTokens.error,
+                  CupertinoIcons.exclamationmark_circle,
+                  size: 17,
+                  color: GlassTokens.error,
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  _serverAlive! ? 'Server reachable' : 'Server not responding',
-                  style: TextStyle(
-                    color: _serverAlive!
-                        ? GlassTokens.textSecondary
-                        : GlassTokens.error,
-                    fontSize: 11,
-                  ),
+                  'Music Assistant is not responding',
+                  style: const TextStyle(color: GlassTokens.error, fontSize: 12),
                 ),
               ],
             ),
           ),
         ),
       ],
-      SizedBox(
-        height: _keyboardOpen
-            ? 4
-            : _compactLayout
-            ? 12
-            : 24,
-      ),
-      GlassTextField(
-        controller: _usernameController,
-        focusNode: _usernameFocus,
-        label: 'Username',
-        icon: CupertinoIcons.person,
-        textInputAction: TextInputAction.next,
-        onSubmitted: (_) => _passwordFocus.requestFocus(),
-        compact: _compactLayout,
-      ),
-      SizedBox(
-        height: _keyboardOpen
-            ? 2
-            : _compactLayout
-            ? 6
-            : 14,
-      ),
-      GlassTextField(
-        controller: _passwordController,
-        focusNode: _passwordFocus,
-        label: 'Password',
-        icon: CupertinoIcons.lock,
-        obscureText: _obscurePassword,
-        textInputAction: TextInputAction.done,
-        compact: _compactLayout,
-        onSubmitted: (_) {
-          if (!widget.isLoading) unawaited(_submit());
-        },
-        suffix: GlassIconButton(
-          tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-          size: _compactLayout ? 34 : 40,
-          iconSize: 18,
-          onPressed: () => setState(() {
-            _obscurePassword = !_obscurePassword;
-          }),
-          icon: _obscurePassword
-              ? CupertinoIcons.eye
-              : CupertinoIcons.eye_slash,
+      const SizedBox(height: 18),
+      if (_authSession case final session?) ...[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Scan to sign in',
+                    style: TextStyle(
+                      color: GlassTokens.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Use your phone to scan this code and sign in to Home Assistant. Keep your phone and clock on the same Wi-Fi network.',
+                    style: TextStyle(
+                      color: GlassTokens.textSecondary,
+                      fontSize: 13,
+                      height: 1.45,
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  _WaitingForAuthorization(),
+                ],
+              ),
+            ),
+            const SizedBox(width: 22),
+            GlassSurface(
+              borderRadius: GlassTokens.radiusLarge,
+              padding: const EdgeInsets.all(12),
+              tint: Colors.white,
+              showShadow: true,
+              child: QrImageView(
+                data: session.authorizationUrl,
+                size: _compactLayout ? 176 : 224,
+                backgroundColor: Colors.white,
+                errorCorrectionLevel: QrErrorCorrectLevel.M,
+              ),
+            ),
+          ],
         ),
-      ),
-      if (widget.error != null) ...[
+      ] else if (_isPreparingAuth || widget.isLoading) ...[
         SizedBox(
-          height: _keyboardOpen
-              ? 3
-              : _compactLayout
-              ? 6
-              : 14,
+          height: _compactLayout ? 150 : 220,
+          child: const Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
-        _ErrorMessage(message: widget.error!, compact: _compactLayout),
-      ],
-      SizedBox(
-        height: _keyboardOpen
-            ? 4
-            : _compactLayout
-            ? 8
-            : 22,
-      ),
-      GlassActionButton(
-        label: widget.isLoading ? 'Connecting' : 'Connect',
-        icon: widget.isLoading ? null : CupertinoIcons.forward,
-        isLoading: widget.isLoading,
-        onPressed: widget.isLoading ? null : _submit,
-        compact: _compactLayout,
-      ),
-      if (!_compactLayout) ...[
-        const SizedBox(height: 16),
-        const Text(
-          'Use a trusted network when connecting over HTTP.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: GlassTokens.textMuted, fontSize: 11, height: 1.4),
+        Center(
+          child: Text(
+            widget.isLoading ? 'Connecting to Music Assistant…' : 'Preparing sign-in…',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 13),
+          ),
+        ),
+      ] else if (_authError != null || widget.error != null) ...[
+        _ErrorMessage(message: _authError ?? widget.error!, compact: _compactLayout),
+        const SizedBox(height: 14),
+        GlassActionButton(
+          label: 'Try again',
+          icon: CupertinoIcons.refresh,
+          onPressed: _startQrAuth,
+          compact: _compactLayout,
         ),
       ],
     ],
+  );
+}
+
+class _WaitingForAuthorization extends StatelessWidget {
+  const _WaitingForAuthorization();
+
+  @override
+  Widget build(BuildContext context) => GlassSurface(
+    borderRadius: 99,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+    tint: GlassTokens.surfaceTintSubtle,
+    showShadow: false,
+    child: const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+        ),
+        SizedBox(width: 9),
+        Text('Waiting for sign-in', style: TextStyle(color: GlassTokens.textSecondary, fontSize: 12)),
+      ],
+    ),
   );
 }
 
