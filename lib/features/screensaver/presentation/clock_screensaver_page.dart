@@ -5,7 +5,7 @@ import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
 
-import 'player_glass_widgets.dart';
+import '../../../design_system/glass_pill.dart';
 
 /// A low-motion clock shown while the selected player is idle.
 class ClockScreensaverPage extends StatefulWidget {

@@ -3,14 +3,14 @@ import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
 
-import '../data/music_assistant_repository.dart';
-import '../domain/player_summary.dart';
-import '../domain/playlist.dart';
-import '../domain/radio_station.dart';
+import 'package:app/features/player/data/music_assistant_repository.dart';
+import 'package:app/features/player/domain/player_summary.dart';
+import 'package:app/features/player/domain/playlist.dart';
+import 'package:app/features/player/domain/radio_station.dart';
 import '../../../design_system/glass_card.dart';
-import 'artwork_image.dart';
-import 'artwork_playback_card.dart';
-import 'player_glass_widgets.dart';
+import '../../../design_system/glass_surface.dart';
+import '../../player/presentation/artwork_image.dart';
+import '../../player/presentation/artwork_playback_card.dart';
 
 class IdlePlayerPage extends StatefulWidget {
   const IdlePlayerPage({

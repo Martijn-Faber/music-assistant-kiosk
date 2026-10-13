@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../domain/player_summary.dart';
+import 'package:app/features/player/domain/player_summary.dart';
 import '../../../design_system/glass_design_system.dart';
 
 /// Settings as a regular pager destination, sized for the kiosk display.

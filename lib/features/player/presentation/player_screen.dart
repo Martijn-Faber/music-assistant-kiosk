@@ -8,13 +8,13 @@ import 'package:app/design_system/glass_tokens.dart';
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
 import '../domain/radio_station.dart';
+import '../../screensaver/presentation/clock_screensaver_page.dart';
+import '../../idle/presentation/idle_player_page.dart';
+import '../../settings/presentation/player_settings_page.dart';
 import 'album_backdrop.dart';
-import 'clock_screensaver_page.dart';
-import 'idle_player_page.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
 import 'player_queue_sheet.dart';
-import 'player_settings_page.dart';
 import 'player_volume_dialog.dart';
 import 'radio_station_picker_dialog.dart';
 
