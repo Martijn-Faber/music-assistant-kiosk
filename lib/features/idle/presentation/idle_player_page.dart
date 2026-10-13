@@ -16,13 +16,11 @@ class IdlePlayerPage extends StatefulWidget {
     super.key,
     required this.repository,
     required this.player,
-    required this.onBrowseRadio,
     required this.onPlaybackStarted,
   });
 
   final MusicAssistantRepository repository;
   final PlayerSummary player;
-  final VoidCallback onBrowseRadio;
   final VoidCallback onPlaybackStarted;
 
   @override
@@ -76,7 +74,9 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
           ),
     ]);
     return _IdleContent(
-      stations: (results[0] as List<RadioStation>).take(3).toList(),
+      stations: (results[0] as List<RadioStation>)
+          .where((station) => station.isFavorite)
+          .toList(),
       playlists: results[1] as List<Playlist>,
     );
   }
@@ -142,49 +142,24 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    flex: 6,
+                    flex: 4,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader(
                           title: 'START MET RADIO',
                           icon: CupertinoIcons.antenna_radiowaves_left_right,
-                          trailing: InkWell(
-                            onTap: widget.onBrowseRadio,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 2),
-                              child: Text(
-                                'ALLE ZENDERS',
-                                style: TextStyle(
-                                  color: Color(0xFFE9F0EB),
-                                  fontSize: GlassTokens.fontSize10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
                         ),
                         const SizedBox(height: 8),
                         Expanded(
                           child: stations.isNotEmpty
-                              ? Column(
-                                  children: [
-                                    for (var i = 0; i < stations.length; i++) ...[
-                                      if (i > 0) const SizedBox(height: 8),
-                                      Expanded(
-                                        child: _HeroRadioCard(
-                                          station: stations[i],
-                                          repository: widget.repository,
-                                          isLoading: _startingStationId ==
-                                              stations[i].id,
-                                          onTap: playerAvailable && !isBusy
-                                              ? () => _playStation(stations[i])
-                                              : null,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                              ? _RadioStationPager(
+                                  stations: stations,
+                                  repository: widget.repository,
+                                  loadingStationId: _startingStationId,
+                                  onSelect: playerAvailable && !isBusy
+                                      ? _playStation
+                                      : null,
                                 )
                               : const _EmptyPlaceholder(
                                   message: 'Geen favoriete radio ingesteld',
@@ -197,7 +172,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                   const SizedBox(width: 16),
 
                   Expanded(
-                    flex: 4,
+                    flex: 6,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -309,17 +284,21 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
       children: [
         Icon(icon, size: GlassTokens.iconSizeXs, color: const Color(0xFFCFD7D3)),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFFCFD7D3),
-            fontSize: GlassTokens.fontSize10,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFCFD7D3),
+              fontSize: GlassTokens.fontSize10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
           ),
         ),
         if (trailing != null) ...[
-          const Spacer(),
+          const SizedBox(width: 6),
           trailing,
         ],
       ],
@@ -334,102 +313,226 @@ class _IdleContent {
   final List<Playlist> playlists;
 }
 
-/// Primary quick-start action for the favorite radio station.
-class _HeroRadioCard extends StatelessWidget {
-  const _HeroRadioCard({
-    required this.station,
+class _RadioStationPager extends StatefulWidget {
+  const _RadioStationPager({
+    required this.stations,
     required this.repository,
-    required this.onTap,
-    required this.isLoading,
+    required this.loadingStationId,
+    required this.onSelect,
   });
 
-  final RadioStation station;
+  final List<RadioStation> stations;
   final MusicAssistantRepository repository;
-  final VoidCallback? onTap;
-  final bool isLoading;
+  final String? loadingStationId;
+  final ValueChanged<RadioStation>? onSelect;
+
+  @override
+  State<_RadioStationPager> createState() => _RadioStationPagerState();
+}
+
+class _RadioStationPagerState extends State<_RadioStationPager> {
+  int _page = 0;
+  final Map<String, Map<String, dynamic>> _palettes = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPalettes();
+  }
+
+  Future<void> _loadPalettes() async {
+    final entries = await Future.wait<MapEntry<String, Map<String, dynamic>>?>(
+      widget.stations.map((station) async {
+        final imageId = station.imageProxyId;
+        if (imageId == null) return null;
+        try {
+          final palette = await widget.repository.fetchImagePalette(imageId);
+          return palette == null ? null : MapEntry(station.id, palette);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+    if (!mounted) return;
+    setState(() {
+      for (final entry in entries) {
+        if (entry != null) _palettes[entry.key] = entry.value;
+      }
+    });
+  }
+
+  Color? _colorFromPaletteValue(dynamic value) {
+    if (value is! List || value.length < 3 || value.take(3).any((v) => v is! num)) {
+      return null;
+    }
+    return Color.fromARGB(
+      255,
+      (value[0] as num).toInt().clamp(0, 255),
+      (value[1] as num).toInt().clamp(0, 255),
+      (value[2] as num).toInt().clamp(0, 255),
+    );
+  }
+
+  Color _paletteColor(Map<String, dynamic>? palette) {
+    return _colorFromPaletteValue(
+          palette?['background_dark'] ?? palette?['primary'] ?? palette?['accent'],
+        ) ??
+        const Color(0xFF27312F);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final metadata = station.media['metadata'];
-    final palette = station.media['palette'] ??
-        (metadata is Map ? metadata['palette'] : null);
-    final accent = _accentFromPalette(palette);
-    return GlassCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(8),
-      tint: Color.lerp(const Color(0xFF18201F), accent, 0.48)!,
-      blurSigma: 0,
-      child: Row(
+    final station = widget.stations[_page.clamp(0, widget.stations.length - 1)];
+    final palette = _palettes[station.id];
+    final background = _paletteColor(palette);
+    final surfaceColor = Color.lerp(
+      const Color(0xFF101819),
+      background,
+      0.7,
+    )!;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.lerp(surfaceColor, Colors.white, 0.14)!,
+            surfaceColor,
+            Color.lerp(surfaceColor, Colors.black, 0.18)!,
+          ],
+          stops: const [0, 0.48, 1],
+        ),
+        borderRadius: BorderRadius.circular(GlassTokens.cardRadius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Color(0x18FFFFFF),
+            blurRadius: 1,
+            spreadRadius: 0.5,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(width: 72, height: 72, child: _artwork()),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  station.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFF1F4EA),
-                    fontSize: GlassTokens.fontSize16,
-                    fontWeight: FontWeight.w700,
+          PageView.builder(
+            itemCount: widget.stations.length,
+            onPageChanged: (index) => setState(() => _page = index),
+            itemBuilder: (context, index) {
+              final item = widget.stations[index];
+              final provider = artworkImageProvider(
+                imageUrl: item.imageUrl,
+                serverUrl: widget.repository.serverUrl,
+                token: widget.repository.token,
+              );
+              final isLoading = widget.loadingStationId == item.id;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onSelect == null
+                      ? null
+                      : () => widget.onSelect!(item),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 88,
+                            height: 88,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                if (provider == null)
+                                  const _PlaceholderTile(
+                                    icon: CupertinoIcons.antenna_radiowaves_left_right,
+                                  )
+                                else
+                                  Image(
+                                    image: provider,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => const _PlaceholderTile(
+                                      icon: CupertinoIcons.antenna_radiowaves_left_right,
+                                    ),
+                                  ),
+                                if (isLoading)
+                                  const ColoredBox(
+                                    color: Color(0x77000000),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            item.name,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: GlassTokens.fontSize16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              );
+            },
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 10,
+            child: IgnorePointer(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = _indicatorStart; i < _indicatorStart + _indicatorCount; i++) ...[
+                    if (i > 0) const SizedBox(width: 6),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: i == _page ? 16 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: i == _page ? Colors.white : Colors.white54,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              if (isLoading)
-                const SizedBox.square(
-                  dimension: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              else
-                Icon(
-                  CupertinoIcons.play_fill,
-                  size: GlassTokens.iconSizeS,
-                  color: onTap == null
-                      ? const Color(0x667F8985)
-                      : GlassTokens.textPrimary,
-                ),
-              const SizedBox(width: 8),
-            ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Color _accentFromPalette(dynamic rawPalette) {
-    if (rawPalette is! Map) return const Color(0xFF35413E);
-    final rgb = rawPalette['accent'] ?? rawPalette['primary'];
-    if (rgb is! List || rgb.length < 3 || rgb.take(3).any((v) => v is! num)) {
-      return const Color(0xFF35413E);
-    }
-    return Color.fromARGB(
-      255,
-      (rgb[0] as num).toInt().clamp(0, 255),
-      (rgb[1] as num).toInt().clamp(0, 255),
-      (rgb[2] as num).toInt().clamp(0, 255),
-    );
-  }
+  int get _indicatorCount => widget.stations.length.clamp(0, 3).toInt();
 
-  Widget _artwork() {
-    final provider = artworkImageProvider(
-      imageUrl: station.imageUrl,
-      serverUrl: repository.serverUrl,
-      token: repository.token,
-    );
-    if (provider == null) {
-      return const _PlaceholderTile(icon: CupertinoIcons.antenna_radiowaves_left_right);
-    }
-    return Image(
-      image: provider,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) =>
-          const _PlaceholderTile(icon: CupertinoIcons.antenna_radiowaves_left_right),
-    );
-  }
+  int get _indicatorStart =>
+      (_page - 1)
+          .clamp(0, widget.stations.length - _indicatorCount)
+          .toInt();
 }
 
 /// Overzichtelijke rij voor favoriete afspeellijsten

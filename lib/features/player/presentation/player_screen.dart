@@ -7,7 +7,6 @@ import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_summary.dart';
-import '../domain/radio_station.dart';
 import '../../screensaver/presentation/clock_screensaver_page.dart';
 import '../../idle/presentation/idle_player_page.dart';
 import '../../settings/presentation/player_settings_page.dart';
@@ -16,7 +15,6 @@ import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
 import 'player_queue_sheet.dart';
 import 'player_volume_dialog.dart';
-import 'radio_station_picker_dialog.dart';
 
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({
@@ -52,24 +50,6 @@ class PlayerScreen extends StatelessWidget {
 
   PlayerSummary? get _selectedPlayer =>
       players.where((player) => player.id == selectedPlayerId).firstOrNull;
-
-  Future<void> _startRadio(BuildContext context, PlayerSummary player) async {
-    try {
-      final station = await showDialog<RadioStation>(
-        context: context,
-        builder: (context) => RadioStationPickerDialog(
-          loadStations: repository.fetchRadioStations,
-        ),
-      );
-      if (station == null) return;
-      await repository.playRadio(player.id, station);
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not start that radio station.')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +198,6 @@ class PlayerScreen extends StatelessWidget {
       key: ValueKey('${repository.serverUrl}:$selectedPlayerId'),
       repository: repository,
       player: player,
-      onBrowseRadio: () => _startRadio(context, player),
       onPlaybackStarted: () => pagerKey.currentState?._openPlayerPage(),
     );
     final isIdle = !hasCurrentTrack && !isPlaying;

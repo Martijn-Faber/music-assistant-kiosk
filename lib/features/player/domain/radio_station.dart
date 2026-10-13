@@ -4,12 +4,16 @@ class RadioStation {
     required this.name,
     required this.media,
     this.imageUrl,
+    this.imageProxyId,
+    this.isFavorite = false,
   });
 
   final String id;
   final String name;
   final Map<String, dynamic> media;
   final String? imageUrl;
+  final String? imageProxyId;
+  final bool isFavorite;
 
   factory RadioStation.fromMap(Map<String, dynamic> data) {
     final nestedMedia = data['media_item'];
@@ -40,6 +44,8 @@ class RadioStation {
           id,
       media: media,
       imageUrl: _imageUrl(media, data),
+      imageProxyId: _imageProxyId(media, data),
+      isFavorite: media['favorite'] == true || data['favorite'] == true,
     );
   }
 
@@ -84,6 +90,20 @@ class RadioStation {
           candidate['image_url'],
         ]);
         if (url != null) return url;
+      }
+    }
+    return null;
+  }
+
+  static String? _imageProxyId(
+    Map<String, dynamic> media,
+    Map<String, dynamic> data,
+  ) {
+    final metadata = media['metadata'] ?? data['metadata'];
+    if (metadata is! Map || metadata['images'] is! List) return null;
+    for (final image in metadata['images'] as List) {
+      if (image is Map && image['proxy_id'] is String) {
+        return image['proxy_id'] as String;
       }
     }
     return null;

@@ -263,6 +263,15 @@ class MusicAssistantRepository {
     return stations;
   }
 
+  Future<Map<String, dynamic>?> fetchImagePalette(String imageId) async {
+    final response = await _client.sendCommand(
+      'metadata/get_image_palette',
+      args: {'image_id': imageId},
+    );
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return null;
+  }
+
   Future<List<RecentMediaItem>> fetchRecentlyPlayed() async {
     final response = await _client.sendCommand(
       'music/recently_played_items',
