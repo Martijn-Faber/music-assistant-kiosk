@@ -208,6 +208,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         _authSession = session;
         _isPreparingAuth = false;
       });
+      unawaited(session.opened.then((_) {
+        if (mounted && identical(_authSession, session)) setState(() {});
+      }));
       unawaited(_finishQrAuth(session, generation, serverUrl));
     } catch (error) {
       if (!mounted || generation != _authGeneration) return;
@@ -531,7 +534,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Expanded(
+            Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,7 +557,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     ),
                   ),
                   SizedBox(height: 14),
-                  _WaitingForAuthorization(),
+                  _WaitingForAuthorization(opened: session.hasOpened),
                 ],
               ),
             ),
@@ -565,7 +568,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               tint: Colors.white,
               showShadow: true,
               child: QrImageView(
-                data: session.authorizationUrl,
+                data: session.qrUrl,
                 size: _compactLayout ? 176 : 224,
                 backgroundColor: Colors.white,
                 errorCorrectionLevel: QrErrorCorrectLevel.M,
@@ -600,7 +603,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 }
 
 class _WaitingForAuthorization extends StatelessWidget {
-  const _WaitingForAuthorization();
+  const _WaitingForAuthorization({required this.opened});
+
+  final bool opened;
 
   @override
   Widget build(BuildContext context) => GlassSurface(
@@ -608,17 +613,41 @@ class _WaitingForAuthorization extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
     tint: GlassTokens.surfaceTintSubtle,
     showShadow: false,
-    child: const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+    child: AnimatedSize(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeInOutCubic,
+      alignment: Alignment.centerLeft,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
         ),
-        SizedBox(width: 9),
-        Text('Waiting for sign-in', style: TextStyle(color: GlassTokens.textSecondary, fontSize: 12)),
-      ],
+        child: Row(
+          key: ValueKey(opened),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!opened)
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            else
+              const Icon(CupertinoIcons.checkmark_circle_fill, size: 15, color: Colors.white),
+            const SizedBox(width: 9),
+            Text(
+              opened ? 'Complete sign-in on your phone' : 'Waiting for your phone',
+              style: const TextStyle(color: GlassTokens.textSecondary, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }

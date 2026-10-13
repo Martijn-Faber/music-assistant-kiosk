@@ -7,12 +7,16 @@ import 'dart:math';
 /// return its OAuth session token there after Home Assistant sign-in.
 class QrAuthSession {
   QrAuthSession._(
-    this.authorizationUrl,
+    this.qrUrl,
+    this._authorizationUrl,
     this._server,
     this._sessionId,
     Completer<String> tokenCompleter,
+    Completer<void> openedCompleter,
   ) : _tokenCompleter = tokenCompleter,
-      token = tokenCompleter.future {
+      token = tokenCompleter.future,
+      _openedCompleter = openedCompleter,
+      opened = openedCompleter.future {
     unawaited(token.then<void>((_) {}, onError: (Object _, StackTrace __) {}));
     _server.listen(_handleRequest);
     _expiry = Timer(const Duration(minutes: 10), () {
@@ -25,11 +29,15 @@ class QrAuthSession {
     });
   }
 
-  final String authorizationUrl;
+  final String qrUrl;
+  final String _authorizationUrl;
   final HttpServer _server;
   final String _sessionId;
   final Completer<String> _tokenCompleter;
   final Future<String> token;
+  final Completer<void> _openedCompleter;
+  final Future<void> opened;
+  bool hasOpened = false;
   late final Timer _expiry;
   bool _closed = false;
 
@@ -44,6 +52,13 @@ class QrAuthSession {
         host: localAddress,
         port: callbackServer.port,
         path: '/oauth/callback',
+        queryParameters: {'session': sessionId},
+      );
+      final qrUrl = Uri(
+        scheme: 'http',
+        host: localAddress,
+        port: callbackServer.port,
+        path: '/oauth/start',
         queryParameters: {'session': sessionId},
       );
 
@@ -88,10 +103,12 @@ class QrAuthSession {
       }
 
       return QrAuthSession._(
+        qrUrl.toString(),
         authorizationUrl,
         callbackServer,
         sessionId,
         Completer<String>(),
+        Completer<void>(),
       );
     } catch (_) {
       await callbackServer?.close(force: true);
@@ -172,6 +189,19 @@ class QrAuthSession {
 
   void _handleRequest(HttpRequest request) {
     final uri = request.uri;
+    if (!_closed &&
+        request.method == 'GET' &&
+        uri.path == '/oauth/start' &&
+        uri.queryParameters['session'] == _sessionId) {
+      hasOpened = true;
+      if (!_openedCompleter.isCompleted) _openedCompleter.complete();
+      request.response
+        ..statusCode = HttpStatus.found
+        ..headers.set(HttpHeaders.locationHeader, _authorizationUrl)
+        ..headers.set(HttpHeaders.cacheControlHeader, 'no-store');
+      unawaited(request.response.close());
+      return;
+    }
     if (_closed ||
         request.method != 'GET' ||
         uri.path != '/oauth/callback' ||
