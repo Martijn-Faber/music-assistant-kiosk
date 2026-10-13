@@ -689,7 +689,6 @@ class _PlayerPagesState extends State<_PlayerPages> {
         onNotification: _handleScrollNotification,
         child: PageView.builder(
           controller: _controller,
-          physics: const _ShortSwipePagePhysics(),
           itemCount: widget.pages.length,
           onPageChanged: _onPageChanged,
           itemBuilder: (context, index) => AnimatedBuilder(
@@ -786,49 +785,4 @@ class _PlayerPagesState extends State<_PlayerPages> {
   );
 }
 
-/// Keeps page snapping while allowing a slow drag to turn the page sooner
-/// than Flutter's default half-page threshold.
-class _ShortSwipePagePhysics extends PageScrollPhysics {
-  const _ShortSwipePagePhysics({super.parent});
-
-  static const _dragThreshold = 0.05;
-
-  @override
-  Simulation? createBallisticSimulation(
-    ScrollMetrics position,
-    double velocity,
-  ) {
-    if (position.outOfRange || position.viewportDimension <= 0) {
-      return super.createBallisticSimulation(position, velocity);
-    }
-
-    final page = position.pixels / position.viewportDimension;
-    final lowerPage = page.floorToDouble();
-    final fraction = page - lowerPage;
-    final targetPage = velocity > tolerance.velocity ||
-            (velocity > 0 && fraction >= _dragThreshold)
-        ? page.ceilToDouble()
-        : velocity < -tolerance.velocity ||
-              (velocity < 0 && fraction <= 1 - _dragThreshold)
-        ? lowerPage
-        : page.roundToDouble();
-    final minPage = position.minScrollExtent / position.viewportDimension;
-    final maxPage = position.maxScrollExtent / position.viewportDimension;
-    final target = targetPage
-        .clamp(minPage, maxPage)
-        .toDouble() * position.viewportDimension;
-
-    return ScrollSpringSimulation(
-      spring,
-      position.pixels,
-      target,
-      velocity,
-      tolerance: tolerance,
-    );
-  }
-
-  @override
-  PageScrollPhysics applyTo(ScrollPhysics? ancestor) =>
-      _ShortSwipePagePhysics(parent: buildParent(ancestor));
-}
 
