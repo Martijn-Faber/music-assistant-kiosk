@@ -798,7 +798,47 @@ class _ConnectionBackdrop extends StatelessWidget {
   const _ConnectionBackdrop();
 
   @override
-  Widget build(BuildContext context) => const ColoredBox(
-    color: GlassTokens.background,
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF17212C), GlassTokens.background, Color(0xFF080B10)],
+            stops: [0, 0.48, 1],
+          ),
+        ),
+      ),
+      Positioned(
+        top: -180,
+        left: -150,
+        child: Container(
+          width: 470,
+          height: 390,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [Color(0x332D7182), Color(0x002D7182)],
+            ),
+          ),
+        ),
+      ),
+      Positioned(
+        right: -210,
+        bottom: -260,
+        child: Container(
+          width: 560,
+          height: 560,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [Color(0x222D536B), Color(0x002D536B)],
+            ),
+          ),
+        ),
+      ),
+    ],
   );
 }
