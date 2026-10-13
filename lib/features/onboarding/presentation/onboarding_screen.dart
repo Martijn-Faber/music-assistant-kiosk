@@ -13,8 +13,8 @@ import 'onboarding_components.dart';
 typedef ConnectionSubmit =
     Future<void> Function(String serverUrl, String token);
 
-class ConnectionScreen extends StatefulWidget {
-  const ConnectionScreen({
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({
     super.key,
     required this.isLoading,
     required this.error,
@@ -30,10 +30,10 @@ class ConnectionScreen extends StatefulWidget {
   final bool showPlayerSetup;
 
   @override
-  State<ConnectionScreen> createState() => _ConnectionScreenState();
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _ConnectionScreenState extends State<ConnectionScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> {
   final _hostController = TextEditingController();
   final _portController = TextEditingController(text: '8095');
   final _discovery = MusicAssistantServerDiscovery();

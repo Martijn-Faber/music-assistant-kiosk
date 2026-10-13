@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../core/platform/volume_button_bridge.dart';
 import '../core/storage/session_storage.dart';
-import '../features/connection/presentation/connection_screen.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/player/data/music_assistant_repository.dart';
 import '../features/player/domain/player_summary.dart';
 import '../features/player/presentation/player_screen.dart';
@@ -465,7 +465,7 @@ class _SessionGateState extends State<SessionGate> {
   Widget build(BuildContext context) {
     final repository = _repository;
     if (repository == null || _needsPlayerSetup) {
-      return ConnectionScreen(
+      return OnboardingScreen(
         isLoading: _isConnecting,
         error: _connectionError,
         onConnect: _connect,
