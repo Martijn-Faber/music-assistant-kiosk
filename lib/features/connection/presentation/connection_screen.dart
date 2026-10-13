@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../player/data/music_assistant_repository.dart';
 import '../../player/presentation/design_system/glass_tokens.dart';
 import '../data/music_assistant_server_discovery.dart';
 
@@ -42,6 +43,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   int _loginBackStep = 0;
   String? _discoveryError;
   String? _serverInputError;
+  Timer? _serverPingTimer;
+  bool? _serverAlive;
 
   @override
   void initState() {
@@ -53,6 +56,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   @override
   void dispose() {
+    _serverPingTimer?.cancel();
     _hostController.dispose();
     _portController.dispose();
     _usernameController.dispose();
@@ -88,19 +92,16 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     final portText = _portController.text.trim();
     final port = int.tryParse(portText);
 
-    // 1. Als de host al een volledige URL is (bijv. https://musicassistant.famim.dev)
+    // A complete URL owns its scheme and port. In particular, don't append
+    // the default local Music Assistant port (8095) to HTTPS proxy URLs.
     final suppliedUri = Uri.tryParse(host);
     if (suppliedUri != null &&
         (suppliedUri.scheme == 'http' || suppliedUri.scheme == 'https') &&
         suppliedUri.host.isNotEmpty) {
-      if (port != null) {
-        return suppliedUri.replace(port: port).toString();
-      }
       return suppliedUri.toString();
     }
 
-    // 2. Handmatige invoer zonder volledige URL (bijv. een IP-adres of kaal domein)
-    // Als er geen schema in de host staat, gaan we uit van http (of https als je dat wilt)
+    // A bare host uses HTTP and the separately entered port.
     return Uri(
       scheme: 'http',
       host: host,
@@ -129,7 +130,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     });
   }
 
-  void _continueToLogin() {
+  Future<void> _continueToLogin() async {
     final host = _hostController.text.trim();
     final portText = _portController.text.trim();
     
@@ -154,15 +155,30 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       return;
     }
 
-    print(_serverUrl);
-
     FocusScope.of(context).unfocus();
     _loginBackStep = 1;
     setState(() {
       _serverInputError = null;
+      _serverAlive = null;
       _transitionDirection = 1;
       _step = 2;
     });
+    _serverPingTimer?.cancel();
+    unawaited(_pingServer());
+    _serverPingTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => unawaited(_pingServer()),
+    );
+  }
+
+  Future<void> _pingServer() async {
+    final serverUrl = _serverUrl;
+    try {
+      final alive = await MusicAssistantRepository.probeServerTimeAt(serverUrl);
+      if (mounted && serverUrl == _serverUrl) setState(() => _serverAlive = alive);
+    } catch (_) {
+      if (mounted && serverUrl == _serverUrl) setState(() => _serverAlive = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -505,6 +521,12 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
+      ],
+      if (_serverAlive != null) ...[
+        const SizedBox(height: 8),
+        Text(_serverAlive! ? 'Music Assistant server is reachable' : 'Music Assistant server is not responding',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _serverAlive! ? Colors.white70 : const Color(0xFFFFA39B), fontSize: 11)),
       ],
       SizedBox(
         height: _keyboardOpen

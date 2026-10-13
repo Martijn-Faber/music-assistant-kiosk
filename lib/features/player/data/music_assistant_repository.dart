@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 
@@ -15,6 +18,22 @@ class MusicAssistantRepository {
 
   String get serverUrl => _client.serverUrl;
   String get token => _client.token;
+
+  static Future<bool> probeServerTimeAt(String serverUrl) async {
+    final client = HttpClient();
+    try {
+      final uri = Uri.parse(serverUrl).resolve('/api');
+      final request = await client.postUrl(uri);
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode({'command': 'time'}));
+      final response = await request.close();
+      await response.drain<void>();
+      return response.statusCode == HttpStatus.ok ||
+          response.statusCode == HttpStatus.unauthorized;
+    } finally {
+      client.close(force: true);
+    }
+  }
 
   static Future<MusicAssistantRepository> login({
     required String serverUrl,
