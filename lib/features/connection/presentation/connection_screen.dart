@@ -233,6 +233,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     int generation,
     String serverUrl,
   ) async {
+    var renewQrCode = false;
     try {
       final token = await session.token;
       if (!mounted || generation != _authGeneration) return;
@@ -244,12 +245,24 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       });
     } catch (error) {
       if (!mounted || generation != _authGeneration) return;
-      setState(() {
-        _authSession = null;
-        _authError = widget.error ?? error.toString();
-      });
+      if (error is TimeoutException && _step == 2) {
+        setState(() {
+          _authSession = null;
+          _authError = null;
+          _isPreparingAuth = true;
+        });
+        renewQrCode = true;
+      } else {
+        setState(() {
+          _authSession = null;
+          _authError = widget.error ?? error.toString();
+        });
+      }
     } finally {
       await session.close();
+      if (renewQrCode && mounted && _step == 2) {
+        unawaited(_startQrAuth());
+      }
     }
   }
 
