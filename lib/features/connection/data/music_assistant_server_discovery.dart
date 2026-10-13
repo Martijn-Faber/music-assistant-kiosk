@@ -1,63 +1,58 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:multicast_dns/multicast_dns.dart';
+import 'package:music_assistant/auth_helpers.dart';
 
 class DiscoveredMusicAssistantServer {
   const DiscoveredMusicAssistantServer({
+    required this.url,
     required this.name,
-    required this.host,
-    required this.port,
+    required this.serverVersion,
   });
 
+  final String url;
   final String name;
-  final String host;
-  final int port;
+  final String serverVersion;
 
-  String get url => Uri(scheme: 'http', host: host, port: port).toString();
+  String get host => Uri.parse(url).host;
+  int get port => Uri.parse(url).port;
 }
 
 class MusicAssistantServerDiscovery {
-  static const _serviceType = '_mass._tcp.local';
   static const _networkChannel = MethodChannel(
     'com.example.app/network_discovery',
   );
 
-  Future<List<DiscoveredMusicAssistantServer>> discover({
-    Duration scanDuration = const Duration(seconds: 5),
-  }) async {
+  Future<List<DiscoveredMusicAssistantServer>> discover() async {
     await _setMulticastLock(true);
-    final client = MDnsClient();
     try {
-      await client.start(onError: (_) {});
-
-      final found = <String, DiscoveredMusicAssistantServer>{};
-      final resolving = <Future<void>>[];
-      final seenInstances = <String>{};
-      final subscription = client
-          .lookup<PtrResourceRecord>(
-            ResourceRecordQuery.serverPointer(_serviceType),
-          )
-          .listen((record) {
-            if (seenInstances.add(record.domainName)) {
-              resolving.add(_resolve(client, record, found));
-            }
-          }, onError: (_) {});
-
-      try {
-        await Future<void>.delayed(scanDuration);
-        await subscription.cancel();
-        await Future.wait(resolving);
-        final results = found.values.toList()
-          ..sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          );
-        return results;
-      } finally {
-        await subscription.cancel();
-      }
+      final urls = await discoverServers();
+      final servers = await Future.wait(
+        urls.map((url) async {
+          final uri = Uri.parse(url);
+          try {
+            final info = await getServerInfo(url);
+            return DiscoveredMusicAssistantServer(
+              url: url,
+              name: info.name?.trim().isNotEmpty == true
+                  ? info.name!.trim()
+                  : info.serverId,
+              serverVersion: info.serverVersion,
+            );
+          } catch (_) {
+            // Keep a discovered server selectable even if its info endpoint
+            // is unavailable or requires authentication.
+            return DiscoveredMusicAssistantServer(
+              url: url,
+              name: uri.host,
+              serverVersion: '',
+            );
+          }
+        }),
+      );
+      servers.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return servers;
     } finally {
-      client.stop();
       await _setMulticastLock(false);
     }
   }
@@ -69,45 +64,6 @@ class MusicAssistantServerDiscovery {
       );
     } on MissingPluginException {
       // The lock is Android-specific; other platforms can still scan mDNS.
-    }
-  }
-
-  Future<void> _resolve(
-    MDnsClient client,
-    PtrResourceRecord pointer,
-    Map<String, DiscoveredMusicAssistantServer> found,
-  ) async {
-    try {
-      final service = await client
-          .lookup<SrvResourceRecord>(
-            ResourceRecordQuery.service(pointer.domainName),
-          )
-          .first
-          .timeout(const Duration(seconds: 2));
-      final address = await client
-          .lookup<IPAddressResourceRecord>(
-            ResourceRecordQuery.addressIPv4(service.target),
-          )
-          .first
-          .timeout(const Duration(seconds: 2));
-
-      final instanceSuffix = '.$_serviceType';
-      final name = pointer.domainName.endsWith(instanceSuffix)
-          ? pointer.domainName.substring(
-              0,
-              pointer.domainName.length - instanceSuffix.length,
-            )
-          : service.target.replaceAll(RegExp(r'\.$'), '');
-      final server = DiscoveredMusicAssistantServer(
-        name: name,
-        host: address.address.address,
-        port: service.port,
-      );
-      found['${server.host}:${server.port}'] = server;
-    } on TimeoutException {
-      // A partly advertised service should not block the remaining results.
-    } catch (_) {
-      // Ignore malformed or stale advertisements and keep scanning.
     }
   }
 }

@@ -108,7 +108,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   void _selectServer(DiscoveredMusicAssistantServer server) {
-    _hostController.text = server.host;
+    _hostController.text = server.url;
     _portController.text = server.port.toString();
     _loginBackStep = 0;
     FocusScope.of(context).unfocus();
@@ -725,7 +725,9 @@ class _ServerOption extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${server.host}:${server.port}',
+                        server.serverVersion.isEmpty
+                            ? '${server.host}:${server.port}'
+                            : '${server.host}:${server.port} · v${server.serverVersion}',
                         style: const TextStyle(
                           color: GlassTokens.textMuted,
                           fontSize: 12,
