@@ -3,6 +3,7 @@ class PlayerQueueSnapshot {
     required this.playerName,
     required this.queueId,
     required this.currentIndex,
+    required this.indexInBuffer,
     required this.items,
     required this.autoplayEnabled,
   });
@@ -10,6 +11,7 @@ class PlayerQueueSnapshot {
   final String playerName;
   final String queueId;
   final int? currentIndex;
+  final int? indexInBuffer;
   final List<Map<String, dynamic>> items;
   final bool autoplayEnabled;
 }

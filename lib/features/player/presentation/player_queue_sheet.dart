@@ -37,8 +37,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   late Future<PlayerQueueSnapshot> _queue;
   PlayerQueueSnapshot? _lastQueueSnapshot;
-  Set<String> _queueItemKeysToAnimate = {};
-  bool _queueRefreshPendingDuringRemoval = false;
+  Set<String> _movedQueueItemKeys = {};
+  // Revision keys retrigger move animations without remounting rows on refresh.
+  final Map<String, int> _queueItemMoveVersions = {};
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
   final ValueNotifier<double> _dismissProgress = ValueNotifier(0);
@@ -60,6 +61,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   late final void Function() _unsubscribeFromPlayerEvents;
   late final void Function() _unsubscribeFromQueueEvents;
   Timer? _queueRefreshTimer;
+  bool _queueRefreshInFlight = false;
+  bool _queueRefreshPending = false;
 
   @override
   void initState() {
@@ -95,13 +98,21 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   void _onQueueEvent(Map<String, dynamic> event) {
     if (!mounted) return;
     final eventType = event['event'];
-    // Queue time events are frequent and do not change the displayed item
-    // list. Player events already keep the current-item highlight up to date.
-    if (eventType != 'queue_items_updated' && eventType != 'queue_added') {
+    // Only queue creation and item changes affect this list. Player events
+    // update the current-item highlight; time events need no list refresh.
+    if (eventType != 'queue_items_updated' &&
+        eventType != 'queue_added' &&
+        eventType != 'queue_updated') {
       return;
     }
     if (_isRemovingQueueItem) {
-      _queueRefreshPendingDuringRemoval = true;
+      // Keep the event: the server may publish the delete while the optimistic
+      // request is still completing. Refresh again after the first fetch.
+      _queueRefreshPending = true;
+      return;
+    }
+    if (_queueRefreshInFlight) {
+      _queueRefreshPending = true;
       return;
     }
     // The server may emit several queue events for one operation. Coalesce
@@ -109,41 +120,126 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     _scheduleQueueRefresh();
   }
 
-  void _scheduleQueueRefresh() {
+  void _scheduleQueueRefresh({
+    Duration delay = const Duration(milliseconds: 320),
+  }) {
     _queueRefreshTimer?.cancel();
-    _queueRefreshTimer = Timer(const Duration(milliseconds: 120), () {
+    _queueRefreshTimer = Timer(delay, () {
       if (!mounted) return;
-      if (_isRemovingQueueItem) {
-        _queueRefreshPendingDuringRemoval = true;
+      if (_isRemovingQueueItem) return;
+      if (_queueRefreshInFlight) {
+        _queueRefreshPending = true;
         return;
       }
-      setState(() {
-        _queueItemsOverride = null;
-        _queue = _loadQueue();
-      });
+      _startQueueRefresh();
     });
+  }
+
+  void _startQueueRefresh() {
+    _queueRefreshInFlight = true;
+    final refresh = _loadQueue();
+    setState(() {
+      _queue = refresh;
+    });
+    refresh.then((snapshot) {
+      if (mounted &&
+          identical(_queue, refresh) &&
+          _queueItemsOverride != null &&
+          _queueItemsMatch(_queueItemsOverride!, snapshot.items)) {
+        // Retain the optimistic list until the server confirms the deletion.
+        setState(() => _queueItemsOverride = null);
+      }
+      _finishQueueRefresh();
+    }, onError: (Object _, StackTrace __) => _finishQueueRefresh());
+  }
+
+  void _finishQueueRefresh() {
+    _queueRefreshInFlight = false;
+    if (!mounted || !_queueRefreshPending) return;
+    _queueRefreshPending = false;
+    _scheduleQueueRefresh(delay: const Duration(milliseconds: 320));
   }
 
   Future<PlayerQueueSnapshot> _loadQueue() async {
     final previousQueue = _lastQueueSnapshot;
     final queue = await widget.repository.fetchQueue(widget.playerId);
-    if (previousQueue == null) {
-      _queueItemKeysToAnimate = {};
-    } else {
-      final previousPositions = {
-        for (var index = 0; index < previousQueue.items.length; index++)
-          _queueItemKey(previousQueue.items[index], index): index,
-      };
-      _queueItemKeysToAnimate = {
-        for (var index = 0; index < queue.items.length; index++)
-          if (previousPositions[_queueItemKey(queue.items[index], index)] !=
-              index)
-            _queueItemKey(queue.items[index], index),
-      };
+    _movedQueueItemKeys = _queueItemsOverride == null && previousQueue != null
+        ? _findMovedQueueItems(previousQueue.items, queue.items)
+        : {};
+    for (final itemKey in _movedQueueItemKeys) {
+      _queueItemMoveVersions.update(
+        itemKey,
+        (version) => version + 1,
+        ifAbsent: () => 1,
+      );
     }
     _lastQueueSnapshot = queue;
-    if (mounted) setState(() => _autoplayEnabled = queue.autoplayEnabled);
+    if (mounted && _autoplayEnabled != queue.autoplayEnabled) {
+      setState(() => _autoplayEnabled = queue.autoplayEnabled);
+    }
     return queue;
+  }
+
+  Set<String> _findMovedQueueItems(
+    List<Map<String, dynamic>> previousItems,
+    List<Map<String, dynamic>> currentItems,
+  ) {
+    // Only animate a reorder when the same uniquely identified items remain.
+    if (previousItems.length != currentItems.length) return {};
+
+    final previousIds = previousItems.map(_stableQueueItemId).toList();
+    final currentIds = currentItems.map(_stableQueueItemId).toList();
+    if (previousIds.any((id) => id == null) ||
+        currentIds.any((id) => id == null)) {
+      return {};
+    }
+
+    final oldIds = previousIds.cast<String>();
+    final newIds = currentIds.cast<String>();
+    final oldIdSet = oldIds.toSet();
+    final newIdSet = newIds.toSet();
+    if (oldIdSet.length != oldIds.length ||
+        newIdSet.length != newIds.length ||
+        !oldIdSet.containsAll(newIdSet)) {
+      return {};
+    }
+
+    final oldPositions = {
+      for (var index = 0; index < oldIds.length; index++) oldIds[index]: index,
+    };
+    return {
+      for (var index = 0; index < currentItems.length; index++)
+        if (oldPositions[newIds[index]] != index)
+          _queueItemKey(currentItems[index], index),
+    };
+  }
+
+  bool _queueItemsMatch(
+    List<Map<String, dynamic>> optimisticItems,
+    List<Map<String, dynamic>> serverItems,
+  ) {
+    if (optimisticItems.length != serverItems.length) return false;
+    for (var index = 0; index < optimisticItems.length; index++) {
+      if (_queueItemFingerprint(optimisticItems[index]) !=
+          _queueItemFingerprint(serverItems[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  String _queueItemFingerprint(Map<String, dynamic> item) {
+    final id = _stableQueueItemId(item);
+    if (id != null) return 'id:$id';
+    final uri = _queueItemUri(item);
+    final name = item['name'];
+    final artist = _queueArtist(item);
+    return 'media:${uri ?? ''}|${name is String ? name : ''}|${artist ?? ''}';
+  }
+
+  String? _stableQueueItemId(Map<String, dynamic> item) {
+    final id = item['queue_item_id'];
+    return id is String && id.isNotEmpty ? id : null;
   }
 
   @override
@@ -153,7 +249,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     if (identical(animation, _routeAnimation)) return;
     _routeAnimation?.removeStatusListener(_onRouteStatusChanged);
     _routeAnimation = animation;
-    _routeEntered = animation == null || animation.status == AnimationStatus.completed;
+    _routeEntered =
+        animation == null || animation.status == AnimationStatus.completed;
     animation?.addStatusListener(_onRouteStatusChanged);
   }
 
@@ -229,7 +326,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   Future<void> _confirmClearQueue() async {
     if (_isClearingQueue || _isRemovingQueueItem) return;
-    
+
     final media = MediaQuery.of(context);
     final shouldClear = await showDialog<bool>(
       context: context,
@@ -284,12 +381,15 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         child: SizedBox(
                           height: 46,
                           child: OutlinedButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(false),
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white70,
                               side: const BorderSide(color: GlassTokens.border),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
+                                borderRadius: BorderRadius.circular(
+                                  GlassTokens.radiusMedium,
+                                ),
                               ),
                             ),
                             child: const Text('CANCEL'),
@@ -301,12 +401,15 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         child: SizedBox(
                           height: 46,
                           child: FilledButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(true),
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFFFF8E7C),
                               foregroundColor: const Color(0xFF11161C),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(GlassTokens.radiusMedium),
+                                borderRadius: BorderRadius.circular(
+                                  GlassTokens.radiusMedium,
+                                ),
                               ),
                             ),
                             child: const Text('CLEAR QUEUE'),
@@ -322,7 +425,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         ),
       ),
     );
-    
+
     if (shouldClear != true || !mounted) return;
 
     setState(() => _isClearingQueue = true);
@@ -379,40 +482,48 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     }
   }
 
-  Future<bool> _removeQueueItem({
+  Future<void> _removeQueueItemOnServer({
+    required List<Map<String, dynamic>> previousItems,
     required String itemKey,
     required int queueIndex,
     required String? queueItemId,
   }) async {
-    if (_isClearingQueue ||
-        _isRemovingQueueItem ||
-        _startingQueueRowIndex != null) {
-      return false;
-    }
-    setState(() {
-      _isRemovingQueueItem = true;
-      _removingQueueItemKey = itemKey;
-    });
     try {
       await widget.repository.removeQueueItem(
         widget.playerId,
         index: queueIndex,
         queueItemId: queueItemId,
       );
-      return true;
     } catch (error, stackTrace) {
       debugPrint('Could not remove queue item $itemKey: $error');
       debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
         setState(() {
+          _queueItemsOverride = previousItems;
           _isRemovingQueueItem = false;
           _removingQueueItemKey = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not remove this queue item.')),
+          SnackBar(
+            content: Text(
+              error is StateError &&
+                      error.message ==
+                          'This queue item is already buffered for playback.'
+                  ? 'This item is already buffered for playback.'
+                  : 'Could not remove this queue item.',
+            ),
+          ),
         );
+        _scheduleQueueRefresh();
       }
-      return false;
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _isRemovingQueueItem = false;
+        _removingQueueItemKey = null;
+      });
+      _scheduleQueueRefresh();
     }
   }
 
@@ -468,7 +579,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                 ),
                 Row(
                   children: [
-                    const Icon(CupertinoIcons.music_note_list, color: Colors.white),
+                    const Icon(
+                      CupertinoIcons.music_note_list,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(
@@ -552,7 +666,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     initialData: _lastQueueSnapshot,
                     builder: (context, snapshot) {
                       if ((snapshot.data == null &&
-                              snapshot.connectionState != ConnectionState.done) ||
+                              snapshot.connectionState !=
+                                  ConnectionState.done) ||
                           !_routeEntered) {
                         return SingleChildScrollView(
                           controller: scrollController,
@@ -617,8 +732,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           _currentQueueRowIndexOverride ??
                           (uriMatch >= 0 ? uriMatch : serverIndexMatch);
                       if (currentQueueRowIndex >= 0 &&
-                          currentQueueRowIndex != _lastAutoScrolledQueueRowIndex) {
-                        final isInitialPosition = !_didPositionQueueAtCurrentItem;
+                          currentQueueRowIndex !=
+                              _lastAutoScrolledQueueRowIndex) {
+                        final isInitialPosition =
+                            !_didPositionQueueAtCurrentItem;
                         final shouldExpandSheet = isInitialPosition;
                         _didPositionQueueAtCurrentItem = true;
                         _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
@@ -649,11 +766,13 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   .clamp(0.0, position.maxScrollExtent)
                                   .toDouble();
                           if (expandSheet) {
-                            unawaited(_sheetController.animateTo(
-                                  _maxExtent,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutCubic,
-                                ));
+                            unawaited(
+                              _sheetController.animateTo(
+                                _maxExtent,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                              ),
+                            );
                           }
                           final offset = targetOffset
                               .clamp(0.0, targetMaxScrollExtent)
@@ -682,297 +801,314 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         child: Opacity(
                           opacity: _queuePositioned ? 1 : 0,
                           child: ListView.separated(
-                          controller: scrollController,
-                          findChildIndexCallback: (key) {
-                            if (key is! ValueKey<String>) return null;
-                            for (var index = 0; index < queueItems.length; index++) {
-                              if ('${_queueItemKey(queueItems[index], index)}@$index' ==
-                                  key.value) {
-                                return index;
+                            controller: scrollController,
+                            findItemIndexCallback: (key) {
+                              if (key is! ValueKey<String>) return null;
+                              for (
+                                var index = 0;
+                                index < queueItems.length;
+                                index++
+                              ) {
+                                if (_queueItemKey(queueItems[index], index) ==
+                                    key.value) {
+                                  return index;
+                                }
                               }
-                            }
-                            return null;
-                          },
-                          itemCount: queueItems.length,
-                          separatorBuilder: (_, index) {
-                          final touchesCurrentItem =
-                              index == currentQueueRowIndex ||
-                              index + 1 == currentQueueRowIndex;
-                          return touchesCurrentItem
-                              ? const SizedBox(height: 1)
-                              : const Divider(
-                                  color: Color(0x33FFFFFF),
-                                  height: 1,
-                                );
-                        },
-                          itemBuilder: (context, index) {
-                          final item = queueItems[index];
-                          final queueIndex = item['index'] is num
-                              ? (item['index'] as num).toInt()
-                              : item['sort_index'] is num
-                              ? (item['sort_index'] as num).toInt()
-                              : index;
-                          final queueItemId = item['queue_item_id'] is String
-                              ? item['queue_item_id'] as String
-                              : null;
-                          final itemKey = _queueItemKey(item, index);
-                          final isCurrent = index == currentQueueRowIndex;
-                          final isPreviouslyPlayed =
-                              currentQueueRowIndex >= 0 &&
-                              index < currentQueueRowIndex;
-                          final artist = _queueArtist(item);
-                          final isLoading = _startingQueueRowIndex == index;
-                          final tile = ListTile(
-                            onTap:
-                                _startingQueueRowIndex == null &&
-                                    !_isClearingQueue
-                                ? () => _playQueueItem(
-                                    rowIndex: index,
-                                    queueIndex: queueIndex,
-                                    queueItemId: queueItemId,
-                                  )
-                                : null,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                            ),
-                            leading: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 30,
-                                  child: Center(
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: TextStyle(
-                                        color: isCurrent
-                                            ? Colors.white
-                                            : Colors.white54,
-                                        fontWeight: isCurrent
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                ArtworkImage(
-                                  imageUrl: RecentMediaItem.imageUrlFromMap(
-                                    Map<String, dynamic>.from(item),
-                                  ),
-                                  serverUrl: widget.repository.serverUrl,
-                                  token: widget.repository.token,
-                                  size: 48,
-                                ),
-                              ],
-                            ),
-                            title: Text(
-                              item['name'] is String
-                                  ? item['name'] as String
-                                  : 'Unknown item',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isCurrent
-                                    ? Colors.white
-                                    : const Color(0xFFD8E0DB),
-                                fontWeight: isCurrent
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              ),
-                            ),
-                            subtitle: artist == null
-                                ? null
-                                : Text(
-                                    artist,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white54,
-                                    ),
-                                  ),
-                            trailing: isLoading
-                                ? const SizedBox.square(
-                                    dimension: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : null,
-                          );
-                          return TweenAnimationBuilder<double>(
-                            key: ValueKey('$itemKey@$index'),
-                            tween: Tween(
-                              begin: _queueItemKeysToAnimate.contains(itemKey)
-                                  ? 0.0
-                                  : 1.0,
-                              end: 1.0,
-                            ),
-                            duration: _queueItemKeysToAnimate.contains(itemKey)
-                                ? const Duration(milliseconds: 260)
-                                : Duration.zero,
-                            curve: Curves.easeOutCubic,
-                            builder: (context, progress, child) => Opacity(
-                              opacity: progress,
-                              child: Transform.translate(
-                                offset: Offset(0, (1 - progress) * 12),
-                                child: child,
-                              ),
-                            ),
-                            child: Dismissible(
-                            key: ValueKey(itemKey),
-                            direction:
-                                _isClearingQueue ||
-                                    (_isRemovingQueueItem &&
-                                        _removingQueueItemKey != itemKey) ||
-                                    _startingQueueRowIndex != null
-                                ? DismissDirection.none
-                                : DismissDirection.endToStart,
-                            confirmDismiss: (_) => _removeQueueItem(
-                              itemKey: itemKey,
-                              queueIndex: queueIndex,
-                              queueItemId: queueItemId,
-                            ),
-                            onUpdate: (details) {
-                              _dismissProgress.value = details.progress
-                                  .clamp(0.0, 1.0)
-                                  .toDouble();
+                              return null;
                             },
-                            onDismissed: (_) {
-                              final updatedItems =
-                                  List<Map<String, dynamic>>.of(queueItems)
-                                    ..removeAt(index);
-                              final previousPositions = {
-                                for (var previousIndex = 0;
-                                    previousIndex < queueItems.length;
-                                    previousIndex++)
-                                  _queueItemKey(
-                                    queueItems[previousIndex],
-                                    previousIndex,
-                                  ): previousIndex,
-                              };
-                              _queueItemKeysToAnimate = {
-                                for (var nextIndex = 0;
-                                    nextIndex < updatedItems.length;
-                                    nextIndex++)
-                                  if (previousPositions[
-                                          _queueItemKey(
-                                            updatedItems[nextIndex],
-                                            nextIndex,
-                                          )] !=
-                                      nextIndex)
-                                    _queueItemKey(
-                                      updatedItems[nextIndex],
-                                      nextIndex,
-                                    ),
-                              };
-                              final shouldRefresh =
-                                  _queueRefreshPendingDuringRemoval;
-                              setState(() {
-                                _queueItemsOverride = updatedItems;
-                                _isRemovingQueueItem = false;
-                                _removingQueueItemKey = null;
-                              });
-                              _dismissProgress.value = 0;
-                              _queueRefreshPendingDuringRemoval = false;
-                              if (shouldRefresh) _scheduleQueueRefresh();
+                            itemCount: queueItems.length,
+                            separatorBuilder: (_, index) {
+                              final touchesCurrentItem =
+                                  index == currentQueueRowIndex ||
+                                  index + 1 == currentQueueRowIndex;
+                              return touchesCurrentItem
+                                  ? const SizedBox(height: 1)
+                                  : const Divider(
+                                      color: Color(0x33FFFFFF),
+                                      height: 1,
+                                    );
                             },
-                            background: const SizedBox.expand(),
-                            secondaryBackground: Container(
-                              alignment: Alignment.centerRight,
-                              child: LayoutBuilder(
-                                builder: (context, constraints) =>
-                                    ValueListenableBuilder<double>(
-                                      valueListenable: _dismissProgress,
-                                      builder: (context, progress, _) => Container(
-                                        width:
-                                            (constraints.maxWidth * progress -
-                                                    8)
-                                                .clamp(
-                                                  0.0,
-                                                  constraints.maxWidth,
-                                                )
-                                                .toDouble(),
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFD94A4A),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
+                            itemBuilder: (context, index) {
+                              final item = queueItems[index];
+                              final queueIndex = item['index'] is num
+                                  ? (item['index'] as num).toInt()
+                                  : item['sort_index'] is num
+                                  ? (item['sort_index'] as num).toInt()
+                                  : index;
+                              final queueItemId =
+                                  item['queue_item_id'] is String
+                                  ? item['queue_item_id'] as String
+                                  : null;
+                              final itemKey = _queueItemKey(item, index);
+                              final shouldAnimateRemoteMove =
+                                  _movedQueueItemKeys.contains(itemKey);
+                              final moveVersion =
+                                  _queueItemMoveVersions[itemKey] ?? 0;
+                              // The web app compares the rendered queue position
+                              // directly with index_in_buffer.
+                              final isBuffered =
+                                  index <= (queue.indexInBuffer ?? 0);
+                              final isCurrent = index == currentQueueRowIndex;
+                              final isPreviouslyPlayed =
+                                  currentQueueRowIndex >= 0 &&
+                                  index < currentQueueRowIndex;
+                              final artist = _queueArtist(item);
+                              final isLoading = _startingQueueRowIndex == index;
+                              final tile = ListTile(
+                                onTap:
+                                    _startingQueueRowIndex == null &&
+                                        !_isClearingQueue
+                                    ? () => _playQueueItem(
+                                        rowIndex: index,
+                                        queueIndex: queueIndex,
+                                        queueItemId: queueItemId,
+                                      )
+                                    : null,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                leading: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 30,
+                                      child: Center(
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: TextStyle(
+                                            color: isCurrent
+                                                ? Colors.white
+                                                : Colors.white54,
+                                            fontWeight: isCurrent
+                                                ? FontWeight.w600
+                                                : FontWeight.w400,
                                           ),
                                         ),
-                                        alignment: Alignment.center,
-                                        child: _removingQueueItemKey == itemKey
-                                            ? const SizedBox.square(
-                                                dimension: 22,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.white,
-                                                    ),
-                                              )
-                                            : Icon(
-                                                CupertinoIcons.minus_circle,
-                                                color: Colors.white,
-                                                size:
-                                                    ((constraints.maxWidth *
-                                                                        progress -
-                                                                    8)
-                                                                .clamp(
-                                                                  0.0,
-                                                                  constraints
-                                                                      .maxWidth,
-                                                                ) *
-                                                            0.65)
-                                                        .clamp(0.0, 24.0)
-                                                        .toDouble(),
-                                              ),
                                       ),
                                     ),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 3),
-                              child: Opacity(
-                                opacity: isPreviouslyPlayed ? .42 : 1,
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 220),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  transitionBuilder: (child, animation) =>
-                                      FadeTransition(
-                                        opacity: animation,
-                                        child: ScaleTransition(
-                                          scale: Tween<double>(
-                                            begin: .985,
-                                            end: 1,
-                                          ).animate(animation),
+                                    const SizedBox(width: 10),
+                                    ArtworkImage(
+                                      imageUrl: RecentMediaItem.imageUrlFromMap(
+                                        Map<String, dynamic>.from(item),
+                                      ),
+                                      serverUrl: widget.repository.serverUrl,
+                                      token: widget.repository.token,
+                                      size: 48,
+                                    ),
+                                  ],
+                                ),
+                                title: Text(
+                                  _queueTrackTitle(item),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isCurrent
+                                        ? Colors.white
+                                        : const Color(0xFFD8E0DB),
+                                    fontWeight: isCurrent
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
+                                ),
+                                subtitle: artist == null
+                                    ? null
+                                    : Text(
+                                        artist,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                trailing: isLoading
+                                    ? const SizedBox.square(
+                                        dimension: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : isBuffered
+                                    ? const Tooltip(
+                                        message: 'Already queued for playback',
+                                        child: Icon(
+                                          CupertinoIcons.lock_fill,
+                                          color: Colors.white38,
+                                          size: 16,
+                                        ),
+                                      )
+                                    : null,
+                              );
+                              return Dismissible(
+                                key: ValueKey(itemKey),
+                                movementDuration: const Duration(
+                                  milliseconds: 220,
+                                ),
+                                resizeDuration: const Duration(
+                                  milliseconds: 260,
+                                ),
+                                direction:
+                                    _isClearingQueue ||
+                                        (_isRemovingQueueItem &&
+                                            _removingQueueItemKey != itemKey) ||
+                                        isBuffered ||
+                                        _startingQueueRowIndex != null
+                                    ? DismissDirection.none
+                                    : DismissDirection.endToStart,
+                                onUpdate: (details) {
+                                  _dismissProgress.value = details.progress
+                                      .clamp(0.0, 1.0)
+                                      .toDouble();
+                                },
+                                onDismissed: (_) {
+                                  final previousItems =
+                                      List<Map<String, dynamic>>.of(queueItems);
+                                  final updatedItems =
+                                      List<Map<String, dynamic>>.of(
+                                        previousItems,
+                                      )..removeAt(index);
+                                  setState(() {
+                                    _queueItemsOverride = updatedItems;
+                                    _isRemovingQueueItem = true;
+                                    _removingQueueItemKey = itemKey;
+                                  });
+                                  _dismissProgress.value = 0;
+                                  unawaited(
+                                    _removeQueueItemOnServer(
+                                      previousItems: previousItems,
+                                      itemKey: itemKey,
+                                      queueIndex: index,
+                                      queueItemId: queueItemId,
+                                    ),
+                                  );
+                                },
+                                background: const SizedBox.expand(),
+                                secondaryBackground: Container(
+                                  alignment: Alignment.centerRight,
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) =>
+                                        ValueListenableBuilder<double>(
+                                          valueListenable: _dismissProgress,
+                                          builder: (context, progress, _) => Container(
+                                            width:
+                                                (constraints.maxWidth *
+                                                            progress -
+                                                        8)
+                                                    .clamp(
+                                                      0.0,
+                                                      constraints.maxWidth,
+                                                    )
+                                                    .toDouble(),
+                                            height: 48,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFD94A4A),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child:
+                                                _removingQueueItemKey == itemKey
+                                                ? const SizedBox.square(
+                                                    dimension: 22,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Colors.white,
+                                                        ),
+                                                  )
+                                                : Icon(
+                                                    CupertinoIcons.minus_circle,
+                                                    color: Colors.white,
+                                                    size:
+                                                        ((constraints.maxWidth *
+                                                                            progress -
+                                                                        8)
+                                                                    .clamp(
+                                                                      0.0,
+                                                                      constraints
+                                                                          .maxWidth,
+                                                                    ) *
+                                                                0.65)
+                                                            .clamp(0.0, 24.0)
+                                                            .toDouble(),
+                                                  ),
+                                          ),
+                                        ),
+                                  ),
+                                ),
+                                child: TweenAnimationBuilder<double>(
+                                  key: ValueKey('$itemKey@$moveVersion'),
+                                  tween: Tween(
+                                    begin: shouldAnimateRemoteMove ? 0.0 : 1.0,
+                                    end: 1.0,
+                                  ),
+                                  duration: shouldAnimateRemoteMove
+                                      ? const Duration(milliseconds: 260)
+                                      : Duration.zero,
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, progress, child) =>
+                                      Opacity(
+                                        opacity: progress,
+                                        child: Transform.translate(
+                                          offset: Offset(
+                                            0,
+                                            (1 - progress) * 12,
+                                          ),
                                           child: child,
                                         ),
                                       ),
-                                  child: isCurrent
-                                    ? GlassSurface(
-                                        key: const ValueKey('current-track'),
-                                        borderRadius: 14,
-                                        padding: EdgeInsets.zero,
-                                        tint: const Color(0x33202730),
-                                        blurSigma: 0,
-                                        showShadow: false,
-                                        child: Material(
-                                          type: MaterialType.transparency,
-                                          child: tile,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 3,
+                                    ),
+                                    child: Opacity(
+                                      opacity: isPreviouslyPlayed ? .42 : 1,
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 220,
                                         ),
-                                      )
-                                    : Material(
-                                        key: const ValueKey('queue-track'),
-                                        type: MaterialType.transparency,
-                                        child: tile,
+                                        switchInCurve: Curves.easeOutCubic,
+                                        switchOutCurve: Curves.easeInCubic,
+                                        transitionBuilder: (child, animation) =>
+                                            FadeTransition(
+                                              opacity: animation,
+                                              child: ScaleTransition(
+                                                scale: Tween<double>(
+                                                  begin: .985,
+                                                  end: 1,
+                                                ).animate(animation),
+                                                child: child,
+                                              ),
+                                            ),
+                                        child: isCurrent
+                                            ? GlassSurface(
+                                                key: const ValueKey(
+                                                  'current-track',
+                                                ),
+                                                borderRadius: 14,
+                                                padding: EdgeInsets.zero,
+                                                tint: const Color(0x33202730),
+                                                blurSigma: 0,
+                                                showShadow: false,
+                                                child: Material(
+                                                  type:
+                                                      MaterialType.transparency,
+                                                  child: tile,
+                                                ),
+                                              )
+                                            : Material(
+                                                key: const ValueKey(
+                                                  'queue-track',
+                                                ),
+                                                type: MaterialType.transparency,
+                                                child: tile,
+                                              ),
                                       ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          );
-                          },
+                              );
+                            },
                           ),
                         ),
                       );
@@ -1016,6 +1152,18 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         : const <String, dynamic>{};
     return _artistLabel(media['artists']) ??
         (media['artist'] is String ? media['artist'] as String : null);
+  }
+
+  String _queueTrackTitle(Map<String, dynamic> item) {
+    final media = item['media_item'] is Map
+        ? Map<String, dynamic>.from(item['media_item'] as Map)
+        : const <String, dynamic>{};
+    final trackTitle = media['name'];
+    if (trackTitle is String && trackTitle.isNotEmpty) return trackTitle;
+    final queueTitle = item['name'];
+    return queueTitle is String && queueTitle.isNotEmpty
+        ? queueTitle
+        : 'Unknown item';
   }
 
   double _estimatedQueueOffset(List<Map<String, dynamic>> items, int rowIndex) {

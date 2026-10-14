@@ -204,6 +204,7 @@ class MusicAssistantRepository {
       playerName: queue?.displayName ?? playerId,
       queueId: queueId,
       currentIndex: queue?.currentIndex,
+      indexInBuffer: queue?.indexInBuffer,
       items: items,
       autoplayEnabled: queue?.dontStopTheMusicEnabled ?? false,
     );
@@ -227,7 +228,9 @@ class MusicAssistantRepository {
       final eventObjectId = event['object_id'] ?? event['objectId'];
       final eventData = event['data'];
       final dataQueueId = eventData is Map
-          ? eventData['queue_id'] ?? eventData['queueId'] ?? eventData['player_id']
+          ? eventData['queue_id'] ??
+                eventData['queueId'] ??
+                eventData['player_id']
           : null;
       if (eventObjectId != playerId &&
           eventObjectId != _activeQueueIds[playerId] &&
@@ -263,6 +266,9 @@ class MusicAssistantRepository {
     String? queueItemId,
   }) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
+    if (index <= (queue?.indexInBuffer ?? 0)) {
+      throw StateError('This queue item is already buffered for playback.');
+    }
     await _client.playerQueues.deleteItem(
       queue?.queueId ?? playerId,
       queueItemId ?? index,
@@ -302,15 +308,15 @@ class MusicAssistantRepository {
   }
 
   Future<MediaItemPalette?> fetchImagePalette(String imageId) async {
-  final response = await _client.sendCommand(
-    'metadata/get_image_palette',
-    args: {'image_id': imageId},
-  );
-  if (response is Map) {
-    return MediaItemPalette.fromJson(Map<String, dynamic>.from(response));
+    final response = await _client.sendCommand(
+      'metadata/get_image_palette',
+      args: {'image_id': imageId},
+    );
+    if (response is Map) {
+      return MediaItemPalette.fromJson(Map<String, dynamic>.from(response));
+    }
+    return null;
   }
-  return null;
-}
 
   Future<String?> fetchProviderIcon(String provider) async {
     final response = await _client.sendCommand(
