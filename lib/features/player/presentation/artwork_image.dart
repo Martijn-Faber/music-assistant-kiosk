@@ -10,12 +10,14 @@ class ArtworkImage extends StatelessWidget {
     required this.serverUrl,
     required this.token,
     this.size = 164,
+    this.showShadow = true,
   });
 
   final String? imageUrl;
   final String serverUrl;
   final String token;
   final double size;
+  final bool showShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +37,15 @@ class ArtworkImage extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
+        boxShadow: showShadow
+            ? const [
+                BoxShadow(
+                  color: Color(0x44000000),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ]
+            : null,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -52,8 +56,14 @@ class ArtworkImage extends StatelessWidget {
               : Image(
                   image: imageProvider,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, progress) =>
-                      progress == null ? child : _placeholder(loading: true),
+                  gaplessPlayback: true,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [_placeholder(loading: true), child],
+                    );
+                  },
                   errorBuilder: (context, error, stackTrace) => _placeholder(),
                 ),
         ),

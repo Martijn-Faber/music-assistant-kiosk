@@ -12,6 +12,7 @@ import '../../settings/presentation/player_settings_page.dart';
 import 'album_backdrop.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
+import 'player_queue_controller.dart';
 import 'player_queue_sheet.dart';
 import 'player_volume_dialog.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
@@ -223,7 +224,7 @@ class PlayerScreen extends StatelessWidget {
         : NowPlayingPage(
             player: player,
             repository: repository,
-            onShowQueue: () => showModalBottomSheet<void>(
+            onShowQueue: (queueController) => showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
               sheetAnimationStyle: const AnimationStyle(
@@ -239,6 +240,7 @@ class PlayerScreen extends StatelessWidget {
               showDragHandle: false,
               builder: (context) => PlayerQueueSheet(
                 repository: repository,
+                queueController: queueController,
                 playerId: player.playerId,
                 initialMediaUri: currentMedia?.uri,
                 onQueueCleared: onQueueCleared,

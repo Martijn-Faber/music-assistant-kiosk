@@ -187,26 +187,20 @@ class MusicAssistantRepository {
   }
 
   Future<PlayerQueueSnapshot> fetchQueue(String playerId) async {
-    final queue = await _client.playerQueues.getActiveQueue(playerId);
-    final queueId = queue?.queueId ?? playerId;
-    _activeQueueIds[playerId] = queueId;
-    final response = await _client.sendCommand(
-      'player_queues/items',
-      args: {'queue_id': queueId, 'limit': 500, 'offset': 0},
+    final queue = await _playerApiClient.getQueueSnapshot(
+      playerId,
+      limit: 500,
     );
-    final items = response is List
-        ? response
-              .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList(growable: false)
-        : const <Map<String, dynamic>>[];
+    _activeQueueIds[playerId] = queue.queueId;
     return PlayerQueueSnapshot(
-      playerName: queue?.displayName ?? playerId,
-      queueId: queueId,
-      currentIndex: queue?.currentIndex,
-      indexInBuffer: queue?.indexInBuffer,
-      items: items,
-      autoplayEnabled: queue?.dontStopTheMusicEnabled ?? false,
+      playerName: queue.displayName ?? playerId,
+      queueId: queue.queueId,
+      currentIndex: queue.currentIndex,
+      indexInBuffer: queue.indexInBuffer,
+      items: queue.items
+          .map((item) => item.toJson())
+          .toList(growable: false),
+      autoplayEnabled: queue.autoplayEnabled,
     );
   }
 

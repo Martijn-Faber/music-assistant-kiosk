@@ -8,6 +8,7 @@ import '../data/music_assistant_repository.dart';
 import '../domain/player_queue_snapshot.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
+import 'player_queue_controller.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import 'player_glass_widgets.dart';
@@ -16,12 +17,14 @@ class PlayerQueueSheet extends StatefulWidget {
   const PlayerQueueSheet({
     super.key,
     required this.repository,
+    required this.queueController,
     required this.playerId,
     required this.initialMediaUri,
     required this.onQueueCleared,
   });
 
   final MusicAssistantRepository repository;
+  final PlayerQueueController queueController;
   final String playerId;
   final String? initialMediaUri;
   final ValueChanged<String> onQueueCleared;
@@ -59,7 +62,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   int? _lastAutoScrolledQueueRowIndex;
   late String? _currentPlayingUri;
   late final void Function() _unsubscribeFromPlayerEvents;
-  late final void Function() _unsubscribeFromQueueEvents;
   Timer? _queueRefreshTimer;
   bool _queueRefreshInFlight = false;
   bool _queueRefreshPending = false;
@@ -69,10 +71,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     super.initState();
     _queue = _loadQueue();
     _currentPlayingUri = widget.initialMediaUri;
-    _unsubscribeFromQueueEvents = widget.repository.listenToQueueEvents(
-      playerId: widget.playerId,
-      onEvent: _onQueueEvent,
-    );
+    widget.queueController.addListener(_onSharedQueueChanged);
     _unsubscribeFromPlayerEvents = widget.repository.listenToPlayerEvents(
       onChanged: (player) {
         if (player.playerId != widget.playerId ||
@@ -95,19 +94,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     );
   }
 
-  void _onQueueEvent(Map<String, dynamic> event) {
+  void _onSharedQueueChanged() {
     if (!mounted) return;
-    final eventType = event['event'];
-    // Only queue creation and item changes affect this list. Player events
-    // update the current-item highlight; time events need no list refresh.
-    if (eventType != 'queue_items_updated' &&
-        eventType != 'queue_added' &&
-        eventType != 'queue_updated') {
-      return;
-    }
     if (_isRemovingQueueItem) {
-      // Keep the event: the server may publish the delete while the optimistic
-      // request is still completing. Refresh again after the first fetch.
+      // Keep the shared update: the optimistic delete is still settling.
       _queueRefreshPending = true;
       return;
     }
@@ -115,9 +105,25 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       _queueRefreshPending = true;
       return;
     }
-    // The server may emit several queue events for one operation. Coalesce
-    // them into one fetch so the popup always renders the final queue state.
-    _scheduleQueueRefresh();
+    final snapshot = widget.queueController.snapshot;
+    if (snapshot == null) return;
+    final previousQueue = _lastQueueSnapshot;
+    _movedQueueItemKeys = _queueItemsOverride == null && previousQueue != null
+        ? _findMovedQueueItems(previousQueue.items, snapshot.items)
+        : {};
+    for (final itemKey in _movedQueueItemKeys) {
+      _queueItemMoveVersions.update(
+        itemKey,
+        (version) => version + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    _lastQueueSnapshot = snapshot;
+    _queue = Future.value(snapshot);
+    if (_autoplayEnabled != snapshot.autoplayEnabled) {
+      _autoplayEnabled = snapshot.autoplayEnabled;
+    }
+    setState(() {});
   }
 
   void _scheduleQueueRefresh({
@@ -137,7 +143,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   void _startQueueRefresh() {
     _queueRefreshInFlight = true;
-    final refresh = _loadQueue();
+    final refresh = _loadQueue(forceRefresh: true);
     setState(() {
       _queue = refresh;
     });
@@ -160,9 +166,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     _scheduleQueueRefresh(delay: const Duration(milliseconds: 320));
   }
 
-  Future<PlayerQueueSnapshot> _loadQueue() async {
+  Future<PlayerQueueSnapshot> _loadQueue({bool forceRefresh = false}) async {
     final previousQueue = _lastQueueSnapshot;
-    final queue = await widget.repository.fetchQueue(widget.playerId);
+    final queue = forceRefresh
+        ? await widget.queueController.refresh()
+        : await widget.queueController.load();
     _movedQueueItemKeys = _queueItemsOverride == null && previousQueue != null
         ? _findMovedQueueItems(previousQueue.items, queue.items)
         : {};
@@ -286,7 +294,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   void dispose() {
     _routeAnimation?.removeStatusListener(_onRouteStatusChanged);
     _unsubscribeFromPlayerEvents();
-    _unsubscribeFromQueueEvents();
+    widget.queueController.removeListener(_onSharedQueueChanged);
     _queueRefreshTimer?.cancel();
     _dismissProgress.dispose();
     _sheetController.dispose();

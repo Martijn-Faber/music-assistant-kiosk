@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/playback_quality_info.dart';
-import 'artwork_image.dart';
 import 'player_glass_widgets.dart';
+import 'player_queue_controller.dart';
+import 'queue_artwork_stack.dart';
 import 'provider_identity.dart';
 
 /// The full-screen page shown while the selected player has an active item.
-class NowPlayingPage extends StatelessWidget {
+class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({
     super.key,
     required this.player,
@@ -26,10 +26,59 @@ class NowPlayingPage extends StatelessWidget {
 
   final MusicAssistantPlayer player;
   final MusicAssistantRepository repository;
-  final VoidCallback onShowQueue;
+  final ValueChanged<PlayerQueueController> onShowQueue;
   final String? qualityLabel;
   final String? playerActionError;
   final String? error;
+
+  @override
+  State<NowPlayingPage> createState() => _NowPlayingPageState();
+}
+
+class _NowPlayingPageState extends State<NowPlayingPage> {
+  MusicAssistantPlayer get player => widget.player;
+  MusicAssistantRepository get repository => widget.repository;
+  ValueChanged<PlayerQueueController> get onShowQueue => widget.onShowQueue;
+  String? get qualityLabel => widget.qualityLabel;
+  String? get playerActionError => widget.playerActionError;
+  String? get error => widget.error;
+
+  late PlayerQueueController _queueController;
+
+  @override
+  void initState() {
+    super.initState();
+    _createQueueController();
+  }
+
+  void _createQueueController() {
+    _queueController = PlayerQueueController(
+      repository: repository,
+      playerId: player.playerId,
+    );
+    unawaited(
+      _queueController.load().then<void>(
+        (_) {},
+        onError: (Object _, StackTrace __) {},
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant NowPlayingPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.player.playerId != widget.player.playerId ||
+        oldWidget.repository != widget.repository) {
+      _queueController.dispose();
+      _createQueueController();
+    }
+  }
+
+  @override
+  void dispose() {
+    _queueController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -37,19 +86,16 @@ class NowPlayingPage extends StatelessWidget {
       final wide = constraints.maxWidth > constraints.maxHeight;
       final compact = constraints.maxWidth < 560;
       final desktop = constraints.maxWidth >= 900;
-      final artworkSize = desktop
+      final artworkSize = (desktop
           ? (constraints.maxHeight * .64).clamp(200.0, 560.0).toDouble()
           : (constraints.maxHeight - 16)
                 .clamp(compact ? 116.0 : 150.0, compact ? 176.0 : 220.0)
-                .toDouble();
-      final artwork = SizedBox.square(
-        dimension: artworkSize,
-        child: ArtworkImage(
-          imageUrl: player.currentMedia?.imageUrl,
-          serverUrl: repository.serverUrl,
-          token: repository.token,
-          size: artworkSize,
-        ),
+                .toDouble()) * .9;
+      final artwork = QueueArtworkStack(
+        player: player,
+        repository: repository,
+        queueController: _queueController,
+        size: artworkSize,
       );
       final details = _details(
         context,
@@ -62,50 +108,47 @@ class NowPlayingPage extends StatelessWidget {
       if (wide) {
         return Stack(
           children: [
-          Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact
-                ? 22
-                : desktop
-                ? 64
-                : 48,
-            vertical: compact
-                ? 16
-                : desktop
-                ? 36
-                : 28,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: desktop ? 1440 : constraints.maxWidth,
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: sideInset,
+                vertical: compact
+                    ? 16
+                    : desktop
+                    ? 36
+                    : 28,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
-                        child: details,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: desktop ? 1440 : constraints.maxWidth,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: details,
+                          ),
+                        ),
                       ),
-                    ),
+                      SizedBox(
+                        width: desktop
+                            ? 64
+                            : compact
+                            ? 20
+                            : 40,
+                      ),
+                      artwork,
+                    ],
                   ),
-                  SizedBox(
-                    width: desktop
-                        ? 64
-                        : compact
-                        ? 20
-                        : 40,
-                  ),
-                  artwork,
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-        Positioned(top: 14, right: sideInset, child: _headerActions()),
-        ]);
+            Positioned(top: 14, right: sideInset, child: _headerActions()),
+          ],
+        );
       }
       return Stack(
         children: [
@@ -174,7 +217,7 @@ class NowPlayingPage extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
         child: InkWell(
-          onTap: onShowQueue,
+          onTap: () => onShowQueue(_queueController),
           borderRadius: BorderRadius.circular(999),
           child: const GlassPill(
             padding: EdgeInsets.all(12),
