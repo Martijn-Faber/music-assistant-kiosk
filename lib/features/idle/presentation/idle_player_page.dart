@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:app/design_system/glass_tokens.dart';
 
 import 'package:app/features/player/data/music_assistant_repository.dart';
 import 'package:app/features/player/domain/player_summary.dart';
@@ -12,6 +11,8 @@ import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
 import '../../player/presentation/artwork_image.dart';
 import '../../player/presentation/provider_identity.dart';
+
+import 'package:app/models/media_item_palette.dart';
 
 class IdlePlayerPage extends StatefulWidget {
   const IdlePlayerPage({
@@ -262,7 +263,7 @@ class _RadioStationPager extends StatefulWidget {
 
 class _RadioStationPagerState extends State<_RadioStationPager> {
   int _page = 0;
-  final Map<String, Map<String, dynamic>> _palettes = {};
+  final Map<String, MediaItemPalette> _palettes = {};
 
   @override
   void initState() {
@@ -271,7 +272,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
   }
 
   Future<void> _loadPalettes() async {
-    final entries = await Future.wait<MapEntry<String, Map<String, dynamic>>?>(
+    final entries = await Future.wait<MapEntry<String, MediaItemPalette>?>(
       widget.stations.map((station) async {
         final imageId = station.imageProxyId;
         if (imageId == null) return null;
@@ -291,24 +292,11 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
     });
   }
 
-  Color? _colorFromPaletteValue(dynamic value) {
-    if (value is! List || value.length < 3 || value.take(3).any((v) => v is! num)) {
-      return null;
-    }
-    return Color.fromARGB(
-      255,
-      (value[0] as num).toInt().clamp(0, 255),
-      (value[1] as num).toInt().clamp(0, 255),
-      (value[2] as num).toInt().clamp(0, 255),
-    );
-  }
-
-  Color _paletteColor(Map<String, dynamic>? palette) {
-    return _colorFromPaletteValue(
-          palette?['background_dark'] ?? palette?['primary'] ?? palette?['accent'],
-        ) ??
-        const Color(0xFF27312F);
-  }
+  Color _paletteColor(MediaItemPalette? palette) =>
+    palette?.backgroundDarkColor ??
+    palette?.primaryColor ??
+    palette?.accentColor ??
+    const Color(0xFF27312F);
 
   @override
   Widget build(BuildContext context) {
@@ -363,15 +351,10 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                 token: widget.repository.token,
               );
               final isLoading = widget.loadingStationId == item.id;
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                  onTap: widget.onSelect == null
-                      ? null
-                      : () => widget.onSelect!(item),
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onSelect == null ? null : () => widget.onSelect!(item),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     child: Column(
@@ -401,9 +384,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                                   const ColoredBox(
                                     color: Color(0x77000000),
                                     child: Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                      ),
+                                      child: CircularProgressIndicator(color: Colors.white),
                                     ),
                                   ),
                               ],
@@ -428,58 +409,29 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                       ],
                     ),
                   ),
-                    ),
-                  ),
-                  if (item.provider != null)
-                    Positioned(
-                      top: 2,
-                      right: 2,
-                      child: IconButton(
-                        tooltip: 'Radio station details',
-                        constraints: const BoxConstraints.tightFor(
-                          width: 48,
-                          height: 48,
-                        ),
-                        padding: const EdgeInsets.all(14),
-                        onPressed: () => showDialog<void>(
-                          context: context,
-                          builder: (_) => _RadioProviderDetailsDialog(
-                            station: item,
-                            repository: widget.repository,
-                          ),
-                        ),
-                        icon: const Icon(
-                          CupertinoIcons.info,
-                          size: GlassTokens.iconSizeS,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               );
             },
           ),
+          if (station.provider != null)
           Positioned(
-            top: 0,
-            left: 8,
-            bottom: 0,
-            child: IgnorePointer(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = _indicatorStart; i < _indicatorStart + _indicatorCount; i++) ...[
-                    if (i > _indicatorStart) const SizedBox(height: 6),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 6,
-                      height: i == _page ? 16 : 6,
-                      decoration: BoxDecoration(
-                        color: i == _page ? Colors.white : Colors.white54,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                  ],
-                ],
+            top: 2,
+            right: 2,
+            child: IconButton(
+              tooltip: 'Radio station details',
+              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+              padding: const EdgeInsets.all(14),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => _RadioProviderDetailsDialog(
+                  station: station,
+                  repository: widget.repository,
+                ),
+              ),
+              icon: const Icon(
+                CupertinoIcons.info,
+                size: GlassTokens.iconSizeS,
+                color: Colors.white70,
               ),
             ),
           ),
@@ -487,13 +439,6 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
       ),
     );
   }
-
-  int get _indicatorCount => widget.stations.length.clamp(0, 3).toInt();
-
-  int get _indicatorStart =>
-      (_page - 1)
-          .clamp(0, widget.stations.length - _indicatorCount)
-          .toInt();
 }
 
 class _RadioProviderDetailsDialog extends StatelessWidget {
