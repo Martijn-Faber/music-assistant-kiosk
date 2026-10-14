@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -21,11 +19,16 @@ class ArtworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageProvider = artworkImageProvider(
+    final sourceProvider = artworkImageProvider(
       imageUrl: imageUrl,
       serverUrl: serverUrl,
       token: token,
     );
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final decodeWidth = (size * pixelRatio).round().clamp(1, 512).toInt();
+    final imageProvider = sourceProvider == null
+        ? null
+        : ResizeImage(sourceProvider, width: decodeWidth);
 
     return Container(
       width: size,
@@ -60,52 +63,33 @@ class ArtworkImage extends StatelessWidget {
 
   Widget _placeholder({bool loading = false}) {
     return ClipRect(
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF242832).withValues(alpha: 0.44),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.18),
-              width: 1,
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF242832),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.18),
+            width: 1,
           ),
-          child: Center(
-            child: loading
-                ? SizedBox.square(
-                    dimension: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white.withValues(alpha: 0.78),
-                    ),
-                  )
-                : Icon(
-                    CupertinoIcons.music_albums,
-                    size: GlassTokens.iconSizeXl,
-                    color: Colors.white.withValues(alpha: 0.5),
+        ),
+        child: Center(
+          child: loading
+              ? SizedBox.square(
+                  dimension: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white.withValues(alpha: 0.78),
                   ),
-          ),
+                )
+              : Icon(
+                  CupertinoIcons.music_albums,
+                  size: GlassTokens.iconSizeXl,
+                  color: Colors.white.withValues(alpha: 0.5),
+                ),
         ),
       ),
     );
   }
 }
-
-// NetworkImage? artworkImageProvider({
-//   required String? imageUrl,
-//   required String serverUrl,
-//   required String token,
-// }) {
-//   final uri = _resolveArtworkUri(imageUrl, serverUrl);
-//   if (uri == null) return null;
-
-//   final serverUri = Uri.tryParse(serverUrl);
-//   final useAuthorization = serverUri != null && uri.origin == serverUri.origin;
-//   return NetworkImage(
-//     uri.toString(),
-//     headers: useAuthorization ? {'Authorization': 'Bearer $token'} : null,
-//   );
-// }
 
 NetworkImage? artworkImageProvider({
   required String? imageUrl,
@@ -124,20 +108,6 @@ NetworkImage? artworkImageProvider({
     headers: useAuthorization ? {'Authorization': 'Bearer $token'} : null,
   );
 }
-
-// Uri? _resolveArtworkUri(String? value, String baseUrl) {
-//   if (value == null || value.trim().isEmpty) return null;
-//   final uri = Uri.tryParse(value.trim());
-//   if (uri == null) return null;
-//   if (uri.hasScheme) {
-//     return {'http', 'https'}.contains(uri.scheme) ? uri : null;
-//   }
-
-//   final baseUri = Uri.tryParse(baseUrl);
-//   if (baseUri == null) return null;
-//   final resolved = baseUri.resolveUri(uri);
-//   return {'http', 'https'}.contains(resolved.scheme) ? resolved : null;
-// }
 
 Uri? _resolveArtworkUri(String? value, String baseUrl) {
   if (value == null || value.trim().isEmpty) return null;
