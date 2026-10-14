@@ -279,6 +279,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       );
       if (mounted) {
         setState(() => _currentQueueRowIndexOverride = rowIndex);
+        Navigator.of(context).pop();
       }
     } catch (error, stackTrace) {
       debugPrint('Could not play queue item $queueItemId: $error');
