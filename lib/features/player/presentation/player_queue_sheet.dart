@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -46,6 +48,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   int? _startingQueueRowIndex;
   int? _currentQueueRowIndexOverride;
   bool _didPositionQueueAtCurrentItem = false;
+  bool _queuePositioned = false;
   int? _lastAutoScrolledQueueRowIndex;
   late String? _currentPlayingUri;
   late final void Function() _unsubscribeFromPlayerEvents;
@@ -530,10 +533,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           _currentQueueRowIndexOverride ??
                           (uriMatch >= 0 ? uriMatch : serverIndexMatch);
                       if (currentQueueRowIndex >= 0 &&
-                          currentQueueRowIndex !=
-                              _lastAutoScrolledQueueRowIndex) {
-                        final shouldExpandSheet =
-                            !_didPositionQueueAtCurrentItem;
+                          currentQueueRowIndex != _lastAutoScrolledQueueRowIndex) {
+                        final isInitialPosition = !_didPositionQueueAtCurrentItem;
+                        final shouldExpandSheet = isInitialPosition;
                         _didPositionQueueAtCurrentItem = true;
                         _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
                         WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -562,29 +564,40 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               (position.maxScrollExtent - expansionPixels)
                                   .clamp(0.0, position.maxScrollExtent)
                                   .toDouble();
-                          final sheetAnimation = expandSheet
-                              ? _sheetController.animateTo(
+                          if (expandSheet) {
+                            unawaited(_sheetController.animateTo(
                                   _maxExtent,
                                   duration: const Duration(milliseconds: 300),
                                   curve: Curves.easeOutCubic,
-                                )
-                              : Future<void>.value();
-                          final scrollAnimation = scrollController.animateTo(
-                            targetOffset
-                                .clamp(0.0, targetMaxScrollExtent)
-                                .toDouble(),
-                            duration: const Duration(milliseconds: 420),
-                            curve: Curves.easeInOutCubic,
-                          );
-                          await Future.wait<void>([
-                            sheetAnimation,
-                            scrollAnimation,
-                          ]);
+                                ));
+                          }
+                          final offset = targetOffset
+                              .clamp(0.0, targetMaxScrollExtent)
+                              .toDouble();
+                          if (isInitialPosition) {
+                            scrollController.jumpTo(offset);
+                          } else {
+                            unawaited(
+                              scrollController.animateTo(
+                                offset,
+                                duration: const Duration(milliseconds: 900),
+                                curve: Curves.easeInOutQuart,
+                              ),
+                            );
+                          }
+                          _lastAutoScrolledQueueRowIndex = currentQueueRowIndex;
+                          if (mounted) setState(() => _queuePositioned = true);
+                        });
+                      } else if (!_queuePositioned) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) setState(() => _queuePositioned = true);
                         });
                       }
                       return GlassScrollFade(
                         controller: scrollController,
-                        child: ListView.separated(
+                        child: Opacity(
+                          opacity: _queuePositioned ? 1 : 0,
+                          child: ListView.separated(
                           controller: scrollController,
                           itemCount: queueItems.length,
                           separatorBuilder: (_, index) {
@@ -800,6 +813,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             ),
                           );
                           },
+                          ),
                         ),
                       );
                     },

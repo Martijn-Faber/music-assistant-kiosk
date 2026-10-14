@@ -227,13 +227,12 @@ class PlayerScreen extends StatelessWidget {
               backgroundColor: Colors.transparent,
               elevation: 0,
               showDragHandle: false,
-              builder: (context) =>
-                  PlayerQueueSheet(
-                    repository: repository,
-                    playerId: player.id,
-                    initialMediaUri: player.mediaUri,
-                    onQueueCleared: onQueueCleared,
-                  ),
+              builder: (context) => PlayerQueueSheet(
+                repository: repository,
+                playerId: player.id,
+                initialMediaUri: player.mediaUri,
+                onQueueCleared: onQueueCleared,
+              ),
             ),
             qualityLabel: qualityLabel,
             playerActionError: playerActionError,
