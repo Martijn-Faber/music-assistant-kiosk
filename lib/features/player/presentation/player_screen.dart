@@ -17,6 +17,12 @@ import 'player_queue_sheet.dart';
 import 'player_volume_dialog.dart';
 
 class PlayerScreen extends StatelessWidget {
+  // Keep the pager alive while SessionGate rebuilds PlayerScreen for player
+  // updates. Recreating this key on every build reset the selected page to
+  // the player page whenever metadata or volume changed.
+  static final GlobalKey<_PlayerPagesState> _pagerKey =
+      GlobalKey<_PlayerPagesState>();
+
   const PlayerScreen({
     super.key,
     required this.repository,
@@ -193,12 +199,11 @@ class PlayerScreen extends StatelessWidget {
 
     final hasCurrentTrack = player.title?.trim().isNotEmpty ?? false;
     final isPlaying = player.playbackState.toLowerCase() == 'playing';
-    final pagerKey = GlobalKey<_PlayerPagesState>();
     final idleHome = IdlePlayerPage(
       key: ValueKey('${repository.serverUrl}:$selectedPlayerId'),
       repository: repository,
       player: player,
-      onPlaybackStarted: () => pagerKey.currentState?._openPlayerPage(),
+      onPlaybackStarted: () => _pagerKey.currentState?._openPlayerPage(),
     );
     final isIdle = !hasCurrentTrack && !isPlaying;
     final nowPlayingLabel = hasCurrentTrack
@@ -235,7 +240,7 @@ class PlayerScreen extends StatelessWidget {
             error: error,
           );
     return _PlayerPages(
-      key: pagerKey,
+      key: _pagerKey,
       isIdle: isIdle,
       playerName: player.name,
       groupMemberCount: player.groupMemberCount,
