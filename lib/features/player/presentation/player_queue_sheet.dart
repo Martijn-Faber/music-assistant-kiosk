@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:music_assistant_api/music_assistant_api.dart';
+import 'package:flutter/services.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_queue_snapshot.dart';
@@ -961,6 +961,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                       .toDouble();
                                 },
                                 onDismissed: (_) {
+                                  unawaited(
+                                    SystemSound.play(SystemSoundType.click),
+                                  );
                                   final previousItems =
                                       List<Map<String, dynamic>>.of(queueItems);
                                   final updatedItems =
