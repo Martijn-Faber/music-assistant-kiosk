@@ -492,6 +492,21 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                             ),
                           ),
                         ),
+                        if (item.provider case final provider?) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            '${provider[0].toUpperCase()}${provider.substring(1)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.68),
+                              fontSize: GlassTokens.fontSize12,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

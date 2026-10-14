@@ -15,6 +15,24 @@ class RadioStation {
   final String? imageProxyId;
   final bool isFavorite;
 
+  String? get provider {
+    final mappings = media['provider_mappings'];
+    if (mappings is! List) return null;
+    for (final mapping in mappings) {
+      if (mapping is! Map) continue;
+      final value = _firstString([
+        mapping['provider_domain'],
+        mapping['provider_instance'],
+      ]);
+      if (value != null) {
+        // Instances often append a generated identifier (for example
+        // `tunein--abc123`); the domain is the useful, readable provider.
+        return value.split('--').first;
+      }
+    }
+    return null;
+  }
+
   factory RadioStation.fromMap(Map<String, dynamic> data) {
     final nestedMedia = data['media_item'];
     final media = nestedMedia is Map
