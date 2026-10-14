@@ -222,6 +222,12 @@ class PlayerScreen extends StatelessWidget {
             onShowQueue: () => showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
+              sheetAnimationStyle: const AnimationStyle(
+                duration: Duration(milliseconds: 420),
+                reverseDuration: Duration(milliseconds: 520),
+                curve: Curves.easeOutCubic,
+                reverseCurve: Curves.easeInOutCubic,
+              ),
               enableDrag: false,
               useSafeArea: true,
               backgroundColor: Colors.transparent,
