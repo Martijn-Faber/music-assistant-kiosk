@@ -8,6 +8,7 @@ import 'package:app/features/player/domain/player_summary.dart';
 import 'package:app/features/player/domain/playlist.dart';
 import 'package:app/features/player/domain/radio_station.dart';
 import '../../../design_system/glass_card.dart';
+import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
 import '../../player/presentation/artwork_image.dart';
 
@@ -32,35 +33,16 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   String? _startingStationId;
   String? _startingPlaylistUri;
   final ScrollController _playlistScrollController = ScrollController();
-  bool _fadePlaylistTop = false;
-  bool _fadePlaylistBottom = false;
 
   @override
   void initState() {
     super.initState();
-    _playlistScrollController.addListener(_updatePlaylistFades);
     _content = _loadContent();
-  }
-
-  void _updatePlaylistFades() {
-    if (!_playlistScrollController.hasClients) return;
-    final position = _playlistScrollController.position;
-    if (!position.hasContentDimensions) return;
-    final fadeTop = position.pixels > 1;
-    final fadeBottom = position.extentAfter > 1;
-    if (fadeTop != _fadePlaylistTop || fadeBottom != _fadePlaylistBottom) {
-      setState(() {
-        _fadePlaylistTop = fadeTop;
-        _fadePlaylistBottom = fadeBottom;
-      });
-    }
   }
 
   @override
   void dispose() {
-    _playlistScrollController
-      ..removeListener(_updatePlaylistFades)
-      ..dispose();
+    _playlistScrollController.dispose();
     super.dispose();
   }
 
@@ -183,81 +165,28 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                         const SizedBox(height: 8),
                         Expanded(
                           child: playlists.isNotEmpty
-                              ? Stack(
-                                  children: [
-                                    NotificationListener<ScrollMetricsNotification>(
-                                      onNotification: (_) {
-                                        _updatePlaylistFades();
-                                        return false;
-                                      },
-                                      child: TweenAnimationBuilder<double>(
-                                        tween: Tween(
-                                          begin: _fadePlaylistTop ? 1 : 0,
-                                          end: _fadePlaylistTop ? 1 : 0,
-                                        ),
-                                        duration: const Duration(
-                                          milliseconds: 180,
-                                        ),
-                                        builder: (context, topFade, child) =>
-                                            TweenAnimationBuilder<double>(
-                                          tween: Tween(
-                                            begin: _fadePlaylistBottom ? 1 : 0,
-                                            end: _fadePlaylistBottom ? 1 : 0,
-                                          ),
-                                          duration: const Duration(
-                                            milliseconds: 180,
-                                          ),
-                                          builder: (context, bottomFade, child) =>
-                                              ShaderMask(
-                                            blendMode: BlendMode.dstIn,
-                                            shaderCallback: (bounds) =>
-                                                LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    Color.lerp(
-                                                      Colors.white,
-                                                      Colors.transparent,
-                                                      topFade,
-                                                    )!,
-                                                    Colors.white,
-                                                    Colors.white,
-                                                    Color.lerp(
-                                                      Colors.white,
-                                                      Colors.transparent,
-                                                      bottomFade,
-                                                    )!,
-                                                  ],
-                                                  stops: const [0, 0.16, 0.84, 1],
-                                                ).createShader(bounds),
-                                            child: child,
-                                          ),
-                                          child: child,
-                                        ),
-                                        child: ListView.separated(
-                                          controller: _playlistScrollController,
-                                          padding: EdgeInsets.zero,
-                                          itemCount: playlists.length,
-                                          separatorBuilder: (_, __) =>
-                                              const SizedBox(height: 8),
-                                          itemBuilder: (context, index) {
-                                            final playlist = playlists[index];
-                                            return _PlaylistRow(
-                                              playlist: playlist,
-                                              repository: widget.repository,
-                                              isLoading:
-                                                  _startingPlaylistUri ==
-                                                      playlist.uri,
-                                              onTap: playerAvailable && !isBusy
-                                                  ? () =>
-                                                        _playPlaylist(playlist)
-                                                  : null,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              ? GlassScrollFade(
+                                  controller: _playlistScrollController,
+                                  child: ListView.separated(
+                                    controller: _playlistScrollController,
+                                    padding: EdgeInsets.zero,
+                                    itemCount: playlists.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final playlist = playlists[index];
+                                      return _PlaylistRow(
+                                        playlist: playlist,
+                                        repository: widget.repository,
+                                        isLoading:
+                                            _startingPlaylistUri ==
+                                                playlist.uri,
+                                        onTap: playerAvailable && !isBusy
+                                            ? () => _playPlaylist(playlist)
+                                            : null,
+                                      );
+                                    },
+                                  ),
                                 )
                               : const _EmptyPlaceholder(
                                   message: 'Geen afspeellijsten gevonden',
