@@ -781,8 +781,11 @@ class _PlaybackQualityDialog extends StatelessWidget {
                                   final encoded = dataUri.substring(separator + 1);
                                   final bytes = base64Decode(encoded);
                                   if (mediaType == 'image/svg+xml') {
+                                    final svg = _inlineSvgClassFills(
+                                      utf8.decode(bytes),
+                                    );
                                     return SvgPicture.memory(
-                                      bytes,
+                                      utf8.encode(svg),
                                       width: GlassTokens.iconSizeM,
                                       height: GlassTokens.iconSizeM,
                                       fit: BoxFit.contain,
@@ -915,6 +918,41 @@ class _PlaybackQualityDialog extends StatelessWidget {
       .where((part) => part.isNotEmpty)
       .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
+}
+
+/// flutter_svg does not apply CSS rules from `<style>` blocks. Inline simple
+/// class-based fill rules so provider logos retain their brand colors.
+String _inlineSvgClassFills(String svg) {
+  final fills = <String, String>{};
+  final styleBlocks = RegExp(
+    r'<style\b[^>]*>([\s\S]*?)</style\s*>',
+    caseSensitive: false,
+  );
+  for (final block in styleBlocks.allMatches(svg)) {
+    final css = block.group(1) ?? '';
+    final rules = RegExp(r'\.([\w-]+)\s*\{([^}]*)\}').allMatches(css);
+    for (final rule in rules) {
+      final fill = RegExp(
+        r'(?:^|;)\s*fill\s*:\s*([^;!]+)',
+        caseSensitive: false,
+      ).firstMatch(rule.group(2) ?? '');
+      if (fill != null) fills[rule.group(1)!] = fill.group(1)!.trim();
+    }
+  }
+
+  var result = svg.replaceAll(styleBlocks, '');
+  result = result.replaceAll(
+    RegExp(r'<style\b[^>]*/\s*>', caseSensitive: false),
+    '',
+  );
+  return result.replaceAllMapped(RegExp(r'class="([^"]+)"'), (match) {
+    final classes = match.group(1)!.split(RegExp(r'\s+'));
+    for (final className in classes) {
+      final fill = fills[className];
+      if (fill != null) return 'fill="$fill"';
+    }
+    return '';
+  });
 }
 
 class NothingPlayingPage extends StatelessWidget {
