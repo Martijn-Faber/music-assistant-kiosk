@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
-import '../domain/player_queue_snapshot.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
 import 'player_queue_controller.dart';
@@ -38,8 +38,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   static const double _initialExtent = .72;
   static const double _maxExtent = .94;
 
-  late Future<PlayerQueueSnapshot> _queue;
-  PlayerQueueSnapshot? _lastQueueSnapshot;
+  late Future<void> _queue;
+  List<MusicAssistantQueueItem>? _lastQueueItems;
   Set<String> _movedQueueItemKeys = {};
   // Revision keys retrigger move animations without remounting rows on refresh.
   final Map<String, int> _queueItemMoveVersions = {};
@@ -52,7 +52,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   bool _isTogglingAutoplay = false;
   bool _isRemovingQueueItem = false;
   String? _removingQueueItemKey;
-  List<Map<String, dynamic>>? _queueItemsOverride;
+  List<MusicAssistantQueueItem>? _queueItemsOverride;
   int? _startingQueueRowIndex;
   int? _currentQueueRowIndexOverride;
   bool _didPositionQueueAtCurrentItem = false;
@@ -83,7 +83,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         setState(() {
           // Some player updates include a title but omit the URI. Keep the last
           // known URI in that case so the queue highlight does not fall back to
-          // an older currentIndex from the initial queue snapshot.
+          // an older currentIndex from the initially loaded queue.
           if (player.currentMedia?.uri != null) {
             _currentPlayingUri = player.currentMedia!.uri;
             _currentQueueRowIndexOverride = null;
@@ -105,11 +105,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       _queueRefreshPending = true;
       return;
     }
-    final snapshot = widget.queueController.snapshot;
-    if (snapshot == null) return;
-    final previousQueue = _lastQueueSnapshot;
-    _movedQueueItemKeys = _queueItemsOverride == null && previousQueue != null
-        ? _findMovedQueueItems(previousQueue.items, snapshot.items)
+    final queue = widget.queueController.queue!;
+    final queueItems = widget.queueController.items;
+    final previousItems = _lastQueueItems;
+    _movedQueueItemKeys = _queueItemsOverride == null && previousItems != null
+        ? _findMovedQueueItems(previousItems, queueItems)
         : {};
     for (final itemKey in _movedQueueItemKeys) {
       _queueItemMoveVersions.update(
@@ -118,10 +118,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         ifAbsent: () => 1,
       );
     }
-    _lastQueueSnapshot = snapshot;
-    _queue = Future.value(snapshot);
-    if (_autoplayEnabled != snapshot.autoplayEnabled) {
-      _autoplayEnabled = snapshot.autoplayEnabled;
+    _lastQueueItems = queueItems;
+    _queue = Future<void>.value();
+    if (_autoplayEnabled != queue.autoplayEnabled) {
+      _autoplayEnabled = queue.autoplayEnabled;
     }
     setState(() {});
   }
@@ -147,11 +147,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     setState(() {
       _queue = refresh;
     });
-    refresh.then((snapshot) {
+    refresh.then((_) {
       if (mounted &&
           identical(_queue, refresh) &&
           _queueItemsOverride != null &&
-          _queueItemsMatch(_queueItemsOverride!, snapshot.items)) {
+          _queueItemsMatch(_queueItemsOverride!, widget.queueController.items)) {
         // Retain the optimistic list until the server confirms the deletion.
         setState(() => _queueItemsOverride = null);
       }
@@ -166,13 +166,18 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     _scheduleQueueRefresh(delay: const Duration(milliseconds: 320));
   }
 
-  Future<PlayerQueueSnapshot> _loadQueue({bool forceRefresh = false}) async {
-    final previousQueue = _lastQueueSnapshot;
-    final queue = forceRefresh
-        ? await widget.queueController.refresh()
-        : await widget.queueController.load();
-    _movedQueueItemKeys = _queueItemsOverride == null && previousQueue != null
-        ? _findMovedQueueItems(previousQueue.items, queue.items)
+  Future<void> _loadQueue({bool forceRefresh = false}) async {
+    final previousItems = _lastQueueItems;
+    if (forceRefresh) {
+      await widget.queueController.refresh();
+    } else {
+      await widget.queueController.load();
+    }
+    final queue = widget.queueController.queue;
+    if (queue == null) return;
+    final queueItems = widget.queueController.items;
+    _movedQueueItemKeys = _queueItemsOverride == null && previousItems != null
+        ? _findMovedQueueItems(previousItems, queueItems)
         : {};
     for (final itemKey in _movedQueueItemKeys) {
       _queueItemMoveVersions.update(
@@ -181,16 +186,15 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         ifAbsent: () => 1,
       );
     }
-    _lastQueueSnapshot = queue;
+    _lastQueueItems = queueItems;
     if (mounted && _autoplayEnabled != queue.autoplayEnabled) {
       setState(() => _autoplayEnabled = queue.autoplayEnabled);
     }
-    return queue;
   }
 
   Set<String> _findMovedQueueItems(
-    List<Map<String, dynamic>> previousItems,
-    List<Map<String, dynamic>> currentItems,
+    List<MusicAssistantQueueItem> previousItems,
+    List<MusicAssistantQueueItem> currentItems,
   ) {
     // Only animate a reorder when the same uniquely identified items remain.
     if (previousItems.length != currentItems.length) return {};
@@ -223,8 +227,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   }
 
   bool _queueItemsMatch(
-    List<Map<String, dynamic>> optimisticItems,
-    List<Map<String, dynamic>> serverItems,
+    List<MusicAssistantQueueItem> optimisticItems,
+    List<MusicAssistantQueueItem> serverItems,
   ) {
     if (optimisticItems.length != serverItems.length) return false;
     for (var index = 0; index < optimisticItems.length; index++) {
@@ -236,19 +240,15 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     return true;
   }
 
-  String _queueItemFingerprint(Map<String, dynamic> item) {
+  String _queueItemFingerprint(MusicAssistantQueueItem item) {
     final id = _stableQueueItemId(item);
     if (id != null) return 'id:$id';
-    final uri = _queueItemUri(item);
-    final name = item['name'];
-    final artist = _queueArtist(item);
-    return 'media:${uri ?? ''}|${name is String ? name : ''}|${artist ?? ''}';
+    return 'media:${_queueItemUri(item) ?? ''}|${item.name}|'
+        '${_queueArtist(item) ?? ''}';
   }
 
-  String? _stableQueueItemId(Map<String, dynamic> item) {
-    final id = item['queue_item_id'];
-    return id is String && id.isNotEmpty ? id : null;
-  }
+  String? _stableQueueItemId(MusicAssistantQueueItem item) =>
+      item.queueItemId.isNotEmpty ? item.queueItemId : null;
 
   @override
   void didChangeDependencies() {
@@ -491,7 +491,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   }
 
   Future<void> _removeQueueItemOnServer({
-    required List<Map<String, dynamic>> previousItems,
+    required List<MusicAssistantQueueItem> previousItems,
     required String itemKey,
     required int queueIndex,
     required String? queueItemId,
@@ -669,11 +669,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                 ),
                 const SizedBox(height: 8),
                 Expanded(
-                  child: FutureBuilder<PlayerQueueSnapshot>(
+                  child: FutureBuilder<void>(
                     future: _queue,
-                    initialData: _lastQueueSnapshot,
                     builder: (context, snapshot) {
-                      if ((snapshot.data == null &&
+                      final loadedQueue = widget.queueController.queue;
+                      if ((loadedQueue == null &&
                               snapshot.connectionState !=
                                   ConnectionState.done) ||
                           !_routeEntered) {
@@ -689,7 +689,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           ),
                         );
                       }
-                      if (snapshot.hasError && snapshot.data == null) {
+                      if (snapshot.hasError && loadedQueue == null) {
                         return SingleChildScrollView(
                           controller: scrollController,
                           child: const SizedBox(
@@ -703,8 +703,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           ),
                         );
                       }
-                      final queue = snapshot.data!;
-                      final queueItems = _queueItemsOverride ?? queue.items;
+                      final queue = loadedQueue!;
+                      final queueItems =
+                          _queueItemsOverride ?? widget.queueController.items;
                       if (queueItems.isEmpty) {
                         return SingleChildScrollView(
                           controller: scrollController,
@@ -729,11 +730,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       final serverIndexMatch = currentQueueIndex == null
                           ? -1
                           : queueItems.indexWhere((item) {
-                              final itemIndex = item['index'] is num
-                                  ? (item['index'] as num).toInt()
-                                  : item['sort_index'] is num
-                                  ? (item['sort_index'] as num).toInt()
-                                  : -1;
+                              final itemIndex = item.index;
                               return itemIndex == currentQueueIndex;
                             });
                       final currentQueueRowIndex =
@@ -838,15 +835,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             },
                             itemBuilder: (context, index) {
                               final item = queueItems[index];
-                              final queueIndex = item['index'] is num
-                                  ? (item['index'] as num).toInt()
-                                  : item['sort_index'] is num
-                                  ? (item['sort_index'] as num).toInt()
-                                  : index;
-                              final queueItemId =
-                                  item['queue_item_id'] is String
-                                  ? item['queue_item_id'] as String
-                                  : null;
+                              final queueIndex = item.index;
+                              final queueItemId = item.queueItemId;
                               final itemKey = _queueItemKey(item, index);
                               final shouldAnimateRemoteMove =
                                   _movedQueueItemKeys.contains(itemKey);
@@ -855,7 +845,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               // The web app compares the rendered queue position
                               // directly with index_in_buffer.
                               final isBuffered =
-                                  index <= (queue.indexInBuffer ?? 0);
+                                  index <= (queue.currentIndex ?? 0);
                               final isCurrent = index == currentQueueRowIndex;
                               final isPreviouslyPlayed =
                                   currentQueueRowIndex >= 0 &&
@@ -896,9 +886,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     ),
                                     const SizedBox(width: 10),
                                     ArtworkImage(
-                                      imageUrl: RecentMediaItem.imageUrlFromMap(
-                                        Map<String, dynamic>.from(item),
-                                      ),
+                                      imageUrl: RecentMediaItem
+                                          .imageUrlFromQueueItem(item),
                                       serverUrl: widget.repository.serverUrl,
                                       token: widget.repository.token,
                                       size: 48,
@@ -973,9 +962,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     SystemSound.play(SystemSoundType.click),
                                   );
                                   final previousItems =
-                                      List<Map<String, dynamic>>.of(queueItems);
+                                      List<MusicAssistantQueueItem>.of(
+                                        queueItems,
+                                      );
                                   final updatedItems =
-                                      List<Map<String, dynamic>>.of(
+                                      List<MusicAssistantQueueItem>.of(
                                         previousItems,
                                       )..removeAt(index);
                                   setState(() {
@@ -1146,38 +1137,26 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     );
   }
 
-  String? _artistLabel(dynamic rawArtists) {
-    if (rawArtists is! List) return null;
-    final names = rawArtists
-        .whereType<Map>()
-        .map((artist) => artist['name'])
+  String? _queueArtist(MusicAssistantQueueItem item) {
+    final artists = item.mediaItem?.artists
+        ?.map((artist) => artist.name)
         .whereType<String>()
         .where((name) => name.isNotEmpty)
         .toList();
-    return names.isEmpty ? null : names.join(', ');
+    return artists == null || artists.isEmpty ? null : artists.join(', ');
   }
 
-  String? _queueArtist(Map<String, dynamic> item) {
-    final media = item['media_item'] is Map
-        ? Map<String, dynamic>.from(item['media_item'] as Map)
-        : const <String, dynamic>{};
-    return _artistLabel(media['artists']) ??
-        (media['artist'] is String ? media['artist'] as String : null);
+  String _queueTrackTitle(MusicAssistantQueueItem item) {
+    final trackTitle = item.mediaItem?.name;
+    return trackTitle != null && trackTitle.isNotEmpty
+        ? trackTitle
+        : item.name;
   }
 
-  String _queueTrackTitle(Map<String, dynamic> item) {
-    final media = item['media_item'] is Map
-        ? Map<String, dynamic>.from(item['media_item'] as Map)
-        : const <String, dynamic>{};
-    final trackTitle = media['name'];
-    if (trackTitle is String && trackTitle.isNotEmpty) return trackTitle;
-    final queueTitle = item['name'];
-    return queueTitle is String && queueTitle.isNotEmpty
-        ? queueTitle
-        : 'Unknown item';
-  }
-
-  double _estimatedQueueOffset(List<Map<String, dynamic>> items, int rowIndex) {
+  double _estimatedQueueOffset(
+    List<MusicAssistantQueueItem> items,
+    int rowIndex,
+  ) {
     var offset = 0.0;
     for (var index = 0; index < rowIndex; index++) {
       // A subtitle makes ListTile taller; include the outer vertical padding
@@ -1187,19 +1166,13 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     return offset;
   }
 
-  String? _queueItemUri(Map<String, dynamic> item) {
-    final mediaItem = item['media_item'];
-    if (mediaItem is Map && mediaItem['uri'] is String) {
-      return mediaItem['uri'] as String;
-    }
-    return item['uri'] is String ? item['uri'] as String : null;
-  }
+  String? _queueItemUri(MusicAssistantQueueItem item) =>
+      item.mediaItem?.uri ?? item.mediaItem?.itemId;
 
-  String _queueItemKey(Map<String, dynamic> item, int rowIndex) {
-    final queueItemId = item['queue_item_id'];
-    if (queueItemId is String && queueItemId.isNotEmpty) return queueItemId;
-    final index = item['index'] ?? item['sort_index'];
-    if (index is num) return 'queue-index-${index.toInt()}';
+  String _queueItemKey(MusicAssistantQueueItem item, int rowIndex) {
+    if (item.queueItemId.isNotEmpty) return item.queueItemId;
+    if (item.index != 0) return 'queue-index-${item.index}';
+    if (item.sortIndex != 0) return 'queue-index-${item.sortIndex}';
     return 'queue-row-$rowIndex-${_queueItemUri(item) ?? 'unknown'}';
   }
 }

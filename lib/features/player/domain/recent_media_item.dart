@@ -1,3 +1,5 @@
+import 'package:music_assistant_api/music_assistant_api.dart';
+
 class RecentMediaItem {
   const RecentMediaItem({
     required this.uri,
@@ -69,6 +71,15 @@ class RecentMediaItem {
       if (url != null) return url;
     }
     return null;
+  }
+
+  static String? imageUrlFromQueueItem(MusicAssistantQueueItem item) {
+    final mediaItem = item.mediaItem;
+    return _firstString([
+      item.image?.path,
+      mediaItem?.album?.imageUrl,
+      ...?mediaItem?.metadata?.images?.map((image) => image.path),
+    ]);
   }
 
   static String? _imageUrlFromValue(dynamic value) {

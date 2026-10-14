@@ -6,7 +6,6 @@ import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 import 'package:music_assistant_api/music_assistant_api.dart' as mass;
 
-import '../domain/player_queue_snapshot.dart';
 import '../domain/playback_quality_info.dart';
 import '../domain/recent_media_item.dart';
 import '../domain/radio_station.dart';
@@ -186,23 +185,17 @@ class MusicAssistantRepository {
     );
   }
 
-  Future<PlayerQueueSnapshot> fetchQueue(String playerId) async {
-    final queue = await _playerApiClient.getQueueSnapshot(
-      playerId,
-      limit: 500,
-    );
+  Future<mass.MusicAssistantPlayerQueue> fetchActiveQueue(
+    String playerId,
+  ) async {
+    final queue = await _playerApiClient.getActiveQueue(playerId);
     _activeQueueIds[playerId] = queue.queueId;
-    return PlayerQueueSnapshot(
-      playerName: queue.displayName ?? playerId,
-      queueId: queue.queueId,
-      currentIndex: queue.currentIndex,
-      indexInBuffer: queue.indexInBuffer,
-      items: queue.items
-          .map((item) => item.toJson())
-          .toList(growable: false),
-      autoplayEnabled: queue.autoplayEnabled,
-    );
+    return queue;
   }
+
+  Future<List<mass.MusicAssistantQueueItem>> fetchQueueItems(
+    String queueId,
+  ) => _playerApiClient.getQueueItems(queueId, limit: 500);
 
   /// Listen for queue changes from the new SDK's generic WebSocket event
   /// stream. Queue events are scoped to the queue ID (or player ID for

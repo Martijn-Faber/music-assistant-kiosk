@@ -45,7 +45,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   int? _displayedQueueIndexHint;
   String? _transitionFromArtwork;
   String? _transitionToArtwork;
-  List<Map<String, dynamic>>? _transitionQueueItems;
+  List<MusicAssistantQueueItem>? _transitionQueueItems;
   int? _transitionFromQueueIndex;
   int? _transitionToQueueIndex;
   late final AnimationController _artworkTransition;
@@ -105,17 +105,18 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     _transitionEndOffset = Offset.zero;
   }
 
-  List<Map<String, dynamic>> get _upcomingQueueItems {
+  List<MusicAssistantQueueItem> get _upcomingQueueItems {
     final currentTrackIdentity =
         player.currentMedia?.uri ?? player.currentMedia?.title;
     return _upcomingQueueItemsAfter(currentTrackIdentity);
   }
 
-  List<Map<String, dynamic>> _upcomingQueueItemsAfter(
+  List<MusicAssistantQueueItem> _upcomingQueueItemsAfter(
     String? trackIdentity,
   ) {
-    final queue = _queueController.snapshot;
+    final queue = _queueController.queue;
     if (queue == null) return const [];
+    final items = _queueController.items;
     // Prefer the displayed track's remembered slot while queue events lag.
     final indexHint = trackIdentity == _displayedArtworkTrackIdentity
         ? _displayedQueueIndexHint
@@ -125,38 +126,35 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         queue.currentIndex;
     if (currentIndex == null) return const [];
     final firstUpcoming = (currentIndex + 1)
-        .clamp(0, queue.items.length)
+        .clamp(0, items.length)
         .toInt();
-    return queue.items.skip(firstUpcoming).take(2).toList(growable: false);
+    return items.skip(firstUpcoming).take(2).toList(growable: false);
   }
 
   int? _queueIndexForTrack(String? trackIdentity, {int? indexHint}) {
-    final queue = _queueController.snapshot;
+    final queue = _queueController.queue;
+    final items = _queueController.items;
     if (queue == null || trackIdentity == null) return null;
     final serverIndex = queue.currentIndex;
     final serverIndexMatchesTrack = serverIndex != null &&
         serverIndex >= 0 &&
-        serverIndex < queue.items.length &&
-        _queueItemTrackIdentity(queue.items[serverIndex]) == trackIdentity;
+        serverIndex < items.length &&
+        _queueItemTrackIdentity(items[serverIndex]) == trackIdentity;
     if (serverIndexMatchesTrack) return serverIndex;
     if (indexHint != null &&
         indexHint >= 0 &&
-        indexHint < queue.items.length &&
-        _queueItemTrackIdentity(queue.items[indexHint]) == trackIdentity) {
+        indexHint < items.length &&
+        _queueItemTrackIdentity(items[indexHint]) == trackIdentity) {
       return indexHint;
     }
-    final matchingIndex = queue.items.indexWhere(
+    final matchingIndex = items.indexWhere(
       (item) => _queueItemTrackIdentity(item) == trackIdentity,
     );
     return matchingIndex >= 0 ? matchingIndex : null;
   }
 
-  String? _queueItemTrackIdentity(Map<String, dynamic> item) {
-    final nested = item['media_item'] ?? item['item'];
-    final media = nested is Map ? nested : item;
-    final uri = media['uri'] ?? media['item_id'] ?? item['uri'];
-    return uri is String ? uri : null;
-  }
+  String? _queueItemTrackIdentity(MusicAssistantQueueItem item) =>
+      item.mediaItem?.uri ?? item.mediaItem?.itemId;
 
   void _onArtworkTransitionStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed && mounted) {
@@ -197,7 +195,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           : 0.0;
       final isSwipeHandoff =
           _isSkippingFromArtwork || _isDraggingArtwork;
-      final queue = _queueController.snapshot;
+      final queue = _queueController.queue;
+      final queueItems = _queueController.items;
       final oldQueueIndex = _queueIndexForTrack(
         oldTrackIdentity,
         indexHint: oldTrackIdentity == _displayedArtworkTrackIdentity
@@ -208,14 +207,14 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       final expectedSwipeIndex = isSwipeHandoff &&
               oldQueueIndex != null &&
               queue != null &&
-              queue.items.isNotEmpty
-          ? (oldQueueIndex + 1) % queue.items.length
+              queueItems.isNotEmpty
+          ? (oldQueueIndex + 1) % queueItems.length
           : null;
       // During a swipe, the next queue slot disambiguates repeated tracks. Use
       // it only if that slot still matches the player-reported track.
       final swipeTargetQueueIndex = expectedSwipeIndex != null &&
               queue != null &&
-              _queueItemTrackIdentity(queue.items[expectedSwipeIndex]) ==
+              _queueItemTrackIdentity(queueItems[expectedSwipeIndex]) ==
                   newTrackIdentity
           ? expectedSwipeIndex
           : newQueueIndex;
@@ -230,7 +229,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       _transitionToQueueIndex =
           isQueuePageScroll ? newQueueIndex! : null;
       _transitionQueueItems = isQueuePageScroll
-          ? List<Map<String, dynamic>>.unmodifiable(queue!.items)
+          ? List<MusicAssistantQueueItem>.unmodifiable(queueItems)
           : null;
       _transitionStartProgress = swipeHandoffProgress;
       _transitionStartOffset = _currentArtworkOffset;
@@ -246,7 +245,9 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       // artwork matching the new player URI instead of assuming one-step next.
       _displayedQueueIndexHint = swipeTargetQueueIndex;
       final promotedArtwork = queue != null && swipeTargetQueueIndex != null
-          ? RecentMediaItem.imageUrlFromMap(queue.items[swipeTargetQueueIndex])
+          ? RecentMediaItem.imageUrlFromQueueItem(
+              queueItems[swipeTargetQueueIndex],
+            )
           : widget.player.currentMedia?.imageUrl;
       _transitionFromArtwork = oldWidget.player.currentMedia?.imageUrl;
       // Use the queue item's artwork for the selected track when available;
@@ -255,8 +256,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           promotedArtwork ?? widget.player.currentMedia?.imageUrl;
       _displayedArtworkTrackIdentity = newTrackIdentity;
       _displayedArtworkUrl = _transitionToArtwork;
-      // Keep the old second upcoming item visible until the shared queue
-      // snapshot catches up with the new current track.
+      // Keep the old second upcoming item visible until the shared queue data
+      // catches up with the new current track.
       _artworkDrag.stop();
       _artworkDrag.value = 0;
       _artworkDragOffset = Offset.zero;
@@ -469,10 +470,10 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final upcomingItems = _upcomingQueueItems;
     final nextArtworkUrl = upcomingItems.isEmpty
         ? null
-        : RecentMediaItem.imageUrlFromMap(upcomingItems.first);
+        : RecentMediaItem.imageUrlFromQueueItem(upcomingItems.first);
     final followingArtworkUrl = upcomingItems.length < 2
         ? null
-        : RecentMediaItem.imageUrlFromMap(upcomingItems[1]);
+        : RecentMediaItem.imageUrlFromQueueItem(upcomingItems[1]);
     final stackHeight = size * 1.1;
     final inTransition =
         _transitionFromArtwork != null && _transitionToArtwork != null;
@@ -517,7 +518,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
               ? _transitionFromArtwork
               : index == toIndex
               ? _transitionToArtwork
-              : RecentMediaItem.imageUrlFromMap(items[index]);
+              : RecentMediaItem.imageUrlFromQueueItem(items[index]);
 
           if (toIndex > fromIndex) {
             // Replay the on-screen swipe for every skipped track: the

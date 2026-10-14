@@ -5,8 +5,8 @@ import 'dart:io';
 import 'connection_state.dart';
 import 'exceptions.dart';
 import 'generated/models/music_assistant_player.dart';
+import 'generated/models/music_assistant_player_queue.dart';
 import 'generated/models/music_assistant_queue_item.dart';
-import 'models/music_assistant_queue_snapshot.dart';
 
 /// WebSocket client for Music Assistant's command API.
 ///
@@ -113,26 +113,33 @@ class MusicAssistantClient {
         .toList(growable: false);
   }
 
-  /// Fetches the active queue and its items for a player.
-  ///
-  /// The queue items are decoded into the SDK's [MusicAssistantQueueItem]
-  /// model. A player ID is used as the queue ID when Music Assistant has not
-  /// created a queue yet, matching the server's queue command behavior.
-  Future<MusicAssistantQueueSnapshot> getQueueSnapshot(
-    String playerId, {
-    int limit = 500,
-    int offset = 0,
-  }) async {
+  /// Fetches the active queue for a player.
+  Future<MusicAssistantPlayerQueue> getActiveQueue(String playerId) async {
     final queueResponse = await sendCommand(
       'player_queues/get_active_queue',
       args: {'player_id': playerId},
     );
-    final queue = queueResponse is Map
-        ? Map<String, dynamic>.from(queueResponse)
-        : const <String, dynamic>{};
-    final queueId = queue['queue_id'] is String
-        ? queue['queue_id'] as String
-        : playerId;
+    if (queueResponse == null) {
+      return MusicAssistantPlayerQueue(
+        queueId: playerId,
+        displayName: playerId,
+        currentIndex: null,
+      );
+    }
+    if (queueResponse is! Map) {
+      throw const FormatException('The server returned invalid queue data.');
+    }
+    return MusicAssistantPlayerQueue.fromJson(
+      Map<String, dynamic>.from(queueResponse),
+    );
+  }
+
+  /// Fetches a page of items from a queue.
+  Future<List<MusicAssistantQueueItem>> getQueueItems(
+    String queueId, {
+    int limit = 500,
+    int offset = 0,
+  }) async {
     final itemsResponse = await sendCommand(
       'player_queues/items',
       args: {'queue_id': queueId, 'limit': limit, 'offset': offset},
@@ -140,28 +147,13 @@ class MusicAssistantClient {
     if (itemsResponse != null && itemsResponse is! List) {
       throw const FormatException('The server returned invalid queue items.');
     }
-    final items = (itemsResponse as List? ?? const [])
+    return (itemsResponse as List? ?? const [])
         .whereType<Map>()
         .map((item) => MusicAssistantQueueItem.fromJson(
               Map<String, dynamic>.from(item),
             ))
         .toList(growable: false);
-
-    return MusicAssistantQueueSnapshot(
-      queueId: queueId,
-      displayName: queue['display_name'] is String
-          ? queue['display_name'] as String
-          : null,
-      currentIndex: _queueInteger(queue['current_index']),
-      indexInBuffer: _queueInteger(queue['index_in_buffer']),
-      autoplayEnabled:
-          queue['autoplay_enabled'] == true ||
-          queue['dont_stop_the_music_enabled'] == true,
-      items: items,
-    );
   }
-
-  int? _queueInteger(Object? value) => value is num ? value.toInt() : null;
 
   Future<Object?> _sendCommand(
     String command, {
