@@ -432,22 +432,15 @@ class PlayerScreen extends StatelessWidget {
         : 26.0;
     if (!maxWidth.isFinite || maxWidth <= 0) return maximum;
 
-    final direction = Directionality.of(context);
-    final textScaler = MediaQuery.textScalerOf(context);
-    for (var fontSize = maximum; fontSize > minimum; fontSize -= 1) {
-      final painter = TextPainter(
-        text: TextSpan(
-          text: text,
-          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700),
-        ),
-        maxLines: 2,
-        ellipsis: '\u2026',
-        textDirection: direction,
-        textScaler: textScaler,
-      )..layout(maxWidth: maxWidth);
-      if (!painter.didExceedMaxLines) return fontSize;
-    }
-    return minimum;
+    return _fitFontSize(
+      context,
+      text,
+      maxWidth,
+      minimum: minimum,
+      maximum: maximum,
+      maxLines: 2,
+      fontWeight: FontWeight.w700,
+    );
   }
 
   double _fitMetadataFontSize(
@@ -469,26 +462,54 @@ class PlayerScreen extends StatelessWidget {
         : 15.0;
     if (!maxWidth.isFinite || maxWidth <= 0) return maximum;
 
-    final painterStyle = TextStyle(
-      fontSize: maximum,
+    return _fitFontSize(
+      context,
+      text,
+      maxWidth,
+      minimum: minimum,
+      maximum: maximum,
+      maxLines: 1,
       fontWeight: FontWeight.w500,
     );
+  }
+
+  double _fitFontSize(
+    BuildContext context,
+    String text,
+    double maxWidth, {
+    required double minimum,
+    required double maximum,
+    required int maxLines,
+    required FontWeight fontWeight,
+  }) {
     final direction = Directionality.of(context);
     final textScaler = MediaQuery.textScalerOf(context);
-    for (var fontSize = maximum; fontSize > minimum; fontSize -= 1) {
+    var low = minimum.toInt();
+    var high = maximum.toInt();
+    var bestFit = low;
+
+    // Text fit is monotonic by size, so binary search avoids laying out every
+    // intermediate font size when player updates rebuild this page.
+    while (low <= high) {
+      final fontSize = (low + high) ~/ 2;
       final painter = TextPainter(
         text: TextSpan(
           text: text,
-          style: painterStyle.copyWith(fontSize: fontSize),
+          style: TextStyle(fontSize: fontSize.toDouble(), fontWeight: fontWeight),
         ),
-        maxLines: 1,
+        maxLines: maxLines,
         ellipsis: '\u2026',
         textDirection: direction,
         textScaler: textScaler,
       )..layout(maxWidth: maxWidth);
-      if (!painter.didExceedMaxLines) return fontSize;
+      if (painter.didExceedMaxLines) {
+        high = fontSize - 1;
+      } else {
+        bestFit = fontSize;
+        low = fontSize + 1;
+      }
     }
-    return minimum;
+    return bestFit.toDouble();
   }
 }
 
