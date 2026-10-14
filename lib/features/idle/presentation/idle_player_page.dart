@@ -432,11 +432,15 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                   ),
                   if (item.provider != null)
                     Positioned(
-                      top: 10,
-                      right: 10,
+                      top: 2,
+                      right: 2,
                       child: IconButton(
                         tooltip: 'Radio station details',
-                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 48,
+                          height: 48,
+                        ),
+                        padding: const EdgeInsets.all(14),
                         onPressed: () => showDialog<void>(
                           context: context,
                           builder: (_) => _RadioProviderDetailsDialog(
