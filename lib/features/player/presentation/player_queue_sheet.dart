@@ -6,6 +6,7 @@ import '../domain/player_queue_snapshot.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
 import '../../../design_system/glass_tokens.dart';
+import '../../../design_system/glass_scroll_fade.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerQueueSheet extends StatefulWidget {
@@ -581,10 +582,12 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           ]);
                         });
                       }
-                      return ListView.separated(
+                      return GlassScrollFade(
                         controller: scrollController,
-                        itemCount: queueItems.length,
-                        separatorBuilder: (_, index) {
+                        child: ListView.separated(
+                          controller: scrollController,
+                          itemCount: queueItems.length,
+                          separatorBuilder: (_, index) {
                           final touchesCurrentItem =
                               index == currentQueueRowIndex ||
                               index + 1 == currentQueueRowIndex;
@@ -595,7 +598,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   height: 1,
                                 );
                         },
-                        itemBuilder: (context, index) {
+                          itemBuilder: (context, index) {
                           final item = queueItems[index];
                           final queueIndex = item['index'] is num
                               ? (item['index'] as num).toInt()
@@ -796,7 +799,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               ),
                             ),
                           );
-                        },
+                          },
+                        ),
                       );
                     },
                   ),
