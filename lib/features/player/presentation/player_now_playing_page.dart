@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -12,6 +10,7 @@ import '../domain/playback_quality_info.dart';
 import '../domain/player_summary.dart';
 import 'artwork_image.dart';
 import 'player_glass_widgets.dart';
+import 'provider_identity.dart';
 
 /// The full-screen page shown while the selected player has an active item.
 class NowPlayingPage extends StatelessWidget {
@@ -746,84 +745,16 @@ class _PlaybackQualityDialog extends StatelessWidget {
                   if (info.bitRate != null && info.bitRate! > 0) {
                     add('Bitrate', '${(info.bitRate! / 1000).round()} kbps');
                   }
-                  final provider = _providerLabel(info.source);
+                  final provider = info.source;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (provider != null) ...[
                         Row(
                           children: [
-                            FutureBuilder<String?>(
-                              future: info.source == null
-                                  ? Future.value(null)
-                                  : repository.fetchProviderIcon(info.source!),
-                              builder: (context, iconSnapshot) {
-                                final dataUri = iconSnapshot.data;
-                                if (dataUri == null) {
-                                  return Icon(
-                                    _providerIcon(info.source),
-                                    size: GlassTokens.iconSizeM,
-                                    color: Colors.white70,
-                                  );
-                                }
-                                try {
-                                  final separator = dataUri.indexOf(',');
-                                  if (separator < 0) {
-                                    throw const FormatException(
-                                      'Invalid provider icon data URI',
-                                    );
-                                  }
-                                  final mediaType = dataUri
-                                      .substring(5, separator)
-                                      .split(';')
-                                      .first
-                                      .toLowerCase();
-                                  final encoded = dataUri.substring(separator + 1);
-                                  final bytes = base64Decode(encoded);
-                                  if (mediaType == 'image/svg+xml') {
-                                    final svg = _inlineSvgClassFills(
-                                      utf8.decode(bytes),
-                                    );
-                                    return SvgPicture.memory(
-                                      utf8.encode(svg),
-                                      width: GlassTokens.iconSizeM,
-                                      height: GlassTokens.iconSizeM,
-                                      fit: BoxFit.contain,
-                                      placeholderBuilder: (_) => Icon(
-                                        _providerIcon(info.source),
-                                        size: GlassTokens.iconSizeM,
-                                        color: Colors.white70,
-                                      ),
-                                    );
-                                  }
-                                  return Image.memory(
-                                    bytes,
-                                    width: GlassTokens.iconSizeM,
-                                    height: GlassTokens.iconSizeM,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, _, _) => Icon(
-                                      _providerIcon(info.source),
-                                      size: GlassTokens.iconSizeM,
-                                      color: Colors.white70,
-                                    ),
-                                  );
-                                } on FormatException {
-                                  return Icon(
-                                    _providerIcon(info.source),
-                                    size: GlassTokens.iconSizeM,
-                                    color: Colors.white70,
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              provider,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: GlassTokens.fontSize16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            ProviderIdentity(
+                              repository: repository,
+                              providerId: provider,
                             ),
                           ],
                         ),
@@ -869,90 +800,11 @@ class _PlaybackQualityDialog extends StatelessWidget {
     ],
   );
 
-  String? _providerLabel(String? source) {
-    final value = source?.trim();
-    if (value == null || value.isEmpty) return null;
-    // Music Assistant may return an instance label such as
-    // `Apple Music HiDHRV29` or `apple_music--HiDHRV29`.
-    final withoutInstance = value
-        .replaceFirst(RegExp(r'--[A-Za-z0-9_-]+$'), '')
-        .replaceFirst(RegExp(r'\s+[A-Za-z]*\d[A-Za-z0-9_-]*$'), '')
-        .trim();
-    const friendlyNames = {
-      'apple_music': 'Apple Music',
-      'apple music': 'Apple Music',
-      'jellyfin': 'Jellyfin',
-      'tunein': 'TuneIn',
-      'youtube_music': 'YouTube Music',
-      'youtube music': 'YouTube Music',
-      'music_assistant': 'Music Assistant',
-      'music assistant': 'Music Assistant',
-      'spotify': 'Spotify',
-      'tidal': 'Tidal',
-      'qobuz': 'Qobuz',
-      'deezer': 'Deezer',
-    };
-    final normalized = withoutInstance.toLowerCase();
-    return friendlyNames[normalized] ?? withoutInstance
-        .split(RegExp(r'[_\-\s]+'))
-        .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
-  }
-
-  IconData _providerIcon(String? source) {
-    final provider = source?.toLowerCase() ?? '';
-    if (provider.contains('radio') || provider.contains('tunein')) {
-      return CupertinoIcons.antenna_radiowaves_left_right;
-    }
-    if (provider.contains('youtube')) return CupertinoIcons.play_arrow;
-    if (provider.contains('apple')) return CupertinoIcons.music_note;
-    if (provider.contains('spotify') || provider.contains('music')) {
-      return CupertinoIcons.music_note;
-    }
-    return CupertinoIcons.globe;
-  }
-
   String? _prettify(String? value) => value
       ?.split('_')
       .where((part) => part.isNotEmpty)
       .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
-}
-
-/// flutter_svg does not apply CSS rules from `<style>` blocks. Inline simple
-/// class-based fill rules so provider logos retain their brand colors.
-String _inlineSvgClassFills(String svg) {
-  final fills = <String, String>{};
-  final styleBlocks = RegExp(
-    r'<style\b[^>]*>([\s\S]*?)</style\s*>',
-    caseSensitive: false,
-  );
-  for (final block in styleBlocks.allMatches(svg)) {
-    final css = block.group(1) ?? '';
-    final rules = RegExp(r'\.([\w-]+)\s*\{([^}]*)\}').allMatches(css);
-    for (final rule in rules) {
-      final fill = RegExp(
-        r'(?:^|;)\s*fill\s*:\s*([^;!]+)',
-        caseSensitive: false,
-      ).firstMatch(rule.group(2) ?? '');
-      if (fill != null) fills[rule.group(1)!] = fill.group(1)!.trim();
-    }
-  }
-
-  var result = svg.replaceAll(styleBlocks, '');
-  result = result.replaceAll(
-    RegExp(r'<style\b[^>]*/\s*>', caseSensitive: false),
-    '',
-  );
-  return result.replaceAllMapped(RegExp(r'class="([^"]+)"'), (match) {
-    final classes = match.group(1)!.split(RegExp(r'\s+'));
-    for (final className in classes) {
-      final fill = fills[className];
-      if (fill != null) return 'fill="$fill"';
-    }
-    return '';
-  });
 }
 
 class NothingPlayingPage extends StatelessWidget {

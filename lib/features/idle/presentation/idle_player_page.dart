@@ -11,6 +11,7 @@ import '../../../design_system/glass_card.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
 import '../../player/presentation/artwork_image.dart';
+import '../../player/presentation/provider_identity.dart';
 
 class IdlePlayerPage extends StatefulWidget {
   const IdlePlayerPage({
@@ -362,9 +363,12 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                 token: widget.repository.token,
               );
               final isLoading = widget.loadingStationId == item.id;
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
                   onTap: widget.onSelect == null
                       ? null
                       : () => widget.onSelect!(item),
@@ -421,25 +425,33 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                             ),
                           ),
                         ),
-                        if (item.provider case final provider?) ...[
-                          const SizedBox(height: 5),
-                          Text(
-                            '${provider[0].toUpperCase()}${provider.substring(1)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.68),
-                              fontSize: GlassTokens.fontSize12,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
-                ),
+                    ),
+                  ),
+                  if (item.provider != null)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: IconButton(
+                        tooltip: 'Radio station details',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => showDialog<void>(
+                          context: context,
+                          builder: (_) => _RadioProviderDetailsDialog(
+                            station: item,
+                            repository: widget.repository,
+                          ),
+                        ),
+                        icon: const Icon(
+                          CupertinoIcons.info,
+                          size: GlassTokens.iconSizeS,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),
@@ -478,6 +490,67 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
       (_page - 1)
           .clamp(0, widget.stations.length - _indicatorCount)
           .toInt();
+}
+
+class _RadioProviderDetailsDialog extends StatelessWidget {
+  const _RadioProviderDetailsDialog({
+    required this.station,
+    required this.repository,
+  });
+
+  final RadioStation station;
+  final MusicAssistantRepository repository;
+
+  @override
+  Widget build(BuildContext context) => Dialog(
+    backgroundColor: Colors.transparent,
+    insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+    child: GlassSurface(
+      borderRadius: GlassTokens.radiusLarge,
+      padding: const EdgeInsets.fromLTRB(20, 12, 12, 18),
+      tint: const Color(0xEE141D20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Radio station',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: GlassTokens.fontSize20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(CupertinoIcons.xmark, color: Colors.white70),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ProviderIdentity(
+            repository: repository,
+            providerId: station.provider,
+            iconSize: GlassTokens.iconSizeXl,
+            textSize: GlassTokens.fontSize18,
+            spacing: 12,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            station.name,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: GlassTokens.fontSize14,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Overzichtelijke rij voor favoriete afspeellijsten
