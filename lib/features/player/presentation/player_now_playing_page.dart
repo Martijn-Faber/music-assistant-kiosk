@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -229,6 +231,7 @@ class NowPlayingPage extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (_) => _PlaybackQualityDialog(
+        repository: repository,
         details: details,
         trackTitle: player.title,
         artist: player.artist,
@@ -625,12 +628,14 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
 
 class _PlaybackQualityDialog extends StatelessWidget {
   const _PlaybackQualityDialog({
+    required this.repository,
     required this.details,
     required this.trackTitle,
     required this.artist,
     required this.fallbackQualityLabel,
   });
 
+  final MusicAssistantRepository repository;
   final Future<PlaybackQualityInfo?> details;
   final String? trackTitle;
   final String? artist;
@@ -722,7 +727,6 @@ class _PlaybackQualityDialog extends StatelessWidget {
                     }
                   }
 
-                  add('Source', info.source?.toUpperCase());
                   add('Stream', _prettify(info.streamType));
                   add('Quality', info.qualityLabel ?? fallbackQualityLabel);
                   add('Codec', info.codec?.toUpperCase());
@@ -742,7 +746,89 @@ class _PlaybackQualityDialog extends StatelessWidget {
                   if (info.bitRate != null && info.bitRate! > 0) {
                     add('Bitrate', '${(info.bitRate! / 1000).round()} kbps');
                   }
-                  return _detailRows(rows);
+                  final provider = _providerLabel(info.source);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (provider != null) ...[
+                        Row(
+                          children: [
+                            FutureBuilder<String?>(
+                              future: info.source == null
+                                  ? Future.value(null)
+                                  : repository.fetchProviderIcon(info.source!),
+                              builder: (context, iconSnapshot) {
+                                final dataUri = iconSnapshot.data;
+                                if (dataUri == null) {
+                                  return Icon(
+                                    _providerIcon(info.source),
+                                    size: GlassTokens.iconSizeM,
+                                    color: Colors.white70,
+                                  );
+                                }
+                                try {
+                                  final separator = dataUri.indexOf(',');
+                                  if (separator < 0) {
+                                    throw const FormatException(
+                                      'Invalid provider icon data URI',
+                                    );
+                                  }
+                                  final mediaType = dataUri
+                                      .substring(5, separator)
+                                      .split(';')
+                                      .first
+                                      .toLowerCase();
+                                  final encoded = dataUri.substring(separator + 1);
+                                  final bytes = base64Decode(encoded);
+                                  if (mediaType == 'image/svg+xml') {
+                                    return SvgPicture.memory(
+                                      bytes,
+                                      width: GlassTokens.iconSizeM,
+                                      height: GlassTokens.iconSizeM,
+                                      fit: BoxFit.contain,
+                                      placeholderBuilder: (_) => Icon(
+                                        _providerIcon(info.source),
+                                        size: GlassTokens.iconSizeM,
+                                        color: Colors.white70,
+                                      ),
+                                    );
+                                  }
+                                  return Image.memory(
+                                    bytes,
+                                    width: GlassTokens.iconSizeM,
+                                    height: GlassTokens.iconSizeM,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, _, _) => Icon(
+                                      _providerIcon(info.source),
+                                      size: GlassTokens.iconSizeM,
+                                      color: Colors.white70,
+                                    ),
+                                  );
+                                } on FormatException {
+                                  return Icon(
+                                    _providerIcon(info.source),
+                                    size: GlassTokens.iconSizeM,
+                                    color: Colors.white70,
+                                  );
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              provider,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: GlassTokens.fontSize16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      _detailRows(rows),
+                    ],
+                  );
                 },
               ),
             ],
@@ -779,6 +865,50 @@ class _PlaybackQualityDialog extends StatelessWidget {
         ),
     ],
   );
+
+  String? _providerLabel(String? source) {
+    final value = source?.trim();
+    if (value == null || value.isEmpty) return null;
+    // Music Assistant may return an instance label such as
+    // `Apple Music HiDHRV29` or `apple_music--HiDHRV29`.
+    final withoutInstance = value
+        .replaceFirst(RegExp(r'--[A-Za-z0-9_-]+$'), '')
+        .replaceFirst(RegExp(r'\s+[A-Za-z]*\d[A-Za-z0-9_-]*$'), '')
+        .trim();
+    const friendlyNames = {
+      'apple_music': 'Apple Music',
+      'apple music': 'Apple Music',
+      'jellyfin': 'Jellyfin',
+      'tunein': 'TuneIn',
+      'youtube_music': 'YouTube Music',
+      'youtube music': 'YouTube Music',
+      'music_assistant': 'Music Assistant',
+      'music assistant': 'Music Assistant',
+      'spotify': 'Spotify',
+      'tidal': 'Tidal',
+      'qobuz': 'Qobuz',
+      'deezer': 'Deezer',
+    };
+    final normalized = withoutInstance.toLowerCase();
+    return friendlyNames[normalized] ?? withoutInstance
+        .split(RegExp(r'[_\-\s]+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+  }
+
+  IconData _providerIcon(String? source) {
+    final provider = source?.toLowerCase() ?? '';
+    if (provider.contains('radio') || provider.contains('tunein')) {
+      return CupertinoIcons.antenna_radiowaves_left_right;
+    }
+    if (provider.contains('youtube')) return CupertinoIcons.play_arrow;
+    if (provider.contains('apple')) return CupertinoIcons.music_note;
+    if (provider.contains('spotify') || provider.contains('music')) {
+      return CupertinoIcons.music_note;
+    }
+    return CupertinoIcons.globe;
+  }
 
   String? _prettify(String? value) => value
       ?.split('_')

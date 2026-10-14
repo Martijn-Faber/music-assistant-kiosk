@@ -13,6 +13,7 @@ dependencies:
   wakelock_plus: ^1.8.1
   flutter_secure_storage: ^11.2.0
   music_assistant: ^0.2.0
+  flutter_svg: ^2.0.17
   qr_flutter: ^4.1.0
 
 dev_dependencies:

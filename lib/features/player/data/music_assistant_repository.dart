@@ -272,6 +272,17 @@ class MusicAssistantRepository {
     return null;
   }
 
+  Future<String?> fetchProviderIcon(String provider) async {
+    final response = await _client.sendCommand(
+      'providers/icon',
+      args: {'provider': provider},
+    );
+    if (response is String && response.startsWith('data:image/')) {
+      return response;
+    }
+    return null;
+  }
+
   Future<List<RecentMediaItem>> fetchRecentlyPlayed() async {
     final response = await _client.sendCommand(
       'music/recently_played_items',
