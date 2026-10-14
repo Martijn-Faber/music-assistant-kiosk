@@ -36,6 +36,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   static const double _maxExtent = .94;
 
   late Future<PlayerQueueSnapshot> _queue;
+  PlayerQueueSnapshot? _lastQueueSnapshot;
+  Set<String> _queueItemKeysToAnimate = {};
+  bool _queueRefreshPendingDuringRemoval = false;
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
   final ValueNotifier<double> _dismissProgress = ValueNotifier(0);
@@ -55,12 +58,18 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   int? _lastAutoScrolledQueueRowIndex;
   late String? _currentPlayingUri;
   late final void Function() _unsubscribeFromPlayerEvents;
+  late final void Function() _unsubscribeFromQueueEvents;
+  Timer? _queueRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _queue = _loadQueue();
     _currentPlayingUri = widget.initialMediaUri;
+    _unsubscribeFromQueueEvents = widget.repository.listenToQueueEvents(
+      playerId: widget.playerId,
+      onEvent: _onQueueEvent,
+    );
     _unsubscribeFromPlayerEvents = widget.repository.listenToPlayerEvents(
       onChanged: (player) {
         if (player.playerId != widget.playerId ||
@@ -83,8 +92,56 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     );
   }
 
+  void _onQueueEvent(Map<String, dynamic> event) {
+    if (!mounted) return;
+    final eventType = event['event'];
+    // Queue time events are frequent and do not change the displayed item
+    // list. Player events already keep the current-item highlight up to date.
+    if (eventType != 'queue_items_updated' && eventType != 'queue_added') {
+      return;
+    }
+    if (_isRemovingQueueItem) {
+      _queueRefreshPendingDuringRemoval = true;
+      return;
+    }
+    // The server may emit several queue events for one operation. Coalesce
+    // them into one fetch so the popup always renders the final queue state.
+    _scheduleQueueRefresh();
+  }
+
+  void _scheduleQueueRefresh() {
+    _queueRefreshTimer?.cancel();
+    _queueRefreshTimer = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      if (_isRemovingQueueItem) {
+        _queueRefreshPendingDuringRemoval = true;
+        return;
+      }
+      setState(() {
+        _queueItemsOverride = null;
+        _queue = _loadQueue();
+      });
+    });
+  }
+
   Future<PlayerQueueSnapshot> _loadQueue() async {
+    final previousQueue = _lastQueueSnapshot;
     final queue = await widget.repository.fetchQueue(widget.playerId);
+    if (previousQueue == null) {
+      _queueItemKeysToAnimate = {};
+    } else {
+      final previousPositions = {
+        for (var index = 0; index < previousQueue.items.length; index++)
+          _queueItemKey(previousQueue.items[index], index): index,
+      };
+      _queueItemKeysToAnimate = {
+        for (var index = 0; index < queue.items.length; index++)
+          if (previousPositions[_queueItemKey(queue.items[index], index)] !=
+              index)
+            _queueItemKey(queue.items[index], index),
+      };
+    }
+    _lastQueueSnapshot = queue;
     if (mounted) setState(() => _autoplayEnabled = queue.autoplayEnabled);
     return queue;
   }
@@ -132,6 +189,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   void dispose() {
     _routeAnimation?.removeStatusListener(_onRouteStatusChanged);
     _unsubscribeFromPlayerEvents();
+    _unsubscribeFromQueueEvents();
+    _queueRefreshTimer?.cancel();
     _dismissProgress.dispose();
     _sheetController.dispose();
     super.dispose();
@@ -490,8 +549,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                 Expanded(
                   child: FutureBuilder<PlayerQueueSnapshot>(
                     future: _queue,
+                    initialData: _lastQueueSnapshot,
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done ||
+                      if ((snapshot.data == null &&
+                              snapshot.connectionState != ConnectionState.done) ||
                           !_routeEntered) {
                         return SingleChildScrollView(
                           controller: scrollController,
@@ -505,7 +566,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           ),
                         );
                       }
-                      if (snapshot.hasError) {
+                      if (snapshot.hasError && snapshot.data == null) {
                         return SingleChildScrollView(
                           controller: scrollController,
                           child: const SizedBox(
@@ -622,6 +683,16 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           opacity: _queuePositioned ? 1 : 0,
                           child: ListView.separated(
                           controller: scrollController,
+                          findChildIndexCallback: (key) {
+                            if (key is! ValueKey<String>) return null;
+                            for (var index = 0; index < queueItems.length; index++) {
+                              if ('${_queueItemKey(queueItems[index], index)}@$index' ==
+                                  key.value) {
+                                return index;
+                              }
+                            }
+                            return null;
+                          },
                           itemCount: queueItems.length,
                           separatorBuilder: (_, index) {
                           final touchesCurrentItem =
@@ -729,7 +800,26 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   )
                                 : null,
                           );
-                          return Dismissible(
+                          return TweenAnimationBuilder<double>(
+                            key: ValueKey('$itemKey@$index'),
+                            tween: Tween(
+                              begin: _queueItemKeysToAnimate.contains(itemKey)
+                                  ? 0.0
+                                  : 1.0,
+                              end: 1.0,
+                            ),
+                            duration: _queueItemKeysToAnimate.contains(itemKey)
+                                ? const Duration(milliseconds: 260)
+                                : Duration.zero,
+                            curve: Curves.easeOutCubic,
+                            builder: (context, progress, child) => Opacity(
+                              opacity: progress,
+                              child: Transform.translate(
+                                offset: Offset(0, (1 - progress) * 12),
+                                child: child,
+                              ),
+                            ),
+                            child: Dismissible(
                             key: ValueKey(itemKey),
                             direction:
                                 _isClearingQueue ||
@@ -752,12 +842,40 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               final updatedItems =
                                   List<Map<String, dynamic>>.of(queueItems)
                                     ..removeAt(index);
+                              final previousPositions = {
+                                for (var previousIndex = 0;
+                                    previousIndex < queueItems.length;
+                                    previousIndex++)
+                                  _queueItemKey(
+                                    queueItems[previousIndex],
+                                    previousIndex,
+                                  ): previousIndex,
+                              };
+                              _queueItemKeysToAnimate = {
+                                for (var nextIndex = 0;
+                                    nextIndex < updatedItems.length;
+                                    nextIndex++)
+                                  if (previousPositions[
+                                          _queueItemKey(
+                                            updatedItems[nextIndex],
+                                            nextIndex,
+                                          )] !=
+                                      nextIndex)
+                                    _queueItemKey(
+                                      updatedItems[nextIndex],
+                                      nextIndex,
+                                    ),
+                              };
+                              final shouldRefresh =
+                                  _queueRefreshPendingDuringRemoval;
                               setState(() {
                                 _queueItemsOverride = updatedItems;
                                 _isRemovingQueueItem = false;
                                 _removingQueueItemKey = null;
                               });
                               _dismissProgress.value = 0;
+                              _queueRefreshPendingDuringRemoval = false;
+                              if (shouldRefresh) _scheduleQueueRefresh();
                             },
                             background: const SizedBox.expand(),
                             secondaryBackground: Container(
@@ -816,8 +934,24 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               padding: const EdgeInsets.symmetric(vertical: 3),
                               child: Opacity(
                                 opacity: isPreviouslyPlayed ? .42 : 1,
-                                child: isCurrent
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 220),
+                                  switchInCurve: Curves.easeOutCubic,
+                                  switchOutCurve: Curves.easeInCubic,
+                                  transitionBuilder: (child, animation) =>
+                                      FadeTransition(
+                                        opacity: animation,
+                                        child: ScaleTransition(
+                                          scale: Tween<double>(
+                                            begin: .985,
+                                            end: 1,
+                                          ).animate(animation),
+                                          child: child,
+                                        ),
+                                      ),
+                                  child: isCurrent
                                     ? GlassSurface(
+                                        key: const ValueKey('current-track'),
                                         borderRadius: 14,
                                         padding: EdgeInsets.zero,
                                         tint: const Color(0x33202730),
@@ -829,11 +963,14 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                         ),
                                       )
                                     : Material(
+                                        key: const ValueKey('queue-track'),
                                         type: MaterialType.transparency,
                                         child: tile,
                                       ),
+                                ),
                               ),
                             ),
+                          ),
                           );
                           },
                           ),

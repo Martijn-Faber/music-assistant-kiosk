@@ -189,6 +189,7 @@ class MusicAssistantRepository {
   Future<PlayerQueueSnapshot> fetchQueue(String playerId) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
     final queueId = queue?.queueId ?? playerId;
+    _activeQueueIds[playerId] = queueId;
     final response = await _client.sendCommand(
       'player_queues/items',
       args: {'queue_id': queueId, 'limit': 500, 'offset': 0},
@@ -201,11 +202,45 @@ class MusicAssistantRepository {
         : const <Map<String, dynamic>>[];
     return PlayerQueueSnapshot(
       playerName: queue?.displayName ?? playerId,
+      queueId: queueId,
       currentIndex: queue?.currentIndex,
       items: items,
       autoplayEnabled: queue?.dontStopTheMusicEnabled ?? false,
     );
   }
+
+  /// Listen for queue changes from the new SDK's generic WebSocket event
+  /// stream. Queue events are scoped to the queue ID (or player ID for
+  /// queue_added, before the queue ID is known).
+  void Function() listenToQueueEvents({
+    required String playerId,
+    required void Function(Map<String, dynamic> event) onEvent,
+  }) {
+    const queueEventNames = {
+      'queue_added',
+      'queue_updated',
+      'queue_items_updated',
+      'queue_time_updated',
+    };
+    final subscription = _playerApiClient.events.listen((event) {
+      if (!queueEventNames.contains(event['event'])) return;
+      final eventObjectId = event['object_id'] ?? event['objectId'];
+      final eventData = event['data'];
+      final dataQueueId = eventData is Map
+          ? eventData['queue_id'] ?? eventData['queueId'] ?? eventData['player_id']
+          : null;
+      if (eventObjectId != playerId &&
+          eventObjectId != _activeQueueIds[playerId] &&
+          dataQueueId != playerId &&
+          dataQueueId != _activeQueueIds[playerId]) {
+        return;
+      }
+      onEvent(event);
+    });
+    return () => subscription.cancel();
+  }
+
+  final Map<String, String> _activeQueueIds = {};
 
   Future<void> setQueueAutoplay(String playerId, bool enabled) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
