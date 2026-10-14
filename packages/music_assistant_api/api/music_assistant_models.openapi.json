@@ -1,0 +1,616 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Music Assistant App Models",
+    "version": "2.10.5",
+    "description": "Scoped schemas used by the current kiosk app. Derived from the supplied Music Assistant OpenAPI specification."
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "ServerInfoMessage": {
+        "properties": {
+          "name": {
+            "nullable": true,
+            "type": "string"
+          },
+          "min_supported_schema_version": {
+            "type": "integer"
+          },
+          "server_version": {
+            "type": "string"
+          },
+          "server_id": {
+            "type": "string"
+          },
+          "status": {
+            "default": "running",
+            "type": "string"
+          },
+          "schema_version": {
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "server_version",
+          "schema_version",
+          "min_supported_schema_version"
+        ]
+      },
+      "Player": {
+        "properties": {
+          "player_id": {
+            "type": "string"
+          },
+          "playback_state": {
+            "$ref": "#/components/schemas/PlaybackState",
+            "default": "idle"
+          },
+          "current_media": {
+            "$ref": "#/components/schemas/PlayerMedia",
+            "nullable": true
+          },
+          "volume_level": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "elapsed_time_last_updated": {
+            "nullable": true,
+            "type": "number"
+          },
+          "group_members": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "elapsed_time": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "player_id",
+          "name"
+        ]
+      },
+      "PlayerMedia": {
+        "properties": {
+          "palette": {
+            "$ref": "#/components/schemas/MediaItemPalette",
+            "nullable": true
+          },
+          "image_url": {
+            "nullable": true,
+            "type": "string"
+          },
+          "duration": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "artist": {
+            "nullable": true,
+            "type": "string"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType",
+            "default": "unknown"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "album": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uri"
+        ]
+      },
+      "PlayerQueue": {
+        "properties": {
+          "queue_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "current_index": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "autoplay_enabled": {
+            "default": false,
+            "type": "boolean"
+          },
+          "current_item": {
+            "$ref": "#/components/schemas/QueueItem",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "queue_id",
+          "display_name",
+          "current_index"
+        ]
+      },
+      "QueueItem": {
+        "properties": {
+          "streamdetails": {
+            "$ref": "#/components/schemas/StreamDetails",
+            "nullable": true
+          },
+          "index": {
+            "default": 0,
+            "type": "integer"
+          },
+          "image": {
+            "$ref": "#/components/schemas/MediaItemImage",
+            "nullable": true
+          },
+          "media_item": {
+            "$ref": "#/components/schemas/Track",
+            "nullable": true
+          },
+          "sort_index": {
+            "default": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "duration": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "queue_item_id": {
+            "type": "string"
+          },
+          "queue_id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queue_id",
+          "queue_item_id",
+          "name"
+        ]
+      },
+      "Track": {
+        "properties": {
+          "album": {
+            "properties": {
+              "uri": {
+                "nullable": true,
+                "type": "string"
+              },
+              "image_url": {
+                "nullable": true,
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "nullable": true,
+            "type": "object"
+          },
+          "artists": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "uri": {
+                  "nullable": true,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MediaItemMetadata",
+            "nullable": true
+          },
+          "duration": {
+            "default": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType",
+            "default": "track"
+          },
+          "uri": {
+            "nullable": true,
+            "type": "string"
+          },
+          "favorite": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "provider",
+          "name"
+        ]
+      },
+      "Radio": {
+        "properties": {
+          "favorite": {
+            "default": false,
+            "type": "boolean"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MediaItemMetadata",
+            "nullable": true
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider_mappings": {
+            "items": {
+              "properties": {
+                "provider_instance": {
+                  "type": "string"
+                },
+                "provider_domain": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "uri": {
+            "nullable": true,
+            "type": "string"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType",
+            "default": "radio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "provider",
+          "name"
+        ]
+      },
+      "Playlist": {
+        "properties": {
+          "owner": {
+            "default": "",
+            "type": "string"
+          },
+          "favorite": {
+            "default": false,
+            "type": "boolean"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MediaItemMetadata",
+            "nullable": true
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "uri": {
+            "nullable": true,
+            "type": "string"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType",
+            "default": "playlist"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "provider",
+          "name"
+        ]
+      },
+      "MediaItemMetadata": {
+        "properties": {
+          "images": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaItemImage"
+            }
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MediaItemImage": {
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "proxy_id": {
+            "nullable": true,
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "provider"
+        ]
+      },
+      "MediaItemPalette": {
+        "properties": {
+          "primary": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "background_light": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "on_light": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "background_dark": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "on_dark": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "accent": {
+            "nullable": true,
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "StreamDetails": {
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "media_type": {
+            "$ref": "#/components/schemas/MediaType",
+            "default": "track"
+          },
+          "stream_type": {
+            "$ref": "#/components/schemas/StreamType",
+            "default": "custom"
+          },
+          "audio_format": {
+            "$ref": "#/components/schemas/AudioFormat"
+          },
+          "item_id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "item_id",
+          "audio_format"
+        ]
+      },
+      "AudioFormat": {
+        "properties": {
+          "bit_rate": {
+            "nullable": true,
+            "type": "integer"
+          },
+          "content_type": {
+            "$ref": "#/components/schemas/ContentType",
+            "default": "?"
+          },
+          "bit_depth": {
+            "default": 16,
+            "type": "integer"
+          },
+          "sample_rate": {
+            "default": 44100,
+            "type": "integer"
+          },
+          "channels": {
+            "default": 2,
+            "type": "integer"
+          },
+          "codec_type": {
+            "$ref": "#/components/schemas/ContentType",
+            "default": "?"
+          }
+        },
+        "type": "object"
+      },
+      "PlaybackState": {
+        "type": "string",
+        "enum": [
+          "idle",
+          "paused",
+          "playing",
+          "unknown"
+        ],
+        "description": "Enum: PlaybackState. Possible values: idle, paused, playing, unknown"
+      },
+      "MediaType": {
+        "type": "string",
+        "enum": [
+          "artist",
+          "album",
+          "track",
+          "playlist",
+          "radio",
+          "audiobook",
+          "podcast",
+          "podcast_episode",
+          "folder",
+          "collection",
+          "announcement",
+          "flow_stream",
+          "plugin_source",
+          "audio_source",
+          "sound_effect",
+          "genre",
+          "unknown"
+        ],
+        "description": "Enum: MediaType. Possible values: artist, album, track, playlist, radio, audiobook, podcast, podcast_episode, folder, collection, announcement, flow_stream, plugin_source, audio_source, sound_effect, genre, unknown"
+      },
+      "StreamType": {
+        "type": "string",
+        "enum": [
+          "http",
+          "encrypted_http",
+          "hls",
+          "icy",
+          "shoutcast",
+          "in_band",
+          "local_file",
+          "named_pipe",
+          "other_ffmpeg",
+          "custom",
+          "unknown"
+        ],
+        "description": "Enum: StreamType. Possible values: http, encrypted_http, hls, icy, shoutcast, in_band, local_file, named_pipe, other_ffmpeg, custom, unknown"
+      },
+      "ContentType": {
+        "type": "string",
+        "enum": [
+          "ogg",
+          "wav",
+          "aiff",
+          "mpeg",
+          "m4a",
+          "mp4",
+          "mp4a",
+          "m4b",
+          "dsf",
+          "flac",
+          "mp3",
+          "wma",
+          "wmav2",
+          "wmapro",
+          "wavpack",
+          "tak",
+          "ape",
+          "mpc",
+          "aac",
+          "alac",
+          "opus",
+          "vorbis",
+          "ac3",
+          "eac3",
+          "dts",
+          "truehd",
+          "dtshd",
+          "dtsx",
+          "cook",
+          "ralf",
+          "mp2",
+          "mp1",
+          "dra",
+          "atrac3",
+          "s16le",
+          "s24le",
+          "s32le",
+          "f32le",
+          "f64le",
+          "s16be",
+          "s24be",
+          "s32be",
+          "pcm_bluray",
+          "pcm_dvd",
+          "adpcm_ima_qt",
+          "adpcm_ms",
+          "adpcm_swf",
+          "dsd_lsbf",
+          "dsd_msbf",
+          "dsd_lsbf_planar",
+          "dsd_msbf_planar",
+          "amr_nb",
+          "amr_wb",
+          "speex",
+          "alaw",
+          "mulaw",
+          "g722",
+          "g726",
+          "pcm",
+          "nut",
+          "?"
+        ],
+        "description": "Enum: ContentType. Possible values: ogg, wav, aiff, mpeg, m4a, mp4, mp4a, m4b, dsf, flac, mp3, wma, wmav2, wmapro, wavpack, tak, ape, mpc, aac, alac, opus, vorbis, ac3, eac3, dts, truehd, dtshd, dtsx, cook, ralf, mp2, mp1, dra, atrac3, s16le, s24le, s32le, f32le, f64le, s16be, s24be, s32be, pcm_bluray, pcm_dvd, adpcm_ima_qt, adpcm_ms, adpcm_swf, dsd_lsbf, dsd_msbf, dsd_lsbf_planar, dsd_msbf_planar, amr_nb, amr_wb, speex, alaw, mulaw, g722, g726, pcm, nut, ?"
+      }
+    }
+  }
+}

@@ -15,6 +15,8 @@ dependencies:
   music_assistant: ^0.2.0
   flutter_svg: ^2.0.17
   qr_flutter: ^4.1.0
+  music_assistant_api:
+    path: packages/music_assistant_api
 
 dev_dependencies:
   flutter_test:

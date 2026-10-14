@@ -1,0 +1,13 @@
+swagger_to_dart:
+  input_directory: api/music_assistant_models.openapi.json
+  output_directory: lib/src/generated
+
+  model:
+    class_prefix: MusicAssistant
+    support_generic_arguments: true
+    union_class_fallback_name: fallback
+    enum_fallback_type: unknown
+
+  api_client:
+    base_api_client_class_name: MusicAssistantBaseApiClient
+    include_openapi_extras: false
