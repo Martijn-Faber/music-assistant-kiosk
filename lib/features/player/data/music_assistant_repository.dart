@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:app/models/media_item_palette.dart';
 import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
+import 'package:music_assistant_api/music_assistant_api.dart' as mass;
+import 'package:app/models/music_assistant/media_item.dart';
 
 import '../domain/player_summary.dart';
 import '../domain/player_queue_snapshot.dart';
@@ -13,9 +15,10 @@ import '../domain/radio_station.dart';
 import '../domain/playlist.dart';
 
 class MusicAssistantRepository {
-  MusicAssistantRepository._(this._client);
+  MusicAssistantRepository._(this._client, this._playerApiClient);
 
   final MusicAssistantClient _client;
+  final mass.MusicAssistantClient _playerApiClient;
 
   String get serverUrl => _client.serverUrl;
   String get token => _client.token;
@@ -58,11 +61,17 @@ class MusicAssistantRepository {
     String token,
   ) async {
     final client = MusicAssistantClient(serverUrl: serverUrl, token: token);
+    final playerApiClient = mass.MusicAssistantClient(
+      serverUrl: serverUrl,
+      token: token,
+    );
     try {
       await client.connect();
-      return MusicAssistantRepository._(client);
+      await playerApiClient.connect();
+      return MusicAssistantRepository._(client, playerApiClient);
     } catch (_) {
       await client.disconnect();
+      await playerApiClient.dispose();
       rethrow;
     }
   }
@@ -83,15 +92,24 @@ class MusicAssistantRepository {
         .toList();
   }
 
-  Future<Map<String, dynamic>> fetchServerInfo() async {
+  Future<PlayerSummary> fetchPlayer(String playerId) async {
+    final player = await _playerApiClient.getPlayer(playerId);
+
+    print("Testing new API: ${player.toJson()}");
+    return PlayerSummary.fromMap(player.toJson());
+  }
+
+  Future<mass.MusicAssistantServerInfoMessage> fetchServerInfo() async {
     final response = await _client.sendCommand('info');
     if (response is! Map) {
       throw const FormatException('The server returned invalid info.');
     }
-    return Map<String, dynamic>.from(response);
+    return mass.MusicAssistantServerInfoMessage.fromJson(
+      Map<String, dynamic>.from(response),
+    );
   }
 
-  Future<Map<String, dynamic>> fetchMediaItem(String uri) async {
+  Future<MusicAssistantMediaItem> fetchMediaItem(String uri) async {
     final response = await _client.sendCommand(
       'music/item_by_uri',
       args: {'uri': uri},
@@ -99,7 +117,7 @@ class MusicAssistantRepository {
     if (response is! Map) {
       throw const FormatException('The server returned invalid media info.');
     }
-    return Map<String, dynamic>.from(response);
+    return MusicAssistantMediaItem.fromJson(Map<String, dynamic>.from(response));
   }
 
   Future<void> setFavorite(String uri, bool favorite) async {
@@ -111,14 +129,9 @@ class MusicAssistantRepository {
       return;
     }
     final item = await fetchMediaItem(uri);
-    final itemId = item['item_id'];
-    final mediaType = item['media_type'];
-    if (itemId is! String || mediaType is! String) {
-      throw const FormatException('The media item cannot be removed from favorites.');
-    }
     await _client.sendCommand(
       'music/favorites/remove_item',
-      args: {'media_type': mediaType, 'library_item_id': itemId},
+      args: {'media_type': item.mediaType, 'library_item_id': item.itemId},
     );
   }
 
@@ -317,9 +330,9 @@ class MusicAssistantRepository {
         args: {'uri': item.uri},
       );
       if (response is Map) {
-        final imageUrl = RecentMediaItem.imageUrlFromMap(
+        final imageUrl = MusicAssistantMediaItem.fromJson(
           Map<String, dynamic>.from(response),
-        );
+        ).imageUrl ?? RecentMediaItem.imageUrlFromMap(Map<String, dynamic>.from(response));
         if (imageUrl != null) return item.withImageUrl(imageUrl);
       }
     } catch (_) {
@@ -451,5 +464,7 @@ class MusicAssistantRepository {
   Future<void> nextTrack(String playerId) =>
       _client.players.nextTrack(playerId);
 
-  Future<void> disconnect() => _client.disconnect();
+  Future<void> disconnect() async {
+    await Future.wait([_client.disconnect(), _playerApiClient.dispose()]);
+  }
 }

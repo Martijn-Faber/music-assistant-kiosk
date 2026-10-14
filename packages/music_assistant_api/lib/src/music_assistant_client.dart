@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'connection_state.dart';
 import 'exceptions.dart';
+import 'generated/models/music_assistant_player.dart';
 
 /// WebSocket client for Music Assistant's command API.
 ///
@@ -81,6 +82,18 @@ class MusicAssistantClient {
     String command, {
     Map<String, Object?>? args,
   }) => _sendCommand(command, args: args);
+
+  /// Fetches a player and its current state by its Music Assistant player ID.
+  Future<MusicAssistantPlayer> getPlayer(String playerId) async {
+    final response = await sendCommand(
+      'players/get',
+      args: {'player_id': playerId},
+    );
+    if (response is! Map) {
+      throw const FormatException('The server returned invalid player data.');
+    }
+    return MusicAssistantPlayer.fromJson(Map<String, dynamic>.from(response));
+  }
 
   Future<Object?> _sendCommand(
     String command, {

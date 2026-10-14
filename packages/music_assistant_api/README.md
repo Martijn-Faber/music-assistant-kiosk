@@ -17,3 +17,9 @@ Generation instructions are in the app's `docs/API_CODE_GENERATION.md`.
 The kiosk app still uses its existing client during this transition. The new
 package is added as a local path dependency so the old and new clients can be
 compared while features move across.
+
+The WebSocket client includes a typed wrapper for the `players/get` command:
+
+```dart
+final player = await client.getPlayer('player-id');
+```

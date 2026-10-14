@@ -8,6 +8,7 @@ import '../core/storage/session_storage.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/player/data/music_assistant_repository.dart';
 import '../features/player/domain/player_summary.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 import '../features/player/presentation/player_screen.dart';
 import '../features/player/presentation/player_setup_page.dart';
 
@@ -24,7 +25,7 @@ class _SessionGateState extends State<SessionGate> {
 
   MusicAssistantRepository? _repository;
   List<PlayerSummary> _players = [];
-  Map<String, dynamic>? _serverInfo;
+  MusicAssistantServerInfoMessage? _serverInfo;
   String? _selectedPlayerId;
   void Function()? _unsubscribeFromPlayers;
   bool _isLoading = true;
@@ -83,6 +84,19 @@ class _SessionGateState extends State<SessionGate> {
           players.any((player) => player.id == savedSession.selectedPlayerId)
           ? savedSession.selectedPlayerId
           : null;
+      final selectedPlayer = selectedPlayerId == null
+          ? null
+          : await repository.fetchPlayer(selectedPlayerId);
+      if (!mounted) {
+        await repository.disconnect();
+        return;
+      }
+      if (selectedPlayer != null) {
+        final index = players.indexWhere(
+          (player) => player.id == selectedPlayerId,
+        );
+        players[index] = selectedPlayer;
+      }
       setState(() {
         _repository = repository;
         _players = players;
@@ -203,9 +217,22 @@ class _SessionGateState extends State<SessionGate> {
 
   Future<void> _selectPlayer(String playerId) async {
     try {
+      final repository = _repository;
+      if (repository == null) {
+        throw StateError(
+          'Connect to Music Assistant before selecting a player.',
+        );
+      }
+      final player = await repository.fetchPlayer(playerId);
       await _sessionStorage.saveSelectedPlayerId(playerId);
       if (!mounted) return;
       setState(() {
+        final index = _players.indexWhere((item) => item.id == playerId);
+        if (index == -1) {
+          _players.add(player);
+        } else {
+          _players[index] = player;
+        }
         _selectedPlayerId = playerId;
         _needsPlayerSetup = false;
         _playerSetupError = null;
@@ -372,10 +399,7 @@ class _SessionGateState extends State<SessionGate> {
   }) async {
     final player = _players.where((item) => item.id == playerId).firstOrNull;
     final currentVolume = player?.volumeLevel ??
-        (await repository.fetchPlayers())
-            .where((item) => item.id == playerId)
-            .firstOrNull
-            ?.volumeLevel;
+        (await repository.fetchPlayer(playerId)).volumeLevel;
     if (currentVolume == null) return;
     final nextVolume = (currentVolume + (increase ? 5 : -5))
         .clamp(0, 100)
@@ -397,7 +421,7 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      final players = await repository.fetchPlayers();
+      final refreshedPlayer = await repository.fetchPlayer(playerId);
       if (!mounted ||
           request != _volumeRefreshRequest ||
           !identical(_repository, repository) ||
@@ -405,10 +429,6 @@ class _SessionGateState extends State<SessionGate> {
         return;
       }
 
-      final refreshedPlayer = players
-          .where((player) => player.id == playerId)
-          .firstOrNull;
-      if (refreshedPlayer == null) return;
       final currentPlayer = _players
           .where((player) => player.id == playerId)
           .firstOrNull;
