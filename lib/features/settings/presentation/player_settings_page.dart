@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 import 'package:flutter/material.dart';
 
 import 'package:app/features/player/domain/player_summary.dart';
@@ -22,7 +23,7 @@ class PlayerSettingsPage extends StatefulWidget {
   final List<PlayerSummary> players;
   final String? selectedPlayerId;
   final String serverAddress;
-  final Map<String, dynamic>? serverInfo;
+  final MusicAssistantServerInfoMessage? serverInfo;
   final String? deviceName;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
@@ -120,9 +121,9 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     const GlassSectionLabel('MUSIC ASSISTANT SERVER'),
                     const SizedBox(height: 8),
                     for (final entry in [
-                      ('Name', info['name']),
-                      ('Version', info['server_version']),
-                      ('Status', info['status']),
+                      ('Name', info.name),
+                      ('Version', info.serverVersion),
+                      ('Status', info.status),
                     ])
                       if (entry.$2 is String && (entry.$2 as String).isNotEmpty) ...[
                         GlassInfoRow(

@@ -15,6 +15,7 @@ import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
 import 'player_queue_sheet.dart';
 import 'player_volume_dialog.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 
 class PlayerScreen extends StatelessWidget {
   // Keep the pager alive while SessionGate rebuilds PlayerScreen for player
@@ -41,7 +42,7 @@ class PlayerScreen extends StatelessWidget {
   });
 
   final MusicAssistantRepository repository;
-  final Map<String, dynamic>? serverInfo;
+  final MusicAssistantServerInfoMessage? serverInfo;
   final List<PlayerSummary> players;
   final String? selectedPlayerId;
   final String? qualityLabel;

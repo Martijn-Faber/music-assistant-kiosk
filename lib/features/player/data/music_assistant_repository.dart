@@ -5,7 +5,6 @@ import 'package:app/models/media_item_palette.dart';
 import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 import 'package:music_assistant_api/music_assistant_api.dart' as mass;
-import 'package:app/models/music_assistant/media_item.dart';
 
 import '../domain/player_summary.dart';
 import '../domain/player_queue_snapshot.dart';
@@ -109,7 +108,7 @@ class MusicAssistantRepository {
     );
   }
 
-  Future<MusicAssistantMediaItem> fetchMediaItem(String uri) async {
+  Future<Map<String, dynamic>> fetchMediaItem(String uri) async {
     final response = await _client.sendCommand(
       'music/item_by_uri',
       args: {'uri': uri},
@@ -117,7 +116,7 @@ class MusicAssistantRepository {
     if (response is! Map) {
       throw const FormatException('The server returned invalid media info.');
     }
-    return MusicAssistantMediaItem.fromJson(Map<String, dynamic>.from(response));
+    return Map<String, dynamic>.from(response);
   }
 
   Future<void> setFavorite(String uri, bool favorite) async {
@@ -129,9 +128,16 @@ class MusicAssistantRepository {
       return;
     }
     final item = await fetchMediaItem(uri);
+    final itemId = item['item_id'];
+    final mediaType = item['media_type'];
+    if (itemId is! String || mediaType is! String) {
+      throw const FormatException(
+        'The media item cannot be removed from favorites.',
+      );
+    }
     await _client.sendCommand(
       'music/favorites/remove_item',
-      args: {'media_type': item.mediaType, 'library_item_id': item.itemId},
+      args: {'media_type': mediaType, 'library_item_id': itemId},
     );
   }
 
@@ -330,9 +336,9 @@ class MusicAssistantRepository {
         args: {'uri': item.uri},
       );
       if (response is Map) {
-        final imageUrl = MusicAssistantMediaItem.fromJson(
+        final imageUrl = RecentMediaItem.imageUrlFromMap(
           Map<String, dynamic>.from(response),
-        ).imageUrl ?? RecentMediaItem.imageUrlFromMap(Map<String, dynamic>.from(response));
+        );
         if (imageUrl != null) return item.withImageUrl(imageUrl);
       }
     } catch (_) {
