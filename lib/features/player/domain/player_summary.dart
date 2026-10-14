@@ -1,3 +1,5 @@
+import 'package:app/models/media_item_palette.dart';
+
 class PlayerSummary {
   const PlayerSummary({
     required this.id,
@@ -29,7 +31,7 @@ class PlayerSummary {
   final String? artist;
   final String? album;
   final String? imageUrl;
-  final Map<String, dynamic>? palette;
+  final MediaItemPalette? palette;
   final List<String>? groupMembers;
   final int? durationSeconds;
   final double? elapsedTimeSeconds;
@@ -77,7 +79,9 @@ class PlayerSummary {
     final media = rawMedia is Map ? rawMedia : null;
 
     final rawPalette = media?['palette'];
-    final palette = rawPalette is Map ? Map<String, dynamic>.from(rawPalette) : null;
+    final palette = rawPalette is Map
+    ? MediaItemPalette.fromJson(Map<String, dynamic>.from(rawPalette))
+    : null;
 
     final available = data['available'];
     // Prefer the player's own level; group_volume can be shared across a
