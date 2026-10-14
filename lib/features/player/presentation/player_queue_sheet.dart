@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/player_queue_snapshot.dart';
@@ -62,8 +63,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     _currentPlayingUri = widget.initialMediaUri;
     _unsubscribeFromPlayerEvents = widget.repository.listenToPlayerEvents(
       onChanged: (player) {
-        if (player.id != widget.playerId ||
-            (player.mediaUri == null && player.title == null)) {
+        if (player.playerId != widget.playerId ||
+            (player.currentMedia?.uri == null &&
+                player.currentMedia?.title == null)) {
           return;
         }
         if (!mounted) return;
@@ -71,8 +73,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
           // Some player updates include a title but omit the URI. Keep the last
           // known URI in that case so the queue highlight does not fall back to
           // an older currentIndex from the initial queue snapshot.
-          if (player.mediaUri != null) {
-            _currentPlayingUri = player.mediaUri;
+          if (player.currentMedia?.uri != null) {
+            _currentPlayingUri = player.currentMedia!.uri;
             _currentQueueRowIndexOverride = null;
           }
         });

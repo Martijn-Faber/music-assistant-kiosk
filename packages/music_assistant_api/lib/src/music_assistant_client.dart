@@ -95,6 +95,22 @@ class MusicAssistantClient {
     return MusicAssistantPlayer.fromJson(Map<String, dynamic>.from(response));
   }
 
+  /// Fetches all players and their current states.
+  Future<List<MusicAssistantPlayer>> getPlayers() async {
+    final response = await sendCommand('players/all');
+    if (response is! List) {
+      throw const FormatException('The server returned invalid player data.');
+    }
+    return response
+        .whereType<Map>()
+        .map(
+          (player) => MusicAssistantPlayer.fromJson(
+            Map<String, dynamic>.from(player),
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Future<Object?> _sendCommand(
     String command, {
     Map<String, Object?>? args,

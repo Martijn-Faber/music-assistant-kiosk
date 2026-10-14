@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
-import '../domain/player_summary.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 import '../../../design_system/glass_design_system.dart'
     show GlassSlider, GlassTokens;
 import 'player_glass_widgets.dart';
@@ -15,14 +15,14 @@ class PlayerVolumeDialog extends StatefulWidget {
   });
 
   final MusicAssistantRepository repository;
-  final PlayerSummary player;
+  final MusicAssistantPlayer player;
 
   @override
   State<PlayerVolumeDialog> createState() => _PlayerVolumeDialogState();
 }
 
 class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
-  late Future<List<PlayerSummary>> _targets;
+  late Future<List<MusicAssistantPlayer>> _targets;
   final Map<String, int> _volumeLevels = {};
   final Map<String, DateTime> _ignoreVolumeEventsUntil = {};
   final Set<String> _adjustingPlayerIds = {};
@@ -33,19 +33,19 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
   void initState() {
     super.initState();
     _targets = _loadTargets();
-    final targetIds = {widget.player.id, ...?widget.player.groupMembers};
+    final targetIds = {widget.player.playerId, ...?widget.player.groupMembers};
     _unsubscribe = widget.repository.listenToPlayerEvents(
       onChanged: (player) {
-        if (!targetIds.contains(player.id) ||
+        if (!targetIds.contains(player.playerId) ||
             player.volumeLevel == null ||
             !mounted ||
-            _adjustingPlayerIds.contains(player.id) ||
-            (_ignoreVolumeEventsUntil[player.id]?.isAfter(DateTime.now()) ??
+            _adjustingPlayerIds.contains(player.playerId) ||
+            (_ignoreVolumeEventsUntil[player.playerId]?.isAfter(DateTime.now()) ??
                 false)) {
           return;
         }
         setState(() {
-          _volumeLevels[player.id] = player.volumeLevel!.clamp(0, 100);
+          _volumeLevels[player.playerId] = player.volumeLevel!.clamp(0, 100);
         });
       },
       onRemoved: (_) {},
@@ -58,22 +58,24 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
     super.dispose();
   }
 
-  Future<List<PlayerSummary>> _loadTargets() async {
+  Future<List<MusicAssistantPlayer>> _loadTargets() async {
     final players = await widget.repository.fetchPlayers();
     final memberIds = widget.player.groupMembers ?? const <String>[];
     final targets = memberIds.isEmpty
-        ? players.where((player) => player.id == widget.player.id).toList()
+        ? players
+              .where((player) => player.playerId == widget.player.playerId)
+              .toList()
         : players
               .where(
                 (player) =>
-                    memberIds.contains(player.id) ||
+                    memberIds.contains(player.playerId) ||
                     memberIds.contains(player.name),
               )
               .toList();
     final resolvedTargets = targets.isEmpty ? [widget.player] : targets;
     for (final target in resolvedTargets) {
       _volumeLevels.putIfAbsent(
-        target.id,
+        target.playerId,
         () => target.volumeLevel?.clamp(0, 100).toInt() ?? 0,
       );
     }
@@ -145,7 +147,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
               ],
             ),
             Flexible(
-              child: FutureBuilder<List<PlayerSummary>>(
+              child: FutureBuilder<List<MusicAssistantPlayer>>(
                 future: _targets,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
@@ -176,7 +178,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     ),
                     itemBuilder: (context, index) {
                       final target = targets[index];
-                      final volume = _volumeLevels[target.id] ?? 0;
+                      final volume = _volumeLevels[target.playerId] ?? 0;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -200,7 +202,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                   ),
                                 ),
                               ),
-                              if (_savingPlayerId == target.id) ...[
+                              if (_savingPlayerId == target.playerId) ...[
                                 const SizedBox.square(
                                   dimension: 14,
                                   child: CircularProgressIndicator(
@@ -225,13 +227,13 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             min: 0,
                             max: 100,
                             onChangeStart: (_) => setState(
-                              () => _adjustingPlayerIds.add(target.id),
+                              () => _adjustingPlayerIds.add(target.playerId),
                             ),
                             onChanged: (value) => setState(
-                              () => _volumeLevels[target.id] = value.round(),
+                              () => _volumeLevels[target.playerId] = value.round(),
                             ),
                             onChangeEnd: (value) =>
-                                _saveVolume(target.id, value),
+                                _saveVolume(target.playerId, value),
                             activeColor: Colors.white,
                             inactiveColor: const Color(0x55FFFFFF),
                           ),

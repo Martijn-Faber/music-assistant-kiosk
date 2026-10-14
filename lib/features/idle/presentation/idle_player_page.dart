@@ -3,7 +3,7 @@ import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
 
 import 'package:app/features/player/data/music_assistant_repository.dart';
-import 'package:app/features/player/domain/player_summary.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 import 'package:app/features/player/domain/playlist.dart';
 import 'package:app/features/player/domain/radio_station.dart';
 import '../../../design_system/glass_card.dart';
@@ -23,7 +23,7 @@ class IdlePlayerPage extends StatefulWidget {
   });
 
   final MusicAssistantRepository repository;
-  final PlayerSummary player;
+  final MusicAssistantPlayer player;
   final VoidCallback onPlaybackStarted;
 
   @override
@@ -69,7 +69,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     if (_startingStationId != null || _startingPlaylistUri != null) return;
     setState(() => _startingStationId = station.id);
     try {
-      await widget.repository.playRadio(widget.player.id, station);
+      await widget.repository.playRadio(widget.player.playerId, station);
       widget.onPlaybackStarted();
     } catch (error, stackTrace) {
       debugPrint('Could not start radio "${station.name}": $error');
@@ -84,7 +84,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     if (_startingStationId != null || _startingPlaylistUri != null) return;
     setState(() => _startingPlaylistUri = playlist.uri);
     try {
-      await widget.repository.playPlaylist(widget.player.id, playlist);
+      await widget.repository.playPlaylist(widget.player.playerId, playlist);
       widget.onPlaybackStarted();
     } catch (_) {
       _showPlayError();

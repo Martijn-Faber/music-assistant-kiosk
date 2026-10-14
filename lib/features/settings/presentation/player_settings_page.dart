@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import 'package:flutter/material.dart';
 
-import 'package:app/features/player/domain/player_summary.dart';
 import '../../../design_system/glass_design_system.dart';
 
 /// Settings as a regular pager destination, sized for the kiosk display.
@@ -20,7 +19,7 @@ class PlayerSettingsPage extends StatefulWidget {
     required this.onSignOut,
   });
 
-  final List<PlayerSummary> players;
+  final List<MusicAssistantPlayer> players;
   final String? selectedPlayerId;
   final String serverAddress;
   final MusicAssistantServerInfoMessage? serverInfo;
@@ -71,14 +70,16 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   const GlassSectionLabel('PLAYER ON SCREEN'),
                   const SizedBox(height: 8),
                   GlassDropdown<String>(
-                    value: widget.players.any((p) => p.id == _selectedPlayerId)
+                    value: widget.players.any(
+                      (p) => p.playerId == _selectedPlayerId,
+                    )
                         ? _selectedPlayerId
                         : null,
                     hint: 'Select a player',
                     items: widget.players
                         .map(
                           (player) => DropdownMenuItem<String>(
-                            value: player.id,
+                            value: player.playerId,
                             child: Text(
                               player.name,
                               maxLines: 1,

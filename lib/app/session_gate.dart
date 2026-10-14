@@ -7,7 +7,6 @@ import '../core/platform/volume_button_bridge.dart';
 import '../core/storage/session_storage.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/player/data/music_assistant_repository.dart';
-import '../features/player/domain/player_summary.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../features/player/presentation/player_screen.dart';
 import '../features/player/presentation/player_setup_page.dart';
@@ -24,7 +23,7 @@ class _SessionGateState extends State<SessionGate> {
   final _volumeButtons = VolumeButtonBridge();
 
   MusicAssistantRepository? _repository;
-  List<PlayerSummary> _players = [];
+  List<MusicAssistantPlayer> _players = [];
   MusicAssistantServerInfoMessage? _serverInfo;
   String? _selectedPlayerId;
   void Function()? _unsubscribeFromPlayers;
@@ -81,7 +80,9 @@ class _SessionGateState extends State<SessionGate> {
       }
 
       final selectedPlayerId =
-          players.any((player) => player.id == savedSession.selectedPlayerId)
+          players.any(
+            (player) => player.playerId == savedSession.selectedPlayerId,
+          )
           ? savedSession.selectedPlayerId
           : null;
       final selectedPlayer = selectedPlayerId == null
@@ -93,7 +94,7 @@ class _SessionGateState extends State<SessionGate> {
       }
       if (selectedPlayer != null) {
         final index = players.indexWhere(
-          (player) => player.id == selectedPlayerId,
+          (player) => player.playerId == selectedPlayerId,
         );
         players[index] = selectedPlayer;
       }
@@ -227,7 +228,7 @@ class _SessionGateState extends State<SessionGate> {
       await _sessionStorage.saveSelectedPlayerId(playerId);
       if (!mounted) return;
       setState(() {
-        final index = _players.indexWhere((item) => item.id == playerId);
+        final index = _players.indexWhere((item) => item.playerId == playerId);
         if (index == -1) {
           _players.add(player);
         } else {
@@ -278,39 +279,44 @@ class _SessionGateState extends State<SessionGate> {
       onChanged: (player) {
         if (!mounted) return;
         final previousPlayer = _players
-            .where((item) => item.id == player.id)
+            .where((item) => item.playerId == player.playerId)
             .firstOrNull;
         final playerWithVolume =
             player.volumeLevel == null && previousPlayer?.volumeLevel != null
-            ? player.withVolumeLevel(previousPlayer!.volumeLevel)
+            ? player.copyWith(volumeLevel: previousPlayer!.volumeLevel)
             : player;
         final updatedPlayer = playerWithVolume;
         final trackChanged =
             previousPlayer == null ||
-            previousPlayer.title != updatedPlayer.title ||
-            previousPlayer.mediaUri != updatedPlayer.mediaUri ||
-            previousPlayer.artist != updatedPlayer.artist ||
-            previousPlayer.album != updatedPlayer.album;
+            previousPlayer.currentMedia?.title !=
+                updatedPlayer.currentMedia?.title ||
+            previousPlayer.currentMedia?.uri != updatedPlayer.currentMedia?.uri ||
+            previousPlayer.currentMedia?.artist !=
+                updatedPlayer.currentMedia?.artist ||
+            previousPlayer.currentMedia?.album !=
+                updatedPlayer.currentMedia?.album;
         final volumeChanged =
             previousPlayer != null &&
             previousPlayer.volumeLevel != updatedPlayer.volumeLevel;
 
         setState(() {
-          final index = _players.indexWhere((item) => item.id == player.id);
+          final index = _players.indexWhere(
+            (item) => item.playerId == player.playerId,
+          );
           if (index == -1) {
             _players.add(updatedPlayer);
           } else {
             _players[index] = updatedPlayer;
           }
-          if (_selectedPlayerId == player.id && trackChanged) {
+          if (_selectedPlayerId == player.playerId && trackChanged) {
             _qualityLabel = null;
           }
         });
 
-        if (_selectedPlayerId == player.id && trackChanged) {
-          unawaited(_refreshQuality(player.id));
+        if (_selectedPlayerId == player.playerId && trackChanged) {
+          unawaited(_refreshQuality(player.playerId));
         }
-        if (_selectedPlayerId == player.id && volumeChanged) {
+        if (_selectedPlayerId == player.playerId && volumeChanged) {
           // An event is newer than any in-flight volume fetch. Do not let an
           // older fetch response move the bar back to a stale value.
           _volumeRefreshRequest++;
@@ -322,7 +328,7 @@ class _SessionGateState extends State<SessionGate> {
         final wasSelected = _selectedPlayerId == playerId;
         if (wasSelected) _qualityRequest++;
         setState(() {
-          _players.removeWhere((player) => player.id == playerId);
+          _players.removeWhere((player) => player.playerId == playerId);
           if (wasSelected) {
             _selectedPlayerId = null;
             _qualityLabel = null;
@@ -397,7 +403,9 @@ class _SessionGateState extends State<SessionGate> {
     String playerId, {
     required bool increase,
   }) async {
-    final player = _players.where((item) => item.id == playerId).firstOrNull;
+    final player = _players
+        .where((item) => item.playerId == playerId)
+        .firstOrNull;
     final currentVolume = player?.volumeLevel ??
         (await repository.fetchPlayer(playerId)).volumeLevel;
     if (currentVolume == null) return;
@@ -430,17 +438,19 @@ class _SessionGateState extends State<SessionGate> {
       }
 
       final currentPlayer = _players
-          .where((player) => player.id == playerId)
+          .where((player) => player.playerId == playerId)
           .firstOrNull;
       final playerWithVolume =
           refreshedPlayer.volumeLevel == null &&
               currentPlayer?.volumeLevel != null
-          ? refreshedPlayer.withVolumeLevel(currentPlayer!.volumeLevel)
+          ? refreshedPlayer.copyWith(volumeLevel: currentPlayer!.volumeLevel)
           : refreshedPlayer;
       final playerToStore = playerWithVolume;
 
       setState(() {
-        final index = _players.indexWhere((player) => player.id == playerId);
+        final index = _players.indexWhere(
+          (player) => player.playerId == playerId,
+        );
         if (index == -1) {
           _players.add(playerToStore);
         } else {
@@ -454,17 +464,17 @@ class _SessionGateState extends State<SessionGate> {
   }
 
   void _markPlayerIdle(String playerId) {
-    final index = _players.indexWhere((player) => player.id == playerId);
+    final index = _players.indexWhere(
+      (player) => player.playerId == playerId,
+    );
     if (index == -1) return;
     setState(() {
       final player = _players[index];
-      _players[index] = PlayerSummary(
-        id: player.id,
-        name: player.name,
-        playbackState: 'idle',
-        available: player.available,
-        volumeLevel: player.volumeLevel,
-        groupMembers: player.groupMembers,
+      _players[index] = player.copyWith(
+        playbackState: MusicAssistantPlaybackState.idle,
+        currentMedia: null,
+        elapsedTime: null,
+        elapsedTimeLastUpdated: null,
       );
       if (_selectedPlayerId == playerId) _qualityLabel = null;
     });

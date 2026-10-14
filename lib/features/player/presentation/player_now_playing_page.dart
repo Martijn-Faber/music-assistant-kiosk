@@ -4,10 +4,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/playback_quality_info.dart';
-import '../domain/player_summary.dart';
 import 'artwork_image.dart';
 import 'player_glass_widgets.dart';
 import 'provider_identity.dart';
@@ -24,7 +24,7 @@ class NowPlayingPage extends StatelessWidget {
     required this.error,
   });
 
-  final PlayerSummary player;
+  final MusicAssistantPlayer player;
   final MusicAssistantRepository repository;
   final VoidCallback onShowQueue;
   final String? qualityLabel;
@@ -45,7 +45,7 @@ class NowPlayingPage extends StatelessWidget {
       final artwork = SizedBox.square(
         dimension: artworkSize,
         child: ArtworkImage(
-          imageUrl: player.imageUrl,
+          imageUrl: player.currentMedia?.imageUrl,
           serverUrl: repository.serverUrl,
           token: repository.token,
           size: artworkSize,
@@ -167,7 +167,7 @@ class NowPlayingPage extends StatelessWidget {
     children: [
       _FavoriteButton(
         repository: repository,
-        uri: player.mediaUri,
+        uri: player.currentMedia?.uri,
       ),
       const SizedBox(width: 8),
       Material(
@@ -226,28 +226,28 @@ class NowPlayingPage extends StatelessWidget {
   );
 
   Future<void> _showPlaybackInfo(BuildContext context) async {
-    final details = repository.fetchPlaybackQualityInfo(player.id);
+    final details = repository.fetchPlaybackQualityInfo(player.playerId);
     await showDialog<void>(
       context: context,
       builder: (_) => _PlaybackQualityDialog(
         repository: repository,
         details: details,
-        trackTitle: player.title,
-        artist: player.artist,
+        trackTitle: player.currentMedia?.title,
+        artist: player.currentMedia?.artist,
         fallbackQualityLabel: qualityLabel,
       ),
     );
   }
 
   Widget _trackInfo(bool compact, bool desktop, {required bool centered}) {
-    final artist = player.artist?.trim();
-    final album = player.album?.trim();
+    final artist = player.currentMedia?.artist?.trim();
+    final album = player.currentMedia?.album?.trim();
     final hasArtist = artist?.isNotEmpty == true;
     final hasAlbum = album?.isNotEmpty == true;
     final hasSeekBar =
-        player.mediaType?.toLowerCase() != 'radio' &&
-        player.durationSeconds != null &&
-        player.durationSeconds! > 0;
+        player.currentMedia?.mediaType != MusicAssistantMediaType.radio &&
+        player.currentMedia?.duration != null &&
+        player.currentMedia!.duration! > 0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: centered
@@ -255,7 +255,7 @@ class NowPlayingPage extends StatelessWidget {
           : CrossAxisAlignment.start,
       children: [
         Text(
-          player.title ?? 'Nothing is playing',
+          player.currentMedia?.title ?? 'Nothing is playing',
           textAlign: centered ? TextAlign.center : TextAlign.start,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -370,7 +370,7 @@ class _TrackInfoPillLayoutDelegate extends MultiChildLayoutDelegate {
 class _TrackProgressBar extends StatefulWidget {
   const _TrackProgressBar({required this.player, required this.centered});
 
-  final PlayerSummary player;
+  final MusicAssistantPlayer player;
   final bool centered;
 
   @override
@@ -383,12 +383,13 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   DateTime _localPositionStartedAt = DateTime.now();
   double _localPositionAtStart = 0;
 
-  bool get _isPlaying => widget.player.playbackState.toLowerCase() == 'playing';
+  bool get _isPlaying =>
+      widget.player.playbackState == MusicAssistantPlaybackState.playing;
 
   @override
   void initState() {
     super.initState();
-    _localPositionAtStart = widget.player.elapsedTimeSeconds ?? 0;
+    _localPositionAtStart = widget.player.elapsedTime ?? 0;
     _localPositionStartedAt = _now;
     _updateTimer();
   }
@@ -397,16 +398,17 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   void didUpdateWidget(covariant _TrackProgressBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     final trackChanged =
-        oldWidget.player.mediaUri != widget.player.mediaUri ||
-        oldWidget.player.title != widget.player.title ||
-        oldWidget.player.imageUrl != widget.player.imageUrl;
+        oldWidget.player.currentMedia?.uri != widget.player.currentMedia?.uri ||
+        oldWidget.player.currentMedia?.title !=
+            widget.player.currentMedia?.title ||
+        oldWidget.player.currentMedia?.imageUrl !=
+            widget.player.currentMedia?.imageUrl;
     final positionChanged =
-        oldWidget.player.elapsedTimeSeconds !=
-            widget.player.elapsedTimeSeconds ||
+        oldWidget.player.elapsedTime != widget.player.elapsedTime ||
         oldWidget.player.elapsedTimeLastUpdated !=
             widget.player.elapsedTimeLastUpdated;
     if (trackChanged) {
-      _localPositionAtStart = widget.player.elapsedTimeSeconds ?? 0;
+      _localPositionAtStart = widget.player.elapsedTime ?? 0;
       _localPositionStartedAt = DateTime.now();
       _now = _localPositionStartedAt;
     } else if (positionChanged) {
@@ -418,8 +420,8 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
         widget.player,
       );
       _now = _localPositionStartedAt;
-    } else if (oldWidget.player.playbackState.toLowerCase() !=
-        widget.player.playbackState.toLowerCase()) {
+    } else if (oldWidget.player.playbackState !=
+        widget.player.playbackState) {
       _localPositionStartedAt = DateTime.now();
       _localPositionAtStart = _positionAt(
         _localPositionStartedAt,
@@ -428,14 +430,15 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
       _now = _localPositionStartedAt;
     }
     if (oldWidget.player.playbackState != widget.player.playbackState ||
-        oldWidget.player.durationSeconds != widget.player.durationSeconds) {
+        oldWidget.player.currentMedia?.duration !=
+            widget.player.currentMedia?.duration) {
       _updateTimer();
     }
   }
 
   void _updateTimer() {
     _timer?.cancel();
-    if (_isPlaying && (widget.player.durationSeconds ?? 0) > 0) {
+    if (_isPlaying && (widget.player.currentMedia?.duration ?? 0) > 0) {
       // The visible time labels only have one-second precision. Let Flutter
       // animate the bar between those updates instead of rebuilding this
       // widget tree four times per second.
@@ -453,7 +456,7 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
 
   @override
   Widget build(BuildContext context) {
-    final duration = widget.player.durationSeconds!;
+    final duration = widget.player.currentMedia!.duration!;
     final position = _positionAt(_now, widget.player);
     final elapsed = position.floor().clamp(0, duration);
     final progress = (position / duration).clamp(0.0, 1.0).toDouble();
@@ -492,23 +495,24 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
     );
   }
 
-  double _positionAt(DateTime time, PlayerSummary player) {
-    final elapsed = player.elapsedTimeSeconds;
+  double _positionAt(DateTime time, MusicAssistantPlayer player) {
+    final elapsed = player.elapsedTime;
     final updatedAt = player.elapsedTimeLastUpdated;
     if (elapsed != null &&
         updatedAt != null &&
-        player.playbackState.toLowerCase() == 'playing') {
+        player.playbackState == MusicAssistantPlaybackState.playing) {
       final updatedAtSeconds = updatedAt.abs() > 1000000000000
           ? updatedAt / 1000
           : updatedAt;
       final difference = time.millisecondsSinceEpoch / 1000 - updatedAtSeconds;
-      if (difference >= 0 && difference < (player.durationSeconds ?? 86400)) {
+      if (difference >= 0 &&
+          difference < (player.currentMedia?.duration ?? 86400)) {
         return elapsed + difference;
       }
     }
     final localElapsed =
         _localPositionAtStart +
-        (player.playbackState.toLowerCase() == 'playing'
+        (player.playbackState == MusicAssistantPlaybackState.playing
             ? time.difference(_localPositionStartedAt).inMilliseconds / 1000
             : 0);
     return localElapsed;

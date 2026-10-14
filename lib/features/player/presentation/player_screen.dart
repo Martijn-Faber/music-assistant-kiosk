@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
-import '../domain/player_summary.dart';
 import '../../screensaver/presentation/clock_screensaver_page.dart';
 import '../../idle/presentation/idle_player_page.dart';
 import '../../settings/presentation/player_settings_page.dart';
@@ -43,7 +42,7 @@ class PlayerScreen extends StatelessWidget {
 
   final MusicAssistantRepository repository;
   final MusicAssistantServerInfoMessage? serverInfo;
-  final List<PlayerSummary> players;
+  final List<MusicAssistantPlayer> players;
   final String? selectedPlayerId;
   final String? qualityLabel;
   final String? playerActionError;
@@ -55,22 +54,23 @@ class PlayerScreen extends StatelessWidget {
   final ValueChanged<String> onQueueCleared;
   final VoidCallback onDisconnect;
 
-  PlayerSummary? get _selectedPlayer =>
-      players.where((player) => player.id == selectedPlayerId).firstOrNull;
+  MusicAssistantPlayer? get _selectedPlayer => players
+      .where((player) => player.playerId == selectedPlayerId)
+      .firstOrNull;
 
   @override
   Widget build(BuildContext context) {
     final player = _selectedPlayer;
     final isIdle =
         player != null &&
-        (player.title?.trim().isNotEmpty != true) &&
-        player.playbackState.toLowerCase() != 'playing';
+        (player.currentMedia?.title?.trim().isNotEmpty != true) &&
+        player.playbackState != MusicAssistantPlaybackState.playing;
 
     return Scaffold(
       backgroundColor: const Color(0xFF101819),
       body: AlbumBackdrop(
-        imageUrl: isIdle ? null : player?.imageUrl,
-        palette: player?.palette,
+        imageUrl: isIdle ? null : player?.currentMedia?.imageUrl,
+        palette: player?.currentMedia?.palette,
         serverUrl: repository.serverUrl,
         token: repository.token,
         child: Stack(
@@ -114,7 +114,7 @@ class PlayerScreen extends StatelessWidget {
     );
   }
 
-  Widget _volumeFeedbackBar(PlayerSummary player) {
+  Widget _volumeFeedbackBar(MusicAssistantPlayer player) {
     final volume = player.volumeLevel?.clamp(0, 100);
     return GlassPill(
       key: const ValueKey('volume-feedback-visible'),
@@ -169,7 +169,7 @@ class PlayerScreen extends StatelessWidget {
     );
   }
 
-  Widget _playerContent(BuildContext context, PlayerSummary? player) {
+  Widget _playerContent(BuildContext context, MusicAssistantPlayer? player) {
     final settingsPage = PlayerSettingsPage(
       serverInfo: serverInfo,
       players: players,
@@ -198,8 +198,10 @@ class PlayerScreen extends StatelessWidget {
       );
     }
 
-    final hasCurrentTrack = player.title?.trim().isNotEmpty ?? false;
-    final isPlaying = player.playbackState.toLowerCase() == 'playing';
+    final currentMedia = player.currentMedia;
+    final hasCurrentTrack = currentMedia?.title?.trim().isNotEmpty ?? false;
+    final isPlaying =
+        player.playbackState == MusicAssistantPlaybackState.playing;
     final idleHome = IdlePlayerPage(
       key: ValueKey('${repository.serverUrl}:$selectedPlayerId'),
       repository: repository,
@@ -209,8 +211,9 @@ class PlayerScreen extends StatelessWidget {
     final isIdle = !hasCurrentTrack && !isPlaying;
     final nowPlayingLabel = hasCurrentTrack
         ? [
-            player.title!.trim(),
-            if (player.artist?.trim().isNotEmpty == true) player.artist!.trim(),
+            currentMedia!.title!.trim(),
+            if (currentMedia.artist?.trim().isNotEmpty == true)
+              currentMedia.artist!.trim(),
           ].join(' · ')
         : isPlaying
         ? 'Music is playing'
@@ -236,8 +239,8 @@ class PlayerScreen extends StatelessWidget {
               showDragHandle: false,
               builder: (context) => PlayerQueueSheet(
                 repository: repository,
-                playerId: player.id,
-                initialMediaUri: player.mediaUri,
+                playerId: player.playerId,
+                initialMediaUri: currentMedia?.uri,
                 onQueueCleared: onQueueCleared,
               ),
             ),
@@ -249,7 +252,9 @@ class PlayerScreen extends StatelessWidget {
       key: _pagerKey,
       isIdle: isIdle,
       playerName: player.name,
-      groupMemberCount: player.groupMemberCount,
+      groupMemberCount: (player.groupMembers?.length ?? 0) > 1
+          ? player.groupMembers!.length
+          : null,
       repository: repository,
       player: player,
       pages: [
@@ -265,7 +270,7 @@ class PlayerScreen extends StatelessWidget {
   }
 
   Widget _playerDetails(
-    PlayerSummary player, {
+    MusicAssistantPlayer player, {
     required bool centered,
     required bool compact,
     required bool desktop,
@@ -281,7 +286,7 @@ class PlayerScreen extends StatelessWidget {
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final title = player.title ?? 'Nothing is playing';
+            final title = player.currentMedia?.title ?? 'Nothing is playing';
             final fontSize = _fitTitleFontSize(
               context,
               title,
@@ -302,12 +307,13 @@ class PlayerScreen extends StatelessWidget {
             );
           },
         ),
-        if (player.artist != null || player.album != null) ...[
+        if (player.currentMedia?.artist != null ||
+            player.currentMedia?.album != null) ...[
           SizedBox(height: compact ? 4 : 8),
           LayoutBuilder(
             builder: (context, constraints) {
-              final artist = player.artist?.trim();
-              final album = player.album?.trim();
+              final artist = player.currentMedia?.artist?.trim();
+              final album = player.currentMedia?.album?.trim();
               final hasArtist = artist != null && artist.isNotEmpty;
               final hasAlbum = album != null && album.isNotEmpty;
               final metadata = [
@@ -529,7 +535,7 @@ class _PlayerPages extends StatefulWidget {
   final String playerName;
   final int? groupMemberCount;
   final MusicAssistantRepository repository;
-  final PlayerSummary? player;
+  final MusicAssistantPlayer? player;
   final List<Widget> pages;
 
   @override

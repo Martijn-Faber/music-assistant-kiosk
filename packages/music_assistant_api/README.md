@@ -18,8 +18,10 @@ The kiosk app still uses its existing client during this transition. The new
 package is added as a local path dependency so the old and new clients can be
 compared while features move across.
 
-The WebSocket client includes a typed wrapper for the `players/get` command:
+The WebSocket client includes typed wrappers for the `players/all` and
+`players/get` commands:
 
 ```dart
+final players = await client.getPlayers();
 final player = await client.getPlayer('player-id');
 ```

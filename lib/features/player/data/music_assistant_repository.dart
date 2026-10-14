@@ -6,7 +6,6 @@ import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 import 'package:music_assistant_api/music_assistant_api.dart' as mass;
 
-import '../domain/player_summary.dart';
 import '../domain/player_queue_snapshot.dart';
 import '../domain/playback_quality_info.dart';
 import '../domain/recent_media_item.dart';
@@ -75,27 +74,11 @@ class MusicAssistantRepository {
     }
   }
 
-  Future<List<PlayerSummary>> fetchPlayers() async {
-    final response = await _client.sendCommand('players/all');
-    if (response is! List) {
-      throw const FormatException(
-        'The server returned an invalid player list.',
-      );
-    }
+  Future<List<mass.MusicAssistantPlayer>> fetchPlayers() async =>
+      (await _playerApiClient.getPlayers()).toList();
 
-    return response
-        .whereType<Map>()
-        .map(
-          (player) => PlayerSummary.fromMap(Map<String, dynamic>.from(player)),
-        )
-        .toList();
-  }
-
-  Future<PlayerSummary> fetchPlayer(String playerId) async {
-    final player = await _playerApiClient.getPlayer(playerId);
-
-    print("Testing new API: ${player.toJson()}");
-    return PlayerSummary.fromMap(player.toJson());
+  Future<mass.MusicAssistantPlayer> fetchPlayer(String playerId) async {
+    return await _playerApiClient.getPlayer(playerId);
   }
 
   Future<mass.MusicAssistantServerInfoMessage> fetchServerInfo() async {
@@ -409,7 +392,7 @@ class MusicAssistantRepository {
   }
 
   void Function() listenToPlayerEvents({
-    required void Function(PlayerSummary player) onChanged,
+    required void Function(mass.MusicAssistantPlayer player) onChanged,
     required void Function(String playerId) onRemoved,
   }) {
     return _client.subscribe(
@@ -426,12 +409,15 @@ class MusicAssistantRepository {
         final playerId = event.objectId ?? playerData['player_id'];
         if (playerId is! String) return;
         playerData['player_id'] = playerId;
+        if (playerData['name'] is! String) playerData['name'] = playerId;
 
+        final mass.MusicAssistantPlayer player;
         try {
-          onChanged(PlayerSummary.fromMap(playerData));
-        } on FormatException {
+          player = mass.MusicAssistantPlayer.fromJson(playerData);
+        } catch (_) {
           return;
         }
+        onChanged(player);
       },
       eventTypes: {
         EventType.playerAdded,

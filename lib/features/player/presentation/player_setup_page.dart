@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../domain/player_summary.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 import '../../../design_system/glass_design_system.dart';
 
 class PlayerSetupPage extends StatefulWidget {
@@ -14,7 +14,7 @@ class PlayerSetupPage extends StatefulWidget {
     required this.onComplete,
   });
 
-  final List<PlayerSummary> players;
+  final List<MusicAssistantPlayer> players;
   final bool isRefreshing;
   final String? error;
   final Future<void> Function() onRefresh;
@@ -31,7 +31,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
   @override
   void didUpdateWidget(covariant PlayerSetupPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!widget.players.any((player) => player.id == _selectedPlayerId)) {
+    if (!widget.players.any((player) => player.playerId == _selectedPlayerId)) {
       _selectedPlayerId = null;
     }
   }
@@ -72,7 +72,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final player = widget.players[index];
-                        final selected = player.id == _selectedPlayerId;
+                        final selected = player.playerId == _selectedPlayerId;
                         return GlassCard(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -90,7 +90,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                           onTap: _isSaving
                               ? null
                               : () => setState(
-                                  () => _selectedPlayerId = player.id,
+                                  () => _selectedPlayerId = player.playerId,
                                 ),
                           child: Row(
                             children: [
