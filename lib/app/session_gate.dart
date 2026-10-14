@@ -373,11 +373,25 @@ class _SessionGateState extends State<SessionGate> {
       switch (action) {
         case 'volumeUp':
           _showVolumeChangeFeedback();
-          await _adjustVolume(repository, playerId, increase: true);
+          final volumeIncreased = await _adjustVolume(
+            repository,
+            playerId,
+            increase: true,
+          );
+          if (volumeIncreased) {
+            await SystemSound.play(SystemSoundType.click);
+          }
           await _refreshPlayerAfterVolumeChange(repository, playerId);
         case 'volumeDown':
           _showVolumeChangeFeedback();
-          await _adjustVolume(repository, playerId, increase: false);
+          final volumeDecreased = await _adjustVolume(
+            repository,
+            playerId,
+            increase: false,
+          );
+          if (volumeDecreased) {
+            await SystemSound.play(SystemSoundType.click);
+          }
           await _refreshPlayerAfterVolumeChange(repository, playerId);
         case 'togglePlayback':
           await repository.togglePlayback(playerId);
@@ -398,7 +412,7 @@ class _SessionGateState extends State<SessionGate> {
     });
   }
 
-  Future<void> _adjustVolume(
+  Future<bool> _adjustVolume(
     MusicAssistantRepository repository,
     String playerId, {
     required bool increase,
@@ -408,11 +422,13 @@ class _SessionGateState extends State<SessionGate> {
         .firstOrNull;
     final currentVolume = player?.volumeLevel ??
         (await repository.fetchPlayer(playerId)).volumeLevel;
-    if (currentVolume == null) return;
+    if (currentVolume == null) return false;
     final nextVolume = (currentVolume + (increase ? 5 : -5))
         .clamp(0, 100)
         .toInt();
+    if (nextVolume == currentVolume) return false;
     await repository.setPlayerVolume(playerId, nextVolume);
+    return true;
   }
 
   Future<void> _refreshPlayerAfterVolumeChange(
