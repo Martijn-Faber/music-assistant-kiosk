@@ -111,16 +111,14 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      widget.nowPlayingLabel == null
-                          ? CupertinoIcons.antenna_radiowaves_left_right
-                          : CupertinoIcons.music_note,
+                      CupertinoIcons.music_note,
                       size: GlassTokens.iconSizeS,
                       color: Color(0xFFE9F0EB),
                     ),
                     SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        widget.nowPlayingLabel ?? 'Tap to choose a station',
+                        widget.nowPlayingLabel ?? 'Start listening',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
