@@ -422,6 +422,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
       child: Stack(
         children: [
           PageView.builder(
+            scrollDirection: Axis.vertical,
             itemCount: widget.stations.length,
             onPageChanged: (index) => setState(() => _page = index),
             itemBuilder: (context, index) {
@@ -439,7 +440,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                       ? null
                       : () => widget.onSelect!(item),
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 22),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -499,19 +500,19 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
             },
           ),
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 10,
+            top: 0,
+            left: 8,
+            bottom: 0,
             child: IgnorePointer(
-              child: Row(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (var i = _indicatorStart; i < _indicatorStart + _indicatorCount; i++) ...[
-                    if (i > 0) const SizedBox(width: 6),
+                    if (i > _indicatorStart) const SizedBox(height: 6),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      width: i == _page ? 16 : 6,
-                      height: 6,
+                      width: 6,
+                      height: i == _page ? 16 : 6,
                       decoration: BoxDecoration(
                         color: i == _page ? Colors.white : Colors.white54,
                         borderRadius: BorderRadius.circular(99),
