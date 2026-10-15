@@ -179,6 +179,10 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     itemBuilder: (context, index) {
                       final target = targets[index];
                       final volume = _volumeLevels[target.playerId] ?? 0;
+                      final canSetVolume = target.supportedFeatures?.contains(
+                            MusicAssistantPlayerFeature.volumeSet,
+                          ) ==
+                          true;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -213,7 +217,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                 const SizedBox(width: 9),
                               ],
                               Text(
-                                '${volume}%',
+                                canSetVolume ? '${volume}%' : 'Unsupported',
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: GlassTokens.fontSize13,
@@ -226,14 +230,19 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             value: volume.toDouble(),
                             min: 0,
                             max: 100,
-                            onChangeStart: (_) => setState(
-                              () => _adjustingPlayerIds.add(target.playerId),
-                            ),
-                            onChanged: (value) => setState(
-                              () => _volumeLevels[target.playerId] = value.round(),
-                            ),
-                            onChangeEnd: (value) =>
-                                _saveVolume(target.playerId, value),
+                            onChangeStart: canSetVolume
+                                ? (_) => setState(
+                                    () => _adjustingPlayerIds.add(target.playerId),
+                                  )
+                                : null,
+                            onChanged: canSetVolume
+                                ? (value) => setState(
+                                    () => _volumeLevels[target.playerId] = value.round(),
+                                  )
+                                : null,
+                            onChangeEnd: canSetVolume
+                                ? (value) => _saveVolume(target.playerId, value)
+                                : null,
                             activeColor: Colors.white,
                             inactiveColor: const Color(0x55FFFFFF),
                           ),

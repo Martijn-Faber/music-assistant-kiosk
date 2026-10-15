@@ -106,7 +106,7 @@ class _SessionGateState extends State<SessionGate> {
         _needsPlayerSetup = selectedPlayerId == null;
       });
       _listenToPlayerChanges(repository);
-      await _setVolumeControlEnabled(selectedPlayerId != null);
+      await _setVolumeControlEnabled(_playerSupportsVolumeSet(selectedPlayer));
       if (selectedPlayerId != null)
         unawaited(_refreshQuality(selectedPlayerId));
     } catch (_) {
@@ -240,7 +240,7 @@ class _SessionGateState extends State<SessionGate> {
         _qualityLabel = null;
         _playerError = null;
       });
-      await _setVolumeControlEnabled(true);
+      await _setVolumeControlEnabled(_playerSupportsVolumeSet(player));
       unawaited(_refreshQuality(playerId));
     } catch (error) {
       if (mounted) {
@@ -370,6 +370,12 @@ class _SessionGateState extends State<SessionGate> {
     final repository = _repository;
     final playerId = _selectedPlayerId;
     if (repository == null || playerId == null) return;
+    if ((action == 'volumeUp' || action == 'volumeDown') &&
+        !_playerSupportsVolumeSet(
+          _players.where((player) => player.playerId == playerId).firstOrNull,
+        )) {
+      return;
+    }
 
     print("Incoming hardware button command");
 
@@ -407,6 +413,12 @@ class _SessionGateState extends State<SessionGate> {
       if (mounted) setState(() => _playerActionError = 'Player action failed.');
     }
   }
+
+  bool _playerSupportsVolumeSet(MusicAssistantPlayer? player) =>
+      player?.supportedFeatures?.contains(
+        MusicAssistantPlayerFeature.volumeSet,
+      ) ==
+      true;
 
   void _showVolumeChangeFeedback() {
     _volumeFeedbackTimer?.cancel();
