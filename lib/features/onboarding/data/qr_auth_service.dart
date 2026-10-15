@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:music_assistant_api/music_assistant_api.dart';
+
 /// Starts a short-lived callback on the clock and asks Music Assistant to
 /// return its OAuth session token there after Home Assistant sign-in.
 class QrAuthSession {
@@ -88,18 +90,19 @@ class QrAuthSession {
         );
       }
 
-      final result = await _sendPublicCommand(
-        serverUrl,
-        'auth/authorization_url',
-        args: {'provider_id': providerId, 'return_url': returnUrl.toString()},
+      final authClient = MusicAssistantClient(
+        serverUrl: serverUrl,
+        token: '',
       );
-      final authorizationUrl = result is Map
-          ? result['authorization_url']
-          : null;
-      if (authorizationUrl is! String || authorizationUrl.isEmpty) {
-        throw const QrAuthException(
-          'Music Assistant could not start Home Assistant sign-in.',
+      late final String authorizationUrl;
+      try {
+        await authClient.connectUnauthenticated();
+        authorizationUrl = await authClient.auth.authorizationUrl(
+          providerId: providerId,
+          returnUrl: returnUrl.toString(),
         );
+      } finally {
+        await authClient.disconnect();
       }
 
       return QrAuthSession._(

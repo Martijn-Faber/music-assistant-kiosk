@@ -49,7 +49,10 @@ class MusicAssistantClient {
   final Duration requestTimeout;
 
   late final MusicResource music = MusicResource(sendCommand);
-  late final AuthResource auth = AuthResource(sendCommand);
+  late final AuthResource auth = AuthResource(
+    sendCommand,
+    sendUnauthenticatedCommand,
+  );
   late final PlayersResource players = PlayersResource(
     all: _getPlayers,
     get: _getPlayer,
@@ -132,7 +135,12 @@ class MusicAssistantClient {
     },
   );
 
-  Future<void> connect() async {
+  Future<void> connect() => _connect(authenticate: true);
+
+  /// Opens the WebSocket without sending an authentication command.
+  Future<void> connectUnauthenticated() => _connect(authenticate: false);
+
+  Future<void> _connect({required bool authenticate}) async {
     if (_socket != null) throw StateError('Already connected.');
     _closing = false;
     _stateController.add(MusicAssistantConnectionState.connecting);
@@ -150,18 +158,20 @@ class MusicAssistantClient {
 
     try {
       serverInfo = await _serverInfoCompleter!.future.timeout(requestTimeout);
-      final authResult = await _sendCommand(
-        'auth',
-        args: {'token': token},
-        allowUnauthenticated: true,
-      );
-      if (authResult is! Map || authResult['authenticated'] != true) {
-        throw const MusicAssistantApiException('Authentication failed.');
+      if (authenticate) {
+        final authResult = await _sendCommand(
+          'auth',
+          args: {'token': token},
+          allowUnauthenticated: true,
+        );
+        if (authResult is! Map || authResult['authenticated'] != true) {
+          throw const MusicAssistantApiException('Authentication failed.');
+        }
+        user = authResult['user'] is Map
+            ? Map<String, dynamic>.from(authResult['user'] as Map)
+            : null;
+        _authenticated = true;
       }
-      user = authResult['user'] is Map
-          ? Map<String, dynamic>.from(authResult['user'] as Map)
-          : null;
-      _authenticated = true;
       _stateController.add(MusicAssistantConnectionState.connected);
     } catch (_) {
       await disconnect();
@@ -173,6 +183,12 @@ class MusicAssistantClient {
   /// server providers after this package version was released.
   Future<Object?> sendCommand(String command, {Map<String, Object?>? args}) =>
       _sendCommand(command, args: args);
+
+  /// Sends an unauthenticated command over an open WebSocket connection.
+  Future<Object?> sendUnauthenticatedCommand(
+    String command, {
+    Map<String, Object?>? args,
+  }) => _sendCommand(command, args: args, allowUnauthenticated: true);
 
   /// Fetches a player and its current state by its Music Assistant player ID.
   Future<MusicAssistantPlayer> _getPlayer(String playerId) async {
