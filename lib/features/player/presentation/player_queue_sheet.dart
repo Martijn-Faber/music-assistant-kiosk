@@ -69,6 +69,16 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   bool _queueRefreshInFlight = false;
   bool _queueRefreshPending = false;
 
+  String? get _queueSourceSubtitle {
+    final sources = widget.queueController.queue?.sources;
+    if (sources == null || sources.isEmpty) return null;
+    final names = sources
+        .map((source) => source.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    return names.isEmpty ? null : names.join(', ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -593,14 +603,31 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       color: Colors.white,
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'Queue',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: GlassTokens.fontSize22,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Queue',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: GlassTokens.fontSize22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (_queueSourceSubtitle case final subtitle?)
+                            Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     IconButton(
