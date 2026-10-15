@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
@@ -13,6 +14,7 @@ import 'artwork_image.dart';
 import 'player_queue_controller.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
+import '../../../design_system/glass_surface.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerQueueSheet extends StatefulWidget {
@@ -63,6 +65,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   late String? _currentPlayingUri;
   late final void Function() _unsubscribeFromPlayerEvents;
   Timer? _queueRefreshTimer;
+  Timer? _bufferedInfoTimer;
+  OverlayEntry? _bufferedInfoEntry;
   bool _queueRefreshInFlight = false;
   bool _queueRefreshPending = false;
 
@@ -272,11 +276,47 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     }
   }
 
+  void _showBufferedInfoMessage() {
+    _bufferedInfoTimer?.cancel();
+    _bufferedInfoEntry?.remove();
+
+    final entry = OverlayEntry(
+      builder: (context) => Positioned(
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.paddingOf(context).bottom + 28,
+        child: SafeArea(
+          top: false,
+          child: Material(
+            color: const Color(0xEE263238),
+            elevation: 8,
+            borderRadius: BorderRadius.circular(14),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Text(
+                'This track is already buffered by the player to play next.',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context, rootOverlay: true).insert(entry);
+    _bufferedInfoEntry = entry;
+    _bufferedInfoTimer = Timer(const Duration(seconds: 3), () {
+      entry.remove();
+      if (identical(_bufferedInfoEntry, entry)) _bufferedInfoEntry = null;
+    });
+  }
+
   @override
   void dispose() {
     _unsubscribeFromPlayerEvents();
     widget.queueController.removeListener(_onSharedQueueChanged);
     _queueRefreshTimer?.cancel();
+    _bufferedInfoTimer?.cancel();
+    _bufferedInfoEntry?.remove();
     _dismissProgress.dispose();
     _sheetController.dispose();
     super.dispose();
@@ -841,6 +881,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               final isPreviouslyPlayed =
                                   currentQueueRowIndex >= 0 &&
                                   index < currentQueueRowIndex;
+                              final isBufferedUpcoming =
+                                  isBuffered &&
+                                  currentQueueRowIndex >= 0 &&
+                                  index > currentQueueRowIndex;
                               final artist = _queueArtist(item);
                               final isLoading = _startingQueueRowIndex == index;
                               final tile = ListTile(
@@ -887,6 +931,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                       serverUrl: widget.repository.serverUrl,
                                       token: widget.repository.token,
                                       size: 48,
+                                      safeInVirtualizedList: true,
                                     ),
                                   ],
                                 ),
@@ -921,18 +966,28 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                           color: Colors.white,
                                         ),
                                       )
-                                    : isBuffered
-                                    ? const Tooltip(
-                                        message: 'Already queued for playback',
-                                        child: Icon(
-                                          CupertinoIcons.lock_fill,
+                                    : isBufferedUpcoming
+                                    ? IconButton(
+                                        onPressed: () {
+                                          _showBufferedInfoMessage();
+                                        },
+                                        padding: const EdgeInsets.all(12),
+                                        constraints: const BoxConstraints.tightFor(
+                                          width: 44,
+                                          height: 44,
+                                        ),
+                                        icon: const Icon(
+                                          CupertinoIcons.info_circle,
                                           color: Colors.white38,
                                           size: 16,
                                         ),
                                       )
                                     : null,
                               );
-                              return Dismissible(
+                              return _BufferedSwipeRow(
+                                key: ValueKey(itemKey),
+                                enabled: isBufferedUpcoming,
+                                child: Dismissible(
                                 key: ValueKey(itemKey),
                                 movementDuration: const Duration(
                                   milliseconds: 220,
@@ -944,7 +999,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     _isClearingQueue ||
                                         (_isRemovingQueueItem &&
                                             _removingQueueItemKey != itemKey) ||
-                                        isBuffered ||
+                                        isCurrent ||
+                                        isPreviouslyPlayed ||
+                                        isBufferedUpcoming ||
                                         _startingQueueRowIndex != null
                                     ? DismissDirection.none
                                     : DismissDirection.endToStart,
@@ -987,8 +1044,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     builder: (context, constraints) =>
                                         ValueListenableBuilder<double>(
                                           valueListenable: _dismissProgress,
-                                          builder: (context, progress, _) => Container(
-                                            width:
+                                          builder: (context, progress, _) {
+                                            final revealWidth =
                                                 (constraints.maxWidth *
                                                             progress -
                                                         8)
@@ -996,41 +1053,35 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                                       0.0,
                                                       constraints.maxWidth,
                                                     )
-                                                    .toDouble(),
-                                            height: 48,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFD94A4A),
-                                              borderRadius:
-                                                  BorderRadius.circular(999),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child:
-                                                _removingQueueItemKey == itemKey
-                                                ? const SizedBox.square(
-                                                    dimension: 22,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color: Colors.white,
-                                                        ),
-                                                  )
-                                                : Icon(
-                                                    CupertinoIcons.minus_circle,
-                                                    color: Colors.white,
-                                                    size:
-                                                        ((constraints.maxWidth *
-                                                                            progress -
-                                                                        8)
-                                                                    .clamp(
-                                                                      0.0,
-                                                                      constraints
-                                                                          .maxWidth,
-                                                                    ) *
-                                                                0.65)
-                                                            .clamp(0.0, 24.0)
-                                                            .toDouble(),
-                                                  ),
-                                          ),
+                                                    .toDouble();
+                                            return Container(
+                                              width: revealWidth,
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFD94A4A),
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: _removingQueueItemKey ==
+                                                      itemKey
+                                                  ? const SizedBox.square(
+                                                      dimension: 22,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: Colors.white,
+                                                          ),
+                                                    )
+                                                  : Icon(
+                                                      CupertinoIcons.minus_circle,
+                                                      color: Colors.white,
+                                                      size: (revealWidth * 0.65)
+                                                          .clamp(0.0, 24.0)
+                                                          .toDouble(),
+                                                    ),
+                                            );
+                                          },
                                         ),
                                   ),
                                 ),
@@ -1105,6 +1156,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     ),
                                   ),
                                 ),
+                                ),
                               );
                             },
                           ),
@@ -1177,5 +1229,109 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     if (item.index != 0) return 'queue-index-${item.index}';
     if (item.sortIndex != 0) return 'queue-index-${item.sortIndex}';
     return 'queue-row-$rowIndex-${_queueItemUri(item) ?? 'unknown'}';
+  }
+}
+
+class _BufferedSwipeRow extends StatefulWidget {
+  const _BufferedSwipeRow({super.key, required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_BufferedSwipeRow> createState() => _BufferedSwipeRowState();
+}
+
+class _BufferedSwipeRowState extends State<_BufferedSwipeRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _drag;
+
+  @override
+  void initState() {
+    super.initState();
+    _drag = AnimationController.unbounded(vsync: this);
+  }
+
+  void _returnToRest() {
+    if (_drag.value >= 0) return;
+    _drag.animateWith(
+      SpringSimulation(
+        const SpringDescription(mass: 1, stiffness: 700, damping: 32),
+        _drag.value,
+        0,
+        0,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _drag.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.child;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rowWidth = constraints.maxWidth;
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragUpdate: (details) {
+            _drag.stop();
+            _drag.value = (_drag.value + details.delta.dx)
+                .clamp(-rowWidth, 0)
+                .toDouble();
+          },
+          onHorizontalDragEnd: (_) => _returnToRest(),
+          onHorizontalDragCancel: _returnToRest,
+          child: AnimatedBuilder(
+            animation: _drag,
+            child: widget.child,
+            builder: (context, child) {
+              final offset = _drag.value.clamp(-rowWidth, 0).toDouble();
+              final revealWidth = -offset;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (revealWidth > 2)
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: GlassSurface(
+                          borderRadius: 999,
+                          padding: EdgeInsets.zero,
+                          tint: const Color(0x55303840),
+                          blurSigma: 14,
+                          showShadow: false,
+                          child: SizedBox(
+                            width: revealWidth,
+                            height: 48,
+                            child: Center(
+                              child: revealWidth < 8
+                                  ? const SizedBox.shrink()
+                                  : const Icon(
+                                      CupertinoIcons.minus_circle,
+                                      color: Colors.white70,
+                                      size: 22,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Transform.translate(
+                    offset: Offset(offset, 0),
+                    child: child,
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 }

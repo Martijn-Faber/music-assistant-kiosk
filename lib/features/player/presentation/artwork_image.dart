@@ -11,6 +11,7 @@ class ArtworkImage extends StatelessWidget {
     required this.token,
     this.size = 164,
     this.showShadow = true,
+    this.safeInVirtualizedList = false,
   });
 
   final String? imageUrl;
@@ -18,6 +19,7 @@ class ArtworkImage extends StatelessWidget {
   final String token;
   final double size;
   final bool showShadow;
+  final bool safeInVirtualizedList;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +55,13 @@ class ArtworkImage extends StatelessWidget {
           dimension: size,
           child: imageProvider == null
               ? _placeholder()
+              : safeInVirtualizedList
+              ? _NetworkArtworkFrame(
+                  imageProvider: imageProvider,
+                  size: size,
+                  placeholderBuilder: (loading) =>
+                      _placeholder(loading: loading),
+                )
               : Image(
                   image: imageProvider,
                   fit: BoxFit.cover,
@@ -97,6 +106,112 @@ class ArtworkImage extends StatelessWidget {
                 ),
         ),
       ),
+    );
+  }
+}
+
+/// Resolves artwork directly so an in-flight queue image doesn't consult a
+/// Scrollable's BuildContext after its row has been removed from the list.
+class _NetworkArtworkFrame extends StatefulWidget {
+  const _NetworkArtworkFrame({
+    required this.imageProvider,
+    required this.size,
+    required this.placeholderBuilder,
+  });
+
+  final ImageProvider imageProvider;
+  final double size;
+  final Widget Function(bool loading) placeholderBuilder;
+
+  @override
+  State<_NetworkArtworkFrame> createState() => _NetworkArtworkFrameState();
+}
+
+class _NetworkArtworkFrameState extends State<_NetworkArtworkFrame> {
+  ImageStream? _imageStream;
+  ImageStreamListener? _imageListener;
+  ImageInfo? _imageInfo;
+  bool _failed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolveImage();
+  }
+
+  @override
+  void didUpdateWidget(covariant _NetworkArtworkFrame oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageProvider != widget.imageProvider ||
+        oldWidget.size != widget.size) {
+      _resolveImage();
+    }
+  }
+
+  void _resolveImage() {
+    final configuration = createLocalImageConfiguration(
+      context,
+      size: Size(widget.size, widget.size),
+    );
+    final stream = widget.imageProvider.resolve(configuration);
+    if (_imageStream?.key == stream.key) return;
+
+    final previousStream = _imageStream;
+    final previousListener = _imageListener;
+    if (previousStream != null && previousListener != null) {
+      previousStream.removeListener(previousListener);
+    }
+    _imageInfo?.dispose();
+    _imageInfo = null;
+    _failed = false;
+    _imageStream = stream;
+
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (imageInfo, _) {
+        if (!mounted || !identical(_imageStream, stream)) {
+          imageInfo.dispose();
+          return;
+        }
+        final previousInfo = _imageInfo;
+        setState(() {
+          _imageInfo = imageInfo;
+          _failed = false;
+        });
+        previousInfo?.dispose();
+      },
+      onError: (Object _, StackTrace? __) {
+        if (!mounted || !identical(_imageStream, stream)) return;
+        setState(() => _failed = true);
+      },
+    );
+    _imageListener = listener;
+    stream.addListener(listener);
+  }
+
+  @override
+  void dispose() {
+    final stream = _imageStream;
+    final listener = _imageListener;
+    if (stream != null && listener != null) {
+      stream.removeListener(listener);
+    }
+    _imageInfo?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imageInfo = _imageInfo;
+    if (_failed) return widget.placeholderBuilder(false);
+    if (imageInfo == null) return widget.placeholderBuilder(true);
+    return RawImage(
+      image: imageInfo.image,
+      scale: imageInfo.scale,
+      fit: BoxFit.cover,
+      width: widget.size,
+      height: widget.size,
+      filterQuality: FilterQuality.medium,
     );
   }
 }
