@@ -72,10 +72,10 @@ class MusicAssistantRepository {
   }
 
   Future<List<mass.MusicAssistantPlayer>> fetchPlayers() async =>
-      (await _playerApiClient.getPlayers()).toList();
+      (await _playerApiClient.players.all()).toList();
 
   Future<mass.MusicAssistantPlayer> fetchPlayer(String playerId) async {
-    return await _playerApiClient.getPlayer(playerId);
+    return await _playerApiClient.players.get(playerId);
   }
 
   Future<mass.MusicAssistantServerInfoMessage> fetchServerInfo() async {
@@ -284,18 +284,16 @@ class MusicAssistantRepository {
 
   Future<List<mass.MusicAssistantRadio>> fetchRadioStations() async {
     final stations = <mass.MusicAssistantRadio>[];
-    for (final entry in await _playerApiClient.getFavoriteRadios()) {
+    for (final entry in await _playerApiClient.music.radios.libraryItems()) {
       switch (entry) {
-        case final mass.MusicAssistantRadio radio:
-          stations.add(radio);
-        case mass.MusicAssistantMediaCollection(:final items?):
-          for (final item in items) {
-            try {
-              stations.add(mass.MusicAssistantRadio.fromJson(item));
-            } on Object {
-              // Skip malformed collection entries while retaining the rest.
-            }
-          }
+        case mass.MusicAssistantLibraryItem<mass.MusicAssistantRadio>(
+          :final item,
+        ):
+          stations.add(item);
+        case mass.MusicAssistantLibraryCollection<mass.MusicAssistantRadio>(
+          :final items,
+        ):
+          stations.addAll(items);
       }
     }
     return stations;
@@ -396,12 +394,19 @@ class MusicAssistantRepository {
   Future<List<mass.MusicAssistantPlaylist>> fetchPlaylists() async {
     try {
       final playlists = <mass.MusicAssistantPlaylist>[];
-      for (final entry in await _playerApiClient.getFavoritePlaylists()) {
+      for (final entry
+          in await _playerApiClient.music.playlists.libraryItems()) {
         switch (entry) {
-          case final mass.MusicAssistantPlaylist playlist:
-            playlists.add(playlist);
-          case mass.MusicAssistantMediaCollection(:final items?):
-            playlists.addAll(items.map(mass.MusicAssistantPlaylist.fromJson));
+          case mass.MusicAssistantLibraryItem<mass.MusicAssistantPlaylist>(
+            :final item,
+          ):
+            playlists.add(item);
+          case mass.MusicAssistantLibraryCollection<
+            mass.MusicAssistantPlaylist
+          >(
+            :final items,
+          ):
+            playlists.addAll(items);
         }
       }
       return playlists
@@ -426,24 +431,24 @@ class MusicAssistantRepository {
   void Function() listenToPlayerEvents({
     required void Function(mass.MusicAssistantPlayer player) onChanged,
     required void Function(String playerId) onRemoved,
-  }) => _playerApiClient.subscribeToPlayerChanges(
+  }) => _playerApiClient.players.subscribeToChanges(
     onChanged: onChanged,
     onRemoved: onRemoved,
   );
 
   Future<void> adjustVolume(String playerId, {required bool increase}) async {
     if (increase) {
-      await _playerApiClient.groupVolumeUp(playerId);
+      await _playerApiClient.players.groupVolumeUp(playerId);
     } else {
-      await _playerApiClient.groupVolumeDown(playerId);
+      await _playerApiClient.players.groupVolumeDown(playerId);
     }
   }
 
   Future<void> setGroupVolume(String playerId, int volumeLevel) =>
-      _playerApiClient.setGroupVolume(playerId, volumeLevel);
+      _playerApiClient.players.setGroupVolume(playerId, volumeLevel);
 
   Future<void> setPlayerVolume(String playerId, int volumeLevel) =>
-      _playerApiClient.setPlayerVolume(playerId, volumeLevel);
+      _playerApiClient.players.setVolume(playerId, volumeLevel);
 
   Future<void> togglePlayback(String playerId) =>
       _client.players.playPause(playerId);

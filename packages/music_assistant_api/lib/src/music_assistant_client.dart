@@ -6,12 +6,11 @@ import 'connection_state.dart';
 import 'exceptions.dart';
 import 'events.dart';
 import 'extra_attribute_value.dart';
-import 'generated/models/music_assistant_media_collection.dart';
 import 'generated/models/music_assistant_player.dart';
 import 'generated/models/music_assistant_player_queue.dart';
-import 'generated/models/music_assistant_playlist.dart';
 import 'generated/models/music_assistant_queue_item.dart';
-import 'generated/models/music_assistant_radio.dart';
+import 'resources/music_resource.dart';
+import 'resources/players_resource.dart';
 
 /// The active queue and its typed items fetched together for app presentation.
 class MusicAssistantQueueSnapshot {
@@ -47,6 +46,17 @@ class MusicAssistantClient {
   final String serverUrl;
   final String token;
   final Duration requestTimeout;
+
+  late final MusicResource music = MusicResource(sendCommand);
+  late final PlayersResource players = PlayersResource(
+    all: _getPlayers,
+    get: _getPlayer,
+    setVolume: _setPlayerVolume,
+    setGroupVolume: _setGroupVolume,
+    groupVolumeUp: _groupVolumeUp,
+    groupVolumeDown: _groupVolumeDown,
+    subscribeToChanges: _subscribeToPlayerChanges,
+  );
 
   final _pending = <String, Completer<Object?>>{};
   final _eventController = StreamController<MusicAssistantEvent>.broadcast();
@@ -84,7 +94,7 @@ class MusicAssistantClient {
   }
 
   /// Listens for player additions, updates, and removals using SDK models.
-  void Function() subscribeToPlayerChanges({
+  void Function() _subscribeToPlayerChanges({
     required void Function(MusicAssistantPlayer player) onChanged,
     required void Function(String playerId) onRemoved,
   }) => subscribe(
@@ -163,7 +173,7 @@ class MusicAssistantClient {
       _sendCommand(command, args: args);
 
   /// Fetches a player and its current state by its Music Assistant player ID.
-  Future<MusicAssistantPlayer> getPlayer(String playerId) async {
+  Future<MusicAssistantPlayer> _getPlayer(String playerId) async {
     final response = await sendCommand(
       'players/get',
       args: {'player_id': playerId},
@@ -175,7 +185,7 @@ class MusicAssistantClient {
   }
 
   /// Fetches all players and their current states.
-  Future<List<MusicAssistantPlayer>> getPlayers() async {
+  Future<List<MusicAssistantPlayer>> _getPlayers() async {
     final response = await sendCommand('players/all');
     if (response is! List) {
       throw const FormatException('The server returned invalid player data.');
@@ -189,65 +199,8 @@ class MusicAssistantClient {
         .toList(growable: false);
   }
 
-  /// Fetches favorite radios in the response's original array shape.
-  ///
-  /// Each array element is either a [MusicAssistantRadio] or a
-  /// [MusicAssistantMediaCollection] containing radio item maps.
-  Future<List<Object>> getFavoriteRadios() async {
-    final response = await sendCommand('music/radios/library_items');
-    if (response is! List) {
-      throw const FormatException('The server returned invalid radio items.');
-    }
-    return [
-      for (final value in response)
-        if (value is Map)
-          if (value['items'] is List &&
-              value['item_id'] is String &&
-              value['provider_mappings'] is List)
-            MusicAssistantMediaCollection.fromJson(
-              Map<String, dynamic>.from(value),
-            )
-          else
-            MusicAssistantRadio.fromJson(Map<String, dynamic>.from(value))
-        else
-          throw const FormatException('The server returned an invalid radio.'),
-    ];
-  }
-
-  /// Fetches favorite playlists in the response's original array shape.
-  ///
-  /// Each array element is either a [MusicAssistantPlaylist] or a
-  /// [MusicAssistantMediaCollection] containing playlist item maps.
-  Future<List<Object>> getFavoritePlaylists() async {
-    final response = await sendCommand(
-      'music/playlists/library_items',
-      args: {'favorite': true},
-    );
-    if (response is! List) {
-      throw const FormatException(
-        'The server returned invalid playlist items.',
-      );
-    }
-    return [
-      for (final value in response)
-        if (value is Map)
-          if (value['items'] is List &&
-              value['item_id'] is String &&
-              value['provider_mappings'] is List)
-            MusicAssistantMediaCollection.fromJson(
-              Map<String, dynamic>.from(value),
-            )
-          else
-            MusicAssistantPlaylist.fromJson(Map<String, dynamic>.from(value))
-        else
-          throw const FormatException(
-            'The server returned an invalid playlist.',
-          ),
-    ];
-  }
-
   /// Sets the volume of an individual player.
-  Future<void> setPlayerVolume(String playerId, int volumeLevel) async {
+  Future<void> _setPlayerVolume(String playerId, int volumeLevel) async {
     await sendCommand(
       'players/cmd/volume_set',
       args: {'player_id': playerId, 'volume_level': volumeLevel},
@@ -255,7 +208,7 @@ class MusicAssistantClient {
   }
 
   /// Sets the shared volume of a player group.
-  Future<void> setGroupVolume(String playerId, int volumeLevel) async {
+  Future<void> _setGroupVolume(String playerId, int volumeLevel) async {
     await sendCommand(
       'players/cmd/group_volume',
       args: {'player_id': playerId, 'volume_level': volumeLevel},
@@ -263,7 +216,7 @@ class MusicAssistantClient {
   }
 
   /// Increases the shared volume of a player group.
-  Future<void> groupVolumeUp(String playerId) async {
+  Future<void> _groupVolumeUp(String playerId) async {
     await sendCommand(
       'players/cmd/group_volume_up',
       args: {'player_id': playerId},
@@ -271,7 +224,7 @@ class MusicAssistantClient {
   }
 
   /// Decreases the shared volume of a player group.
-  Future<void> groupVolumeDown(String playerId) async {
+  Future<void> _groupVolumeDown(String playerId) async {
     await sendCommand(
       'players/cmd/group_volume_down',
       args: {'player_id': playerId},
@@ -318,9 +271,8 @@ class MusicAssistantClient {
     return (itemsResponse as List? ?? const [])
         .whereType<Map>()
         .map(
-          (item) => MusicAssistantQueueItem.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
+          (item) =>
+              MusicAssistantQueueItem.fromJson(Map<String, dynamic>.from(item)),
         )
         .toList(growable: false);
   }
@@ -351,7 +303,9 @@ class MusicAssistantClient {
         queueExtraAttributes = const {};
       } else {
         if (queueResponse is! Map) {
-          throw const FormatException('The server returned invalid queue data.');
+          throw const FormatException(
+            'The server returned invalid queue data.',
+          );
         }
         final queueData = Map<String, dynamic>.from(queueResponse);
         queueExtraAttributes = _takeExtraAttributes(queueData);

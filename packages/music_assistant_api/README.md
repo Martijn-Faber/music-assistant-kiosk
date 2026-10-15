@@ -18,10 +18,16 @@ The kiosk app still uses its existing client during this transition. The new
 package is added as a local path dependency so the old and new clients can be
 compared while features move across.
 
-The WebSocket client includes typed wrappers for the `players/all` and
-`players/get` commands:
+The client exposes namespaced resources for player and music-library commands:
 
 ```dart
-final players = await client.getPlayers();
-final player = await client.getPlayer('player-id');
+final players = await client.players.all();
+final player = await client.players.get('player-id');
+final radios = await client.music.radios.libraryItems();
+final playlists = await client.music.playlists.libraryItems();
 ```
+
+Library results preserve the server's array shape. Each entry is either a
+typed radio or playlist item, or a `MusicAssistantLibraryCollection` that
+contains the generated `MusicAssistantMediaCollection` DTO and typed child
+items.
