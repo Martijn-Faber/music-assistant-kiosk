@@ -55,6 +55,10 @@ class AlbumBackdrop extends StatelessWidget {
                   child: Image(
                     image: ResizeImage(provider, width: 32, height: 32),
                     fit: BoxFit.cover,
+                    // Keep the previous blurred frame visible while refreshed
+                    // artwork is loading so metadata updates don't flash the
+                    // backdrop to its base color.
+                    gaplessPlayback: true,
                     filterQuality: FilterQuality.low,
                   ),
                 ),

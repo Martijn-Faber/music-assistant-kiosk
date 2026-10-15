@@ -112,8 +112,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   }
 
   List<MusicAssistantQueueItem> get _upcomingQueueItems {
-    final currentTrackIdentity =
-        player.currentMedia?.uri ?? player.currentMedia?.title;
+    final currentTrackIdentity = _playerTrackIdentity(player);
     return _upcomingQueueItemsAfter(currentTrackIdentity);
   }
 
@@ -145,22 +144,33 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final serverIndexMatchesTrack = serverIndex != null &&
         serverIndex >= 0 &&
         serverIndex < items.length &&
-        _queueItemTrackIdentity(items[serverIndex]) == trackIdentity;
+        _queueItemMatchesTrackIdentity(items[serverIndex], trackIdentity);
     if (serverIndexMatchesTrack) return serverIndex;
     if (indexHint != null &&
         indexHint >= 0 &&
         indexHint < items.length &&
-        _queueItemTrackIdentity(items[indexHint]) == trackIdentity) {
+        _queueItemMatchesTrackIdentity(items[indexHint], trackIdentity)) {
       return indexHint;
     }
     final matchingIndex = items.indexWhere(
-      (item) => _queueItemTrackIdentity(item) == trackIdentity,
+      (item) => _queueItemMatchesTrackIdentity(item, trackIdentity),
     );
     return matchingIndex >= 0 ? matchingIndex : null;
   }
 
-  String? _queueItemTrackIdentity(MusicAssistantQueueItem item) =>
-      item.mediaItem?.uri ?? item.mediaItem?.itemId;
+  String? _playerTrackIdentity(MusicAssistantPlayer player) =>
+      player.currentMedia?.queueItemId ??
+      player.currentMedia?.uri ??
+      player.currentMedia?.title;
+
+  bool _queueItemMatchesTrackIdentity(
+    MusicAssistantQueueItem item,
+    String? trackIdentity,
+  ) =>
+      trackIdentity != null &&
+      (item.queueItemId == trackIdentity ||
+          item.mediaItem?.uri == trackIdentity ||
+          item.mediaItem?.itemId == trackIdentity);
 
   void _onArtworkTransitionStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed && mounted) {
@@ -185,10 +195,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   @override
   void didUpdateWidget(covariant QueueArtworkStack oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldTrackIdentity = oldWidget.player.currentMedia?.uri ??
-        oldWidget.player.currentMedia?.title;
-    final newTrackIdentity =
-        widget.player.currentMedia?.uri ?? widget.player.currentMedia?.title;
+    final oldTrackIdentity = _playerTrackIdentity(oldWidget.player);
+    final newTrackIdentity = _playerTrackIdentity(widget.player);
     if (oldWidget.player.playerId != widget.player.playerId ||
         oldWidget.repository != widget.repository ||
         oldWidget.queueController != widget.queueController) {
@@ -220,8 +228,10 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       // it only if that slot still matches the player-reported track.
       final swipeTargetQueueIndex = expectedSwipeIndex != null &&
               queue != null &&
-              _queueItemTrackIdentity(queueItems[expectedSwipeIndex]) ==
-                  newTrackIdentity
+              _queueItemMatchesTrackIdentity(
+                queueItems[expectedSwipeIndex],
+                newTrackIdentity,
+              )
           ? expectedSwipeIndex
           : newQueueIndex;
       final isQueuePageScroll = !isSwipeHandoff &&
@@ -437,14 +447,12 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   }
 
   Future<void> _skipToNextTrack(double size) async {
-    final trackBeforeSkip =
-        player.currentMedia?.uri ?? player.currentMedia?.title;
+    final trackBeforeSkip = _playerTrackIdentity(player);
     try {
       await repository.nextTrack(player.playerId);
       _skipArtworkTimeout?.cancel();
       _skipArtworkTimeout = Timer(const Duration(milliseconds: 1400), () {
-        final currentTrack =
-            player.currentMedia?.uri ?? player.currentMedia?.title;
+        final currentTrack = _playerTrackIdentity(player);
         if (!mounted || currentTrack != trackBeforeSkip) return;
         final currentOffset = _currentArtworkOffset;
         setState(() => _isSkippingFromArtwork = false);
@@ -717,8 +725,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   }
 
   String? get _currentArtworkUrl {
-    final trackIdentity =
-        player.currentMedia?.uri ?? player.currentMedia?.title;
+    final trackIdentity = _playerTrackIdentity(player);
     if (trackIdentity == _displayedArtworkTrackIdentity) {
       return _displayedArtworkUrl ?? player.currentMedia?.imageUrl;
     }
