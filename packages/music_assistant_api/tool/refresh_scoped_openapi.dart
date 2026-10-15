@@ -21,6 +21,7 @@ const _modelRoots = [
   'MediaType',
   'StreamType',
   'ContentType',
+  'User',
 ];
 
 void main() {
@@ -51,6 +52,12 @@ void main() {
   for (final root in _modelRoots) {
     includeSchema(root);
   }
+
+  // User preferences contain arbitrary JSON values, not object-only values.
+  final user = selectedSchemas['User'] as Map<String, dynamic>;
+  final userProperties = user['properties'] as Map<String, dynamic>;
+  final preferences = userProperties['preferences'] as Map<String, dynamic>;
+  preferences['additionalProperties'] = <String, dynamic>{};
 
   // Naming this inline oneOf keeps the generated union filename within the
   // Windows path limit without changing its JSON representation.

@@ -64,32 +64,6 @@ class QrAuthSession {
         queryParameters: {'session': sessionId},
       );
 
-      final providers = await _sendPublicCommand(serverUrl, 'auth/providers');
-      if (providers is! List) {
-        throw const FormatException('Music Assistant returned invalid login providers.');
-      }
-      final provider = providers.whereType<Map>().firstWhere(
-        (entry) {
-          final providerId = '${entry['provider_id'] ?? ''}'
-              .toLowerCase()
-              .replaceAll(RegExp('[^a-z]'), '');
-          final providerType = '${entry['provider_type'] ?? ''}'
-              .toLowerCase()
-              .replaceAll(RegExp('[^a-z]'), '');
-          return entry['requires_redirect'] == true &&
-              (providerId.contains('homeassistant') ||
-                  providerType.contains('homeassistant') ||
-                  providerType == 'hass');
-        },
-        orElse: () => const <String, dynamic>{},
-      );
-      final providerId = provider['provider_id'];
-      if (providerId is! String) {
-        throw const QrAuthException(
-          'This Music Assistant server does not offer Home Assistant sign-in. Enable its Home Assistant authentication provider, then try again.',
-        );
-      }
-
       final authClient = MusicAssistantClient(
         serverUrl: serverUrl,
         token: '',
@@ -97,8 +71,21 @@ class QrAuthSession {
       late final String authorizationUrl;
       try {
         await authClient.connectUnauthenticated();
+        final providers = await authClient.auth.providers();
+        final provider = providers
+            .where(
+              (provider) =>
+                  provider.providerType == 'homeassistant' &&
+                  provider.requiresRedirect,
+            )
+            .firstOrNull;
+        if (provider == null) {
+          throw const QrAuthException(
+            'This Music Assistant server does not offer Home Assistant sign-in. Enable its Home Assistant authentication provider, then try again.',
+          );
+        }
         authorizationUrl = await authClient.auth.authorizationUrl(
-          providerId: providerId,
+          providerId: provider.providerId,
           returnUrl: returnUrl.toString(),
         );
       } finally {
@@ -116,48 +103,6 @@ class QrAuthSession {
     } catch (_) {
       await callbackServer?.close(force: true);
       rethrow;
-    }
-  }
-
-  static Future<dynamic> _sendPublicCommand(
-    String serverUrl,
-    String command, {
-    Map<String, dynamic>? args,
-  }) async {
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 12);
-    try {
-      final request = await client.postUrl(Uri.parse(serverUrl).resolve('/api'));
-      request.headers.contentType = ContentType.json;
-      request.write(
-        jsonEncode({
-          'message_id': _secureRandomToken(),
-          'command': command,
-          if (args != null) 'args': args,
-        }),
-      );
-      final response = await request.close();
-      final body = await utf8.decoder.bind(response).join();
-      if (response.statusCode != HttpStatus.ok) {
-        throw QrAuthException(
-          'Music Assistant rejected the sign-in request (HTTP ${response.statusCode}).',
-        );
-      }
-      final decoded = jsonDecode(body);
-      if (decoded is Map && decoded['error'] != null) {
-        final error = decoded['error'];
-        throw QrAuthException(
-          error is Map && error['message'] is String
-              ? error['message'] as String
-              : error is String
-              ? error
-              : 'Music Assistant could not start sign-in.',
-        );
-      }
-      return decoded;
-    } on SocketException catch (error) {
-      throw QrAuthException('Could not reach Music Assistant: ${error.message}');
-    } finally {
-      client.close(force: true);
     }
   }
 

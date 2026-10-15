@@ -1,6 +1,4 @@
 export 'music_assistant_server_info_message.dart';
-export 'music_assistant_user.dart';
-export 'music_assistant_login_result.dart';
 export 'music_assistant_core_state.dart';
 export 'music_assistant_player.dart';
 export 'music_assistant_player_type.dart';
@@ -87,4 +85,5 @@ export 'music_assistant_audio_metadata.dart';
 export 'music_assistant_radio.dart';
 export 'music_assistant_playlist.dart';
 export 'music_assistant_media_collection.dart';
+export 'music_assistant_user.dart';
 export 'music_assistant_audio_dsp_filter.dart';

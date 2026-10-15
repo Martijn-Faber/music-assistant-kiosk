@@ -1,4 +1,4 @@
-import 'music_assistant_user.dart';
+import '../generated/models/music_assistant_user.dart';
 
 /// Result returned after authenticating with a username and password.
 class MusicAssistantLoginResult {

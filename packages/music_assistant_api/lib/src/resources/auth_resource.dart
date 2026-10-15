@@ -1,5 +1,6 @@
 import '../generated/models/music_assistant_user.dart';
-import '../generated/models/music_assistant_login_result.dart';
+import '../models/music_assistant_login_result.dart';
+import '../models/music_assistant_auth_provider.dart';
 
 /// Authentication endpoints.
 class AuthResource {
@@ -26,6 +27,22 @@ class AuthResource {
   /// Revokes the token used by this connection.
   Future<void> logout() async {
     await _sendCommand('auth/logout');
+  }
+
+  /// Lists the authentication providers configured on the server.
+  Future<List<MusicAssistantAuthProvider>> providers() async {
+    final response = await _sendUnauthenticatedCommand('auth/providers');
+    if (response is! List) {
+      throw const FormatException('The server returned invalid auth providers.');
+    }
+    return response.map((provider) {
+      if (provider is! Map) {
+        throw const FormatException('The server returned invalid auth provider data.');
+      }
+      return MusicAssistantAuthProvider.fromJson(
+        Map<String, dynamic>.from(provider),
+      );
+    }).toList(growable: false);
   }
 
   /// Starts an OAuth sign-in flow without authenticating the WebSocket first.

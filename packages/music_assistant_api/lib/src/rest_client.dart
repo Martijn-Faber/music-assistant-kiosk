@@ -21,18 +21,6 @@ class MusicAssistantRestClient {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getAuthProviders() async {
-    final response = await _request('GET', '/auth/providers');
-    final providers = response is Map ? response['providers'] : null;
-    if (providers is! List) {
-      throw const FormatException('The server returned invalid auth providers.');
-    }
-    return providers
-        .whereType<Map>()
-        .map((provider) => Map<String, dynamic>.from(provider))
-        .toList(growable: false);
-  }
-
   Future<Map<String, dynamic>> setup({
     required String username,
     required String password,
