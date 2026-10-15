@@ -439,7 +439,7 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   @override
   void initState() {
     super.initState();
-    _localPositionAtStart = widget.player.elapsedTime ?? 0;
+    _localPositionAtStart = _reportedPosition(widget.player);
     _localPositionStartedAt = _now;
     _updateTimer();
   }
@@ -456,9 +456,13 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
     final positionChanged =
         oldWidget.player.elapsedTime != widget.player.elapsedTime ||
         oldWidget.player.elapsedTimeLastUpdated !=
-            widget.player.elapsedTimeLastUpdated;
+            widget.player.elapsedTimeLastUpdated ||
+        oldWidget.player.currentMedia?.elapsedTime !=
+            widget.player.currentMedia?.elapsedTime ||
+        oldWidget.player.currentMedia?.elapsedTimeLastUpdated !=
+            widget.player.currentMedia?.elapsedTimeLastUpdated;
     if (trackChanged) {
-      _localPositionAtStart = widget.player.elapsedTime ?? 0;
+      _localPositionAtStart = _reportedPosition(widget.player);
       _localPositionStartedAt = DateTime.now();
       _now = _localPositionStartedAt;
     } else if (positionChanged) {
@@ -546,8 +550,12 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
   }
 
   double _positionAt(DateTime time, MusicAssistantPlayer player) {
-    final elapsed = player.elapsedTime;
-    final updatedAt = player.elapsedTimeLastUpdated;
+    // Music Assistant reports timing on the active media item as well as on
+    // the player. Prefer the item timing, matching the frontend's active
+    // timing resolver, and fall back to the player-level fields for sources
+    // that do not populate media timing.
+    final elapsed = _reportedPosition(player);
+    final updatedAt = _reportedPositionUpdatedAt(player);
     if (elapsed != null &&
         updatedAt != null &&
         player.playbackState == MusicAssistantPlaybackState.playing) {
@@ -567,6 +575,13 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
             : 0);
     return localElapsed;
   }
+
+  double _reportedPosition(MusicAssistantPlayer player) =>
+      (player.currentMedia?.elapsedTime ?? player.elapsedTime ?? 0).toDouble();
+
+  double? _reportedPositionUpdatedAt(MusicAssistantPlayer player) =>
+      player.currentMedia?.elapsedTimeLastUpdated ??
+      player.elapsedTimeLastUpdated;
 
   TextStyle get _timeStyle => const TextStyle(
     color: Color(0xCCD8E0DB),
