@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -826,10 +827,16 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   _movedQueueItemKeys.contains(itemKey);
                               final moveVersion =
                                   _queueItemMoveVersions[itemKey] ?? 0;
-                              // The web app compares the rendered queue position
-                              // directly with index_in_buffer.
-                              final isBuffered =
-                                  index <= (queue.currentIndex ?? 0);
+                              // Match the frontend: lock every item through the
+                              // player's buffered position, including the current
+                              // item if the buffer index is temporarily absent.
+                              final bufferedThrough = math.max(
+                                queue.indexInBuffer ?? 0,
+                                queue.currentIndex ?? 0,
+                              );
+                              // The list row is the absolute queue position;
+                              // QueueItem.index can be unset/defaulted by the API.
+                              final isBuffered = index <= bufferedThrough;
                               final isCurrent = index == currentQueueRowIndex;
                               final isPreviouslyPlayed =
                                   currentQueueRowIndex >= 0 &&
