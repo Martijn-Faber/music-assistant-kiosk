@@ -3,7 +3,7 @@
 /// ```json
 /// {
 ///     "properties": {
-///         "primary": {
+///         "background_dark": {
 ///             "type": "array",
 ///             "items": {
 ///                 "type": "integer"
@@ -17,14 +17,14 @@
 ///             },
 ///             "nullable": true
 ///         },
-///         "on_light": {
+///         "primary": {
 ///             "type": "array",
 ///             "items": {
 ///                 "type": "integer"
 ///             },
 ///             "nullable": true
 ///         },
-///         "background_dark": {
+///         "accent": {
 ///             "type": "array",
 ///             "items": {
 ///                 "type": "integer"
@@ -38,7 +38,7 @@
 ///             },
 ///             "nullable": true
 ///         },
-///         "accent": {
+///         "on_light": {
 ///             "type": "array",
 ///             "items": {
 ///                 "type": "integer"
@@ -62,41 +62,41 @@ abstract class MusicAssistantMediaItemPalette
 
   @jsonSerializable
   const factory MusicAssistantMediaItemPalette({
-    /// primary
-    @JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)
-    List<int>? primary,
+    /// backgroundDark
+    @JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)
+    List<int>? backgroundDark,
 
     /// backgroundLight
     @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)
     List<int>? backgroundLight,
 
-    /// onLight
-    @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)
-    List<int>? onLight,
+    /// primary
+    @JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)
+    List<int>? primary,
 
-    /// backgroundDark
-    @JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)
-    List<int>? backgroundDark,
+    /// accent
+    @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? accent,
 
     /// onDark
     @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? onDark,
 
-    /// accent
-    @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? accent,
+    /// onLight
+    @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)
+    List<int>? onLight,
   }) = _MusicAssistantMediaItemPalette;
 
   factory MusicAssistantMediaItemPalette.fromJson(Map<String, dynamic> json) =>
       _$MusicAssistantMediaItemPaletteFromJson(json);
 
-  static const String primaryKey_ = 'primary';
+  static const String backgroundDarkKey_ = 'background_dark';
 
   static const String backgroundLightKey_ = 'background_light';
 
-  static const String onLightKey_ = 'on_light';
+  static const String primaryKey_ = 'primary';
 
-  static const String backgroundDarkKey_ = 'background_dark';
+  static const String accentKey_ = 'accent';
 
   static const String onDarkKey_ = 'on_dark';
 
-  static const String accentKey_ = 'accent';
+  static const String onLightKey_ = 'on_light';
 }

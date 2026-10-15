@@ -15,13 +15,19 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MusicAssistantServerInfoMessage {
 
-/// name
-@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) String? get name;/// minSupportedSchemaVersion
-@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) int get minSupportedSchemaVersion;/// serverVersion
-@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) String get serverVersion;/// serverId
-@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) String get serverId;/// status
-@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) String get status;/// schemaVersion
-@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) int get schemaVersion;
+/// serverId
+@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) String get serverId;/// serverVersion
+@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) String get serverVersion;/// schemaVersion
+@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) int get schemaVersion;/// minSupportedSchemaVersion
+@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) int get minSupportedSchemaVersion;/// baseUrl
+@JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_) String? get baseUrl;/// homeassistantAddon
+@JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_) bool get homeassistantAddon;/// onboardDone
+@JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_) bool get onboardDone;/// name
+@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) String? get name;/// status
+@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) MusicAssistantCoreState get status;/// internalUrl
+@JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_) String? get internalUrl;/// externalUrl
+@JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_) String? get externalUrl;/// hasRemoteAccess
+@JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_) bool get hasRemoteAccess;
 /// Create a copy of MusicAssistantServerInfoMessage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,16 +40,16 @@ $MusicAssistantServerInfoMessageCopyWith<MusicAssistantServerInfoMessage> get co
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicAssistantServerInfoMessage&&(identical(other.name, name) || other.name == name)&&(identical(other.minSupportedSchemaVersion, minSupportedSchemaVersion) || other.minSupportedSchemaVersion == minSupportedSchemaVersion)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicAssistantServerInfoMessage&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.minSupportedSchemaVersion, minSupportedSchemaVersion) || other.minSupportedSchemaVersion == minSupportedSchemaVersion)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.homeassistantAddon, homeassistantAddon) || other.homeassistantAddon == homeassistantAddon)&&(identical(other.onboardDone, onboardDone) || other.onboardDone == onboardDone)&&(identical(other.name, name) || other.name == name)&&(identical(other.status, status) || other.status == status)&&(identical(other.internalUrl, internalUrl) || other.internalUrl == internalUrl)&&(identical(other.externalUrl, externalUrl) || other.externalUrl == externalUrl)&&(identical(other.hasRemoteAccess, hasRemoteAccess) || other.hasRemoteAccess == hasRemoteAccess));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,minSupportedSchemaVersion,serverVersion,serverId,status,schemaVersion);
+int get hashCode => Object.hash(runtimeType,serverId,serverVersion,schemaVersion,minSupportedSchemaVersion,baseUrl,homeassistantAddon,onboardDone,name,status,internalUrl,externalUrl,hasRemoteAccess);
 
 @override
 String toString() {
-  return 'MusicAssistantServerInfoMessage(name: $name, minSupportedSchemaVersion: $minSupportedSchemaVersion, serverVersion: $serverVersion, serverId: $serverId, status: $status, schemaVersion: $schemaVersion)';
+  return 'MusicAssistantServerInfoMessage(serverId: $serverId, serverVersion: $serverVersion, schemaVersion: $schemaVersion, minSupportedSchemaVersion: $minSupportedSchemaVersion, baseUrl: $baseUrl, homeassistantAddon: $homeassistantAddon, onboardDone: $onboardDone, name: $name, status: $status, internalUrl: $internalUrl, externalUrl: $externalUrl, hasRemoteAccess: $hasRemoteAccess)';
 }
 
 
@@ -54,7 +60,7 @@ abstract mixin class $MusicAssistantServerInfoMessageCopyWith<$Res>  {
   factory $MusicAssistantServerInfoMessageCopyWith(MusicAssistantServerInfoMessage value, $Res Function(MusicAssistantServerInfoMessage) _then) = _$MusicAssistantServerInfoMessageCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) String? name,@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) int minSupportedSchemaVersion,@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) String serverVersion,@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) String serverId,@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) String status,@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) int schemaVersion
+@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) String serverId,@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) String serverVersion,@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) int schemaVersion,@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) int minSupportedSchemaVersion,@JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_) String? baseUrl,@JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_) bool homeassistantAddon,@JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_) bool onboardDone,@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) String? name,@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) MusicAssistantCoreState status,@JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_) String? internalUrl,@JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_) String? externalUrl,@JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_) bool hasRemoteAccess
 });
 
 
@@ -71,15 +77,21 @@ class _$MusicAssistantServerInfoMessageCopyWithImpl<$Res>
 
 /// Create a copy of MusicAssistantServerInfoMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = freezed,Object? minSupportedSchemaVersion = null,Object? serverVersion = null,Object? serverId = null,Object? status = null,Object? schemaVersion = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? serverId = null,Object? serverVersion = null,Object? schemaVersion = null,Object? minSupportedSchemaVersion = null,Object? baseUrl = freezed,Object? homeassistantAddon = null,Object? onboardDone = null,Object? name = freezed,Object? status = null,Object? internalUrl = freezed,Object? externalUrl = freezed,Object? hasRemoteAccess = null,}) {
   return _then(_self.copyWith(
-name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,minSupportedSchemaVersion: null == minSupportedSchemaVersion ? _self.minSupportedSchemaVersion : minSupportedSchemaVersion // ignore: cast_nullable_to_non_nullable
-as int,serverVersion: null == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
-as String,serverId: null == serverId ? _self.serverId : serverId // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+serverId: null == serverId ? _self.serverId : serverId // ignore: cast_nullable_to_non_nullable
+as String,serverVersion: null == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
 as String,schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
-as int,
+as int,minSupportedSchemaVersion: null == minSupportedSchemaVersion ? _self.minSupportedSchemaVersion : minSupportedSchemaVersion // ignore: cast_nullable_to_non_nullable
+as int,baseUrl: freezed == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
+as String?,homeassistantAddon: null == homeassistantAddon ? _self.homeassistantAddon : homeassistantAddon // ignore: cast_nullable_to_non_nullable
+as bool,onboardDone: null == onboardDone ? _self.onboardDone : onboardDone // ignore: cast_nullable_to_non_nullable
+as bool,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as MusicAssistantCoreState,internalUrl: freezed == internalUrl ? _self.internalUrl : internalUrl // ignore: cast_nullable_to_non_nullable
+as String?,externalUrl: freezed == externalUrl ? _self.externalUrl : externalUrl // ignore: cast_nullable_to_non_nullable
+as String?,hasRemoteAccess: null == hasRemoteAccess ? _self.hasRemoteAccess : hasRemoteAccess // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -164,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_)  String? name, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_)  int minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_)  String serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_)  String serverId, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_)  String status, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_)  int schemaVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_)  String serverId, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_)  String serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_)  int schemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_)  int minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_)  String? baseUrl, @JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_)  bool homeassistantAddon, @JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_)  bool onboardDone, @JsonKey(name: MusicAssistantServerInfoMessage.nameKey_)  String? name, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_)  MusicAssistantCoreState status, @JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_)  String? internalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_)  String? externalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_)  bool hasRemoteAccess)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MusicAssistantServerInfoMessage() when $default != null:
-return $default(_that.name,_that.minSupportedSchemaVersion,_that.serverVersion,_that.serverId,_that.status,_that.schemaVersion);case _:
+return $default(_that.serverId,_that.serverVersion,_that.schemaVersion,_that.minSupportedSchemaVersion,_that.baseUrl,_that.homeassistantAddon,_that.onboardDone,_that.name,_that.status,_that.internalUrl,_that.externalUrl,_that.hasRemoteAccess);case _:
   return orElse();
 
 }
@@ -185,10 +197,10 @@ return $default(_that.name,_that.minSupportedSchemaVersion,_that.serverVersion,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_)  String? name, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_)  int minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_)  String serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_)  String serverId, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_)  String status, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_)  int schemaVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_)  String serverId, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_)  String serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_)  int schemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_)  int minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_)  String? baseUrl, @JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_)  bool homeassistantAddon, @JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_)  bool onboardDone, @JsonKey(name: MusicAssistantServerInfoMessage.nameKey_)  String? name, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_)  MusicAssistantCoreState status, @JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_)  String? internalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_)  String? externalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_)  bool hasRemoteAccess)  $default,) {final _that = this;
 switch (_that) {
 case _MusicAssistantServerInfoMessage():
-return $default(_that.name,_that.minSupportedSchemaVersion,_that.serverVersion,_that.serverId,_that.status,_that.schemaVersion);case _:
+return $default(_that.serverId,_that.serverVersion,_that.schemaVersion,_that.minSupportedSchemaVersion,_that.baseUrl,_that.homeassistantAddon,_that.onboardDone,_that.name,_that.status,_that.internalUrl,_that.externalUrl,_that.hasRemoteAccess);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +217,10 @@ return $default(_that.name,_that.minSupportedSchemaVersion,_that.serverVersion,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_)  String? name, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_)  int minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_)  String serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_)  String serverId, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_)  String status, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_)  int schemaVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_)  String serverId, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_)  String serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_)  int schemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_)  int minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_)  String? baseUrl, @JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_)  bool homeassistantAddon, @JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_)  bool onboardDone, @JsonKey(name: MusicAssistantServerInfoMessage.nameKey_)  String? name, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_)  MusicAssistantCoreState status, @JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_)  String? internalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_)  String? externalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_)  bool hasRemoteAccess)?  $default,) {final _that = this;
 switch (_that) {
 case _MusicAssistantServerInfoMessage() when $default != null:
-return $default(_that.name,_that.minSupportedSchemaVersion,_that.serverVersion,_that.serverId,_that.status,_that.schemaVersion);case _:
+return $default(_that.serverId,_that.serverVersion,_that.schemaVersion,_that.minSupportedSchemaVersion,_that.baseUrl,_that.homeassistantAddon,_that.onboardDone,_that.name,_that.status,_that.internalUrl,_that.externalUrl,_that.hasRemoteAccess);case _:
   return null;
 
 }
@@ -220,21 +232,33 @@ return $default(_that.name,_that.minSupportedSchemaVersion,_that.serverVersion,_
 
 @jsonSerializable
 class _MusicAssistantServerInfoMessage extends MusicAssistantServerInfoMessage {
-  const _MusicAssistantServerInfoMessage({@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) this.name, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) required this.minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) required this.serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) required this.serverId, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) this.status = 'running', @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) required this.schemaVersion}): super._();
+  const _MusicAssistantServerInfoMessage({@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) required this.serverId, @JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) required this.serverVersion, @JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) required this.schemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) required this.minSupportedSchemaVersion, @JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_) this.baseUrl, @JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_) this.homeassistantAddon = false, @JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_) this.onboardDone = false, @JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) this.name, @JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) this.status = MusicAssistantCoreState.running, @JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_) this.internalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_) this.externalUrl, @JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_) this.hasRemoteAccess = false}): super._();
   factory _MusicAssistantServerInfoMessage.fromJson(Map<String, dynamic> json) => _$MusicAssistantServerInfoMessageFromJson(json);
 
-/// name
-@override@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) final  String? name;
-/// minSupportedSchemaVersion
-@override@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) final  int minSupportedSchemaVersion;
-/// serverVersion
-@override@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) final  String serverVersion;
 /// serverId
 @override@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) final  String serverId;
-/// status
-@override@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) final  String status;
+/// serverVersion
+@override@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) final  String serverVersion;
 /// schemaVersion
 @override@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) final  int schemaVersion;
+/// minSupportedSchemaVersion
+@override@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) final  int minSupportedSchemaVersion;
+/// baseUrl
+@override@JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_) final  String? baseUrl;
+/// homeassistantAddon
+@override@JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_) final  bool homeassistantAddon;
+/// onboardDone
+@override@JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_) final  bool onboardDone;
+/// name
+@override@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) final  String? name;
+/// status
+@override@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) final  MusicAssistantCoreState status;
+/// internalUrl
+@override@JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_) final  String? internalUrl;
+/// externalUrl
+@override@JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_) final  String? externalUrl;
+/// hasRemoteAccess
+@override@JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_) final  bool hasRemoteAccess;
 
 /// Create a copy of MusicAssistantServerInfoMessage
 /// with the given fields replaced by the non-null parameter values.
@@ -249,16 +273,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicAssistantServerInfoMessage&&(identical(other.name, name) || other.name == name)&&(identical(other.minSupportedSchemaVersion, minSupportedSchemaVersion) || other.minSupportedSchemaVersion == minSupportedSchemaVersion)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicAssistantServerInfoMessage&&(identical(other.serverId, serverId) || other.serverId == serverId)&&(identical(other.serverVersion, serverVersion) || other.serverVersion == serverVersion)&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.minSupportedSchemaVersion, minSupportedSchemaVersion) || other.minSupportedSchemaVersion == minSupportedSchemaVersion)&&(identical(other.baseUrl, baseUrl) || other.baseUrl == baseUrl)&&(identical(other.homeassistantAddon, homeassistantAddon) || other.homeassistantAddon == homeassistantAddon)&&(identical(other.onboardDone, onboardDone) || other.onboardDone == onboardDone)&&(identical(other.name, name) || other.name == name)&&(identical(other.status, status) || other.status == status)&&(identical(other.internalUrl, internalUrl) || other.internalUrl == internalUrl)&&(identical(other.externalUrl, externalUrl) || other.externalUrl == externalUrl)&&(identical(other.hasRemoteAccess, hasRemoteAccess) || other.hasRemoteAccess == hasRemoteAccess));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,minSupportedSchemaVersion,serverVersion,serverId,status,schemaVersion);
+int get hashCode => Object.hash(runtimeType,serverId,serverVersion,schemaVersion,minSupportedSchemaVersion,baseUrl,homeassistantAddon,onboardDone,name,status,internalUrl,externalUrl,hasRemoteAccess);
 
 @override
 String toString() {
-  return 'MusicAssistantServerInfoMessage(name: $name, minSupportedSchemaVersion: $minSupportedSchemaVersion, serverVersion: $serverVersion, serverId: $serverId, status: $status, schemaVersion: $schemaVersion)';
+  return 'MusicAssistantServerInfoMessage(serverId: $serverId, serverVersion: $serverVersion, schemaVersion: $schemaVersion, minSupportedSchemaVersion: $minSupportedSchemaVersion, baseUrl: $baseUrl, homeassistantAddon: $homeassistantAddon, onboardDone: $onboardDone, name: $name, status: $status, internalUrl: $internalUrl, externalUrl: $externalUrl, hasRemoteAccess: $hasRemoteAccess)';
 }
 
 
@@ -269,7 +293,7 @@ abstract mixin class _$MusicAssistantServerInfoMessageCopyWith<$Res> implements 
   factory _$MusicAssistantServerInfoMessageCopyWith(_MusicAssistantServerInfoMessage value, $Res Function(_MusicAssistantServerInfoMessage) _then) = __$MusicAssistantServerInfoMessageCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) String? name,@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) int minSupportedSchemaVersion,@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) String serverVersion,@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) String serverId,@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) String status,@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) int schemaVersion
+@JsonKey(name: MusicAssistantServerInfoMessage.serverIdKey_) String serverId,@JsonKey(name: MusicAssistantServerInfoMessage.serverVersionKey_) String serverVersion,@JsonKey(name: MusicAssistantServerInfoMessage.schemaVersionKey_) int schemaVersion,@JsonKey(name: MusicAssistantServerInfoMessage.minSupportedSchemaVersionKey_) int minSupportedSchemaVersion,@JsonKey(name: MusicAssistantServerInfoMessage.baseUrlKey_) String? baseUrl,@JsonKey(name: MusicAssistantServerInfoMessage.homeassistantAddonKey_) bool homeassistantAddon,@JsonKey(name: MusicAssistantServerInfoMessage.onboardDoneKey_) bool onboardDone,@JsonKey(name: MusicAssistantServerInfoMessage.nameKey_) String? name,@JsonKey(name: MusicAssistantServerInfoMessage.statusKey_) MusicAssistantCoreState status,@JsonKey(name: MusicAssistantServerInfoMessage.internalUrlKey_) String? internalUrl,@JsonKey(name: MusicAssistantServerInfoMessage.externalUrlKey_) String? externalUrl,@JsonKey(name: MusicAssistantServerInfoMessage.hasRemoteAccessKey_) bool hasRemoteAccess
 });
 
 
@@ -286,15 +310,21 @@ class __$MusicAssistantServerInfoMessageCopyWithImpl<$Res>
 
 /// Create a copy of MusicAssistantServerInfoMessage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = freezed,Object? minSupportedSchemaVersion = null,Object? serverVersion = null,Object? serverId = null,Object? status = null,Object? schemaVersion = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? serverId = null,Object? serverVersion = null,Object? schemaVersion = null,Object? minSupportedSchemaVersion = null,Object? baseUrl = freezed,Object? homeassistantAddon = null,Object? onboardDone = null,Object? name = freezed,Object? status = null,Object? internalUrl = freezed,Object? externalUrl = freezed,Object? hasRemoteAccess = null,}) {
   return _then(_MusicAssistantServerInfoMessage(
-name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,minSupportedSchemaVersion: null == minSupportedSchemaVersion ? _self.minSupportedSchemaVersion : minSupportedSchemaVersion // ignore: cast_nullable_to_non_nullable
-as int,serverVersion: null == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
-as String,serverId: null == serverId ? _self.serverId : serverId // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+serverId: null == serverId ? _self.serverId : serverId // ignore: cast_nullable_to_non_nullable
+as String,serverVersion: null == serverVersion ? _self.serverVersion : serverVersion // ignore: cast_nullable_to_non_nullable
 as String,schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
-as int,
+as int,minSupportedSchemaVersion: null == minSupportedSchemaVersion ? _self.minSupportedSchemaVersion : minSupportedSchemaVersion // ignore: cast_nullable_to_non_nullable
+as int,baseUrl: freezed == baseUrl ? _self.baseUrl : baseUrl // ignore: cast_nullable_to_non_nullable
+as String?,homeassistantAddon: null == homeassistantAddon ? _self.homeassistantAddon : homeassistantAddon // ignore: cast_nullable_to_non_nullable
+as bool,onboardDone: null == onboardDone ? _self.onboardDone : onboardDone // ignore: cast_nullable_to_non_nullable
+as bool,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as MusicAssistantCoreState,internalUrl: freezed == internalUrl ? _self.internalUrl : internalUrl // ignore: cast_nullable_to_non_nullable
+as String?,externalUrl: freezed == externalUrl ? _self.externalUrl : externalUrl // ignore: cast_nullable_to_non_nullable
+as String?,hasRemoteAccess: null == hasRemoteAccess ? _self.hasRemoteAccess : hasRemoteAccess // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

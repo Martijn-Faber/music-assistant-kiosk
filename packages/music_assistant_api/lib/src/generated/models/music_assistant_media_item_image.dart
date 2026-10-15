@@ -3,23 +3,27 @@
 /// ```json
 /// {
 ///     "properties": {
-///         "provider": {
-///             "type": "string"
-///         },
-///         "proxy_id": {
-///             "type": "string",
-///             "nullable": true
+///         "type": {
+///             "$ref": "#/components/schemas/ImageType"
 ///         },
 ///         "path": {
 ///             "type": "string"
 ///         },
-///         "type": {
+///         "provider": {
+///             "type": "string"
+///         },
+///         "remotely_accessible": {
+///             "type": "boolean",
+///             "default": false
+///         },
+///         "proxy_id": {
 ///             "type": "string",
 ///             "nullable": true
 ///         }
 ///     },
 ///     "type": "object",
 ///     "required": [
+///         "type",
 ///         "path",
 ///         "provider"
 ///     ]
@@ -38,28 +42,36 @@ abstract class MusicAssistantMediaItemImage
 
   @jsonSerializable
   const factory MusicAssistantMediaItemImage({
-    /// provider
-    @JsonKey(name: MusicAssistantMediaItemImage.providerKey_)
-    required String provider,
-
-    /// proxyId
-    @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? proxyId,
+    /// type
+    @JsonKey(name: MusicAssistantMediaItemImage.typeKey_)
+    required MusicAssistantImageType type,
 
     /// path
     @JsonKey(name: MusicAssistantMediaItemImage.pathKey_) required String path,
 
-    /// type
-    @JsonKey(name: MusicAssistantMediaItemImage.typeKey_) String? type,
+    /// provider
+    @JsonKey(name: MusicAssistantMediaItemImage.providerKey_)
+    required String provider,
+
+    /// remotelyAccessible
+    @Default(false)
+    @JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_)
+    bool remotelyAccessible,
+
+    /// proxyId
+    @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? proxyId,
   }) = _MusicAssistantMediaItemImage;
 
   factory MusicAssistantMediaItemImage.fromJson(Map<String, dynamic> json) =>
       _$MusicAssistantMediaItemImageFromJson(json);
 
-  static const String providerKey_ = 'provider';
-
-  static const String proxyIdKey_ = 'proxy_id';
+  static const String typeKey_ = 'type';
 
   static const String pathKey_ = 'path';
 
-  static const String typeKey_ = 'type';
+  static const String providerKey_ = 'provider';
+
+  static const String remotelyAccessibleKey_ = 'remotely_accessible';
+
+  static const String proxyIdKey_ = 'proxy_id';
 }

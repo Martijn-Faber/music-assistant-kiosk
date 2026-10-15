@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'connection_state.dart';
 import 'exceptions.dart';
+import 'events.dart';
 import 'generated/models/music_assistant_player.dart';
 import 'generated/models/music_assistant_player_queue.dart';
 import 'generated/models/music_assistant_queue_item.dart';
@@ -24,7 +25,7 @@ class MusicAssistantClient {
   final Duration requestTimeout;
 
   final _pending = <String, Completer<Object?>>{};
-  final _eventController = StreamController<Map<String, dynamic>>.broadcast();
+  final _eventController = StreamController<MusicAssistantEvent>.broadcast();
   final _stateController =
       StreamController<MusicAssistantConnectionState>.broadcast();
 
@@ -38,16 +39,70 @@ class MusicAssistantClient {
   Map<String, dynamic>? serverInfo;
   Map<String, dynamic>? user;
 
-  Stream<Map<String, dynamic>> get events => _eventController.stream;
+  /// Events received from the server, with a typed envelope and raw payload.
+  Stream<MusicAssistantEvent> get events => _eventController.stream;
   Stream<MusicAssistantConnectionState> get state => _stateController.stream;
   bool get isConnected => _socket != null && _authenticated;
+
+  /// Listens to server events, optionally filtered by type or object ID.
+  /// Returns a callback that cancels this subscription.
+  void Function() subscribe(
+    void Function(MusicAssistantEvent event) callback, {
+    Set<MusicAssistantEventType>? eventTypes,
+    Set<String>? objectIds,
+  }) {
+    final subscription = _eventController.stream.listen((event) {
+      if (eventTypes != null && !eventTypes.contains(event.type)) return;
+      if (objectIds != null && !objectIds.contains(event.objectId)) return;
+      callback(event);
+    });
+    return () => subscription.cancel();
+  }
+
+  /// Listens for player additions, updates, and removals using SDK models.
+  void Function() subscribeToPlayerChanges({
+    required void Function(MusicAssistantPlayer player) onChanged,
+    required void Function(String playerId) onRemoved,
+  }) => subscribe(
+    (event) {
+      if (event.type == MusicAssistantEventType.playerRemoved) {
+        final playerId = event.objectId;
+        if (playerId != null) onRemoved(playerId);
+        return;
+      }
+
+      final data = event.data;
+      if (data is! Map) return;
+      final playerData = Map<String, dynamic>.from(data);
+      final playerId = event.objectId ?? playerData['player_id'];
+      if (playerId is! String) return;
+      playerData['player_id'] = playerId;
+      playerData['playback_state'] ??= playerData['state'];
+      playerData['name'] ??= playerData['display_name'];
+      playerData['group_members'] ??= playerData['group_childs'];
+      playerData['extra_attributes'] ??= playerData['extra_data'];
+      if (playerData['name'] is! String) playerData['name'] = playerId;
+
+      try {
+        onChanged(MusicAssistantPlayer.fromJson(playerData));
+      } on Object {
+        // Ignore malformed event payloads; a later player fetch can recover.
+      }
+    },
+    eventTypes: {
+      MusicAssistantEventType.playerAdded,
+      MusicAssistantEventType.playerUpdated,
+      MusicAssistantEventType.playerRemoved,
+    },
+  );
 
   Future<void> connect() async {
     if (_socket != null) throw StateError('Already connected.');
     _closing = false;
     _stateController.add(MusicAssistantConnectionState.connecting);
-    final socket = await WebSocket.connect(_webSocketUri(serverUrl).toString())
-        .timeout(requestTimeout);
+    final socket = await WebSocket.connect(
+      _webSocketUri(serverUrl).toString(),
+    ).timeout(requestTimeout);
     _socket = socket;
     _serverInfoCompleter = Completer<Map<String, dynamic>>();
     _socketSubscription = socket.listen(
@@ -80,10 +135,8 @@ class MusicAssistantClient {
 
   /// Sends any Music Assistant WebSocket command, including commands added by
   /// server providers after this package version was released.
-  Future<Object?> sendCommand(
-    String command, {
-    Map<String, Object?>? args,
-  }) => _sendCommand(command, args: args);
+  Future<Object?> sendCommand(String command, {Map<String, Object?>? args}) =>
+      _sendCommand(command, args: args);
 
   /// Fetches a player and its current state by its Music Assistant player ID.
   Future<MusicAssistantPlayer> getPlayer(String playerId) async {
@@ -106,11 +159,42 @@ class MusicAssistantClient {
     return response
         .whereType<Map>()
         .map(
-          (player) => MusicAssistantPlayer.fromJson(
-            Map<String, dynamic>.from(player),
-          ),
+          (player) =>
+              MusicAssistantPlayer.fromJson(Map<String, dynamic>.from(player)),
         )
         .toList(growable: false);
+  }
+
+  /// Sets the volume of an individual player.
+  Future<void> setPlayerVolume(String playerId, int volumeLevel) async {
+    await sendCommand(
+      'players/cmd/volume_set',
+      args: {'player_id': playerId, 'volume_level': volumeLevel},
+    );
+  }
+
+  /// Sets the shared volume of a player group.
+  Future<void> setGroupVolume(String playerId, int volumeLevel) async {
+    await sendCommand(
+      'players/cmd/group_volume',
+      args: {'player_id': playerId, 'volume_level': volumeLevel},
+    );
+  }
+
+  /// Increases the shared volume of a player group.
+  Future<void> groupVolumeUp(String playerId) async {
+    await sendCommand(
+      'players/cmd/group_volume_up',
+      args: {'player_id': playerId},
+    );
+  }
+
+  /// Decreases the shared volume of a player group.
+  Future<void> groupVolumeDown(String playerId) async {
+    await sendCommand(
+      'players/cmd/group_volume_down',
+      args: {'player_id': playerId},
+    );
   }
 
   /// Fetches the active queue for a player.
@@ -122,7 +206,10 @@ class MusicAssistantClient {
     if (queueResponse == null) {
       return MusicAssistantPlayerQueue(
         queueId: playerId,
+        active: false,
         displayName: playerId,
+        available: false,
+        items: 0,
         currentIndex: null,
       );
     }
@@ -149,9 +236,10 @@ class MusicAssistantClient {
     }
     return (itemsResponse as List? ?? const [])
         .whereType<Map>()
-        .map((item) => MusicAssistantQueueItem.fromJson(
-              Map<String, dynamic>.from(item),
-            ))
+        .map(
+          (item) =>
+              MusicAssistantQueueItem.fromJson(Map<String, dynamic>.from(item)),
+        )
         .toList(growable: false);
   }
 
@@ -189,7 +277,9 @@ class MusicAssistantClient {
     _authenticated = false;
     for (final completer in _pending.values) {
       if (!completer.isCompleted) {
-        completer.completeError(StateError('Disconnected from Music Assistant.'));
+        completer.completeError(
+          StateError('Disconnected from Music Assistant.'),
+        );
       }
     }
     _pending.clear();
@@ -219,7 +309,7 @@ class MusicAssistantClient {
       final data = Map<String, dynamic>.from(decoded);
 
       if (data['event'] is String) {
-        _eventController.add(data);
+        _eventController.add(MusicAssistantEvent.fromJson(data));
         return;
       }
       if (data['server_id'] is String && data['message_id'] == null) {
@@ -287,7 +377,11 @@ class MusicAssistantClient {
       'http' => 'ws',
       'https' => 'wss',
       'ws' || 'wss' => uri.scheme,
-      _ => throw ArgumentError.value(serverUrl, 'serverUrl', 'Expected an http(s) URL.'),
+      _ => throw ArgumentError.value(
+        serverUrl,
+        'serverUrl',
+        'Expected an http(s) URL.',
+      ),
     };
     final basePath = uri.path.replaceFirst(RegExp(r'/+$'), '');
     final path = basePath.endsWith('/ws') ? basePath : '$basePath/ws';

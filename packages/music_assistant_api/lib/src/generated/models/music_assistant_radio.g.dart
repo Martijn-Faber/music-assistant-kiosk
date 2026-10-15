@@ -8,39 +8,71 @@ part of 'music_assistant_radio.dart';
 
 _MusicAssistantRadio _$MusicAssistantRadioFromJson(Map<String, dynamic> json) =>
     _MusicAssistantRadio(
-      favorite: json['favorite'] as bool? ?? false,
+      itemId: json['item_id'] as String,
+      provider: json['provider'] as String,
+      name: json['name'] as String,
+      version: json['version'] as String? ?? '',
+      sortName: json['sort_name'] as String?,
+      uri: json['uri'] as String?,
+      externalIds: (json['external_ids'] as List<dynamic>?)
+          ?.map(
+            (e) => (e as List<dynamic>)
+                .map((e) => MusicAssistantExternalID.fromJson(e as String))
+                .toList(),
+          )
+          .toList(),
+      isPlayable: json['is_playable'] as bool? ?? true,
+      mediaType: json['media_type'] == null
+          ? MusicAssistantMediaType.radio
+          : MusicAssistantMediaType.fromJson(json['media_type'] as String),
+      providerMappings: (json['provider_mappings'] as List<dynamic>)
+          .map(
+            (e) => MusicAssistantProviderMapping.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
+          .toList(),
       metadata: json['metadata'] == null
           ? null
           : MusicAssistantMediaItemMetadata.fromJson(
               json['metadata'] as Map<String, dynamic>,
             ),
-      itemId: json['item_id'] as String,
-      provider: json['provider'] as String,
-      name: json['name'] as String,
-      providerMappings: (json['provider_mappings'] as List<dynamic>?)
-          ?.map(
-            (e) => MusicAssistantRadioProviderMappingsItem.fromJson(
-              e as Map<String, dynamic>,
-            ),
-          )
+      favorite: json['favorite'] as bool? ?? false,
+      position: (json['position'] as num?)?.toInt(),
+      dateAdded: json['date_added'] == null
+          ? null
+          : DateTime.parse(json['date_added'] as String),
+      translationKey: json['translation_key'] as String?,
+      translationParams: (json['translation_params'] as List<dynamic>?)
+          ?.map((e) => e as String)
           .toList(),
-      uri: json['uri'] as String?,
-      mediaType: json['media_type'] == null
-          ? MusicAssistantMediaType.radio
-          : MusicAssistantMediaType.fromJson(json['media_type'] as String),
+      duration: (json['duration'] as num?)?.toInt(),
+      isDynamic: json['is_dynamic'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$MusicAssistantRadioToJson(
   _MusicAssistantRadio instance,
 ) => <String, dynamic>{
-  'favorite': instance.favorite,
-  'metadata': instance.metadata?.toJson(),
   'item_id': instance.itemId,
   'provider': instance.provider,
   'name': instance.name,
-  'provider_mappings': instance.providerMappings
-      ?.map((e) => e.toJson())
-      .toList(),
+  'version': instance.version,
+  'sort_name': instance.sortName,
   'uri': instance.uri,
+  'external_ids': instance.externalIds
+      ?.map((e) => e.map((e) => e.toJson()).toList())
+      .toList(),
+  'is_playable': instance.isPlayable,
   'media_type': instance.mediaType.toJson(),
+  'provider_mappings': instance.providerMappings
+      .map((e) => e.toJson())
+      .toList(),
+  'metadata': instance.metadata?.toJson(),
+  'favorite': instance.favorite,
+  'position': instance.position,
+  'date_added': instance.dateAdded?.toIso8601String(),
+  'translation_key': instance.translationKey,
+  'translation_params': instance.translationParams,
+  'duration': instance.duration,
+  'is_dynamic': instance.isDynamic,
 };

@@ -15,13 +15,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MusicAssistantMediaItemPalette {
 
-/// primary
-@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? get primary;/// backgroundLight
-@JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) List<int>? get backgroundLight;/// onLight
-@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? get onLight;/// backgroundDark
-@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? get backgroundDark;/// onDark
-@JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? get onDark;/// accent
-@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? get accent;
+/// backgroundDark
+@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? get backgroundDark;/// backgroundLight
+@JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) List<int>? get backgroundLight;/// primary
+@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? get primary;/// accent
+@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? get accent;/// onDark
+@JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? get onDark;/// onLight
+@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? get onLight;
 /// Create a copy of MusicAssistantMediaItemPalette
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,16 +34,16 @@ $MusicAssistantMediaItemPaletteCopyWith<MusicAssistantMediaItemPalette> get copy
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicAssistantMediaItemPalette&&const DeepCollectionEquality().equals(other.primary, primary)&&const DeepCollectionEquality().equals(other.backgroundLight, backgroundLight)&&const DeepCollectionEquality().equals(other.onLight, onLight)&&const DeepCollectionEquality().equals(other.backgroundDark, backgroundDark)&&const DeepCollectionEquality().equals(other.onDark, onDark)&&const DeepCollectionEquality().equals(other.accent, accent));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicAssistantMediaItemPalette&&const DeepCollectionEquality().equals(other.backgroundDark, backgroundDark)&&const DeepCollectionEquality().equals(other.backgroundLight, backgroundLight)&&const DeepCollectionEquality().equals(other.primary, primary)&&const DeepCollectionEquality().equals(other.accent, accent)&&const DeepCollectionEquality().equals(other.onDark, onDark)&&const DeepCollectionEquality().equals(other.onLight, onLight));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(primary),const DeepCollectionEquality().hash(backgroundLight),const DeepCollectionEquality().hash(onLight),const DeepCollectionEquality().hash(backgroundDark),const DeepCollectionEquality().hash(onDark),const DeepCollectionEquality().hash(accent));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(backgroundDark),const DeepCollectionEquality().hash(backgroundLight),const DeepCollectionEquality().hash(primary),const DeepCollectionEquality().hash(accent),const DeepCollectionEquality().hash(onDark),const DeepCollectionEquality().hash(onLight));
 
 @override
 String toString() {
-  return 'MusicAssistantMediaItemPalette(primary: $primary, backgroundLight: $backgroundLight, onLight: $onLight, backgroundDark: $backgroundDark, onDark: $onDark, accent: $accent)';
+  return 'MusicAssistantMediaItemPalette(backgroundDark: $backgroundDark, backgroundLight: $backgroundLight, primary: $primary, accent: $accent, onDark: $onDark, onLight: $onLight)';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $MusicAssistantMediaItemPaletteCopyWith<$Res>  {
   factory $MusicAssistantMediaItemPaletteCopyWith(MusicAssistantMediaItemPalette value, $Res Function(MusicAssistantMediaItemPalette) _then) = _$MusicAssistantMediaItemPaletteCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? primary,@JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) List<int>? backgroundLight,@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? onLight,@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? backgroundDark,@JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? onDark,@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? accent
+@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? backgroundDark,@JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) List<int>? backgroundLight,@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? primary,@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? accent,@JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? onDark,@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? onLight
 });
 
 
@@ -71,14 +71,14 @@ class _$MusicAssistantMediaItemPaletteCopyWithImpl<$Res>
 
 /// Create a copy of MusicAssistantMediaItemPalette
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? primary = freezed,Object? backgroundLight = freezed,Object? onLight = freezed,Object? backgroundDark = freezed,Object? onDark = freezed,Object? accent = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? backgroundDark = freezed,Object? backgroundLight = freezed,Object? primary = freezed,Object? accent = freezed,Object? onDark = freezed,Object? onLight = freezed,}) {
   return _then(_self.copyWith(
-primary: freezed == primary ? _self.primary : primary // ignore: cast_nullable_to_non_nullable
+backgroundDark: freezed == backgroundDark ? _self.backgroundDark : backgroundDark // ignore: cast_nullable_to_non_nullable
 as List<int>?,backgroundLight: freezed == backgroundLight ? _self.backgroundLight : backgroundLight // ignore: cast_nullable_to_non_nullable
-as List<int>?,onLight: freezed == onLight ? _self.onLight : onLight // ignore: cast_nullable_to_non_nullable
-as List<int>?,backgroundDark: freezed == backgroundDark ? _self.backgroundDark : backgroundDark // ignore: cast_nullable_to_non_nullable
-as List<int>?,onDark: freezed == onDark ? _self.onDark : onDark // ignore: cast_nullable_to_non_nullable
+as List<int>?,primary: freezed == primary ? _self.primary : primary // ignore: cast_nullable_to_non_nullable
 as List<int>?,accent: freezed == accent ? _self.accent : accent // ignore: cast_nullable_to_non_nullable
+as List<int>?,onDark: freezed == onDark ? _self.onDark : onDark // ignore: cast_nullable_to_non_nullable
+as List<int>?,onLight: freezed == onLight ? _self.onLight : onLight // ignore: cast_nullable_to_non_nullable
 as List<int>?,
   ));
 }
@@ -164,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)  List<int>? onLight, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_)  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_)  List<int>? accent)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_)  List<int>? accent, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_)  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)  List<int>? onLight)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MusicAssistantMediaItemPalette() when $default != null:
-return $default(_that.primary,_that.backgroundLight,_that.onLight,_that.backgroundDark,_that.onDark,_that.accent);case _:
+return $default(_that.backgroundDark,_that.backgroundLight,_that.primary,_that.accent,_that.onDark,_that.onLight);case _:
   return orElse();
 
 }
@@ -185,10 +185,10 @@ return $default(_that.primary,_that.backgroundLight,_that.onLight,_that.backgrou
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)  List<int>? onLight, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_)  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_)  List<int>? accent)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_)  List<int>? accent, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_)  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)  List<int>? onLight)  $default,) {final _that = this;
 switch (_that) {
 case _MusicAssistantMediaItemPalette():
-return $default(_that.primary,_that.backgroundLight,_that.onLight,_that.backgroundDark,_that.onDark,_that.accent);case _:
+return $default(_that.backgroundDark,_that.backgroundLight,_that.primary,_that.accent,_that.onDark,_that.onLight);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +205,10 @@ return $default(_that.primary,_that.backgroundLight,_that.onLight,_that.backgrou
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)  List<int>? onLight, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_)  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_)  List<int>? accent)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_)  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_)  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_)  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_)  List<int>? accent, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_)  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_)  List<int>? onLight)?  $default,) {final _that = this;
 switch (_that) {
 case _MusicAssistantMediaItemPalette() when $default != null:
-return $default(_that.primary,_that.backgroundLight,_that.onLight,_that.backgroundDark,_that.onDark,_that.accent);case _:
+return $default(_that.backgroundDark,_that.backgroundLight,_that.primary,_that.accent,_that.onDark,_that.onLight);case _:
   return null;
 
 }
@@ -220,16 +220,16 @@ return $default(_that.primary,_that.backgroundLight,_that.onLight,_that.backgrou
 
 @jsonSerializable
 class _MusicAssistantMediaItemPalette extends MusicAssistantMediaItemPalette {
-  const _MusicAssistantMediaItemPalette({@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) final  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) final  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) final  List<int>? onLight, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) final  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) final  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) final  List<int>? accent}): _primary = primary,_backgroundLight = backgroundLight,_onLight = onLight,_backgroundDark = backgroundDark,_onDark = onDark,_accent = accent,super._();
+  const _MusicAssistantMediaItemPalette({@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) final  List<int>? backgroundDark, @JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) final  List<int>? backgroundLight, @JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) final  List<int>? primary, @JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) final  List<int>? accent, @JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) final  List<int>? onDark, @JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) final  List<int>? onLight}): _backgroundDark = backgroundDark,_backgroundLight = backgroundLight,_primary = primary,_accent = accent,_onDark = onDark,_onLight = onLight,super._();
   factory _MusicAssistantMediaItemPalette.fromJson(Map<String, dynamic> json) => _$MusicAssistantMediaItemPaletteFromJson(json);
 
-/// primary
- final  List<int>? _primary;
-/// primary
-@override@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? get primary {
-  final value = _primary;
+/// backgroundDark
+ final  List<int>? _backgroundDark;
+/// backgroundDark
+@override@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? get backgroundDark {
+  final value = _backgroundDark;
   if (value == null) return null;
-  if (_primary is EqualUnmodifiableListView) return _primary;
+  if (_backgroundDark is EqualUnmodifiableListView) return _backgroundDark;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
@@ -245,24 +245,24 @@ class _MusicAssistantMediaItemPalette extends MusicAssistantMediaItemPalette {
   return EqualUnmodifiableListView(value);
 }
 
-/// onLight
- final  List<int>? _onLight;
-/// onLight
-@override@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? get onLight {
-  final value = _onLight;
+/// primary
+ final  List<int>? _primary;
+/// primary
+@override@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? get primary {
+  final value = _primary;
   if (value == null) return null;
-  if (_onLight is EqualUnmodifiableListView) return _onLight;
+  if (_primary is EqualUnmodifiableListView) return _primary;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
 
-/// backgroundDark
- final  List<int>? _backgroundDark;
-/// backgroundDark
-@override@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? get backgroundDark {
-  final value = _backgroundDark;
+/// accent
+ final  List<int>? _accent;
+/// accent
+@override@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? get accent {
+  final value = _accent;
   if (value == null) return null;
-  if (_backgroundDark is EqualUnmodifiableListView) return _backgroundDark;
+  if (_accent is EqualUnmodifiableListView) return _accent;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
@@ -278,13 +278,13 @@ class _MusicAssistantMediaItemPalette extends MusicAssistantMediaItemPalette {
   return EqualUnmodifiableListView(value);
 }
 
-/// accent
- final  List<int>? _accent;
-/// accent
-@override@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? get accent {
-  final value = _accent;
+/// onLight
+ final  List<int>? _onLight;
+/// onLight
+@override@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? get onLight {
+  final value = _onLight;
   if (value == null) return null;
-  if (_accent is EqualUnmodifiableListView) return _accent;
+  if (_onLight is EqualUnmodifiableListView) return _onLight;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
@@ -303,16 +303,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicAssistantMediaItemPalette&&const DeepCollectionEquality().equals(other._primary, _primary)&&const DeepCollectionEquality().equals(other._backgroundLight, _backgroundLight)&&const DeepCollectionEquality().equals(other._onLight, _onLight)&&const DeepCollectionEquality().equals(other._backgroundDark, _backgroundDark)&&const DeepCollectionEquality().equals(other._onDark, _onDark)&&const DeepCollectionEquality().equals(other._accent, _accent));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicAssistantMediaItemPalette&&const DeepCollectionEquality().equals(other._backgroundDark, _backgroundDark)&&const DeepCollectionEquality().equals(other._backgroundLight, _backgroundLight)&&const DeepCollectionEquality().equals(other._primary, _primary)&&const DeepCollectionEquality().equals(other._accent, _accent)&&const DeepCollectionEquality().equals(other._onDark, _onDark)&&const DeepCollectionEquality().equals(other._onLight, _onLight));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_primary),const DeepCollectionEquality().hash(_backgroundLight),const DeepCollectionEquality().hash(_onLight),const DeepCollectionEquality().hash(_backgroundDark),const DeepCollectionEquality().hash(_onDark),const DeepCollectionEquality().hash(_accent));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_backgroundDark),const DeepCollectionEquality().hash(_backgroundLight),const DeepCollectionEquality().hash(_primary),const DeepCollectionEquality().hash(_accent),const DeepCollectionEquality().hash(_onDark),const DeepCollectionEquality().hash(_onLight));
 
 @override
 String toString() {
-  return 'MusicAssistantMediaItemPalette(primary: $primary, backgroundLight: $backgroundLight, onLight: $onLight, backgroundDark: $backgroundDark, onDark: $onDark, accent: $accent)';
+  return 'MusicAssistantMediaItemPalette(backgroundDark: $backgroundDark, backgroundLight: $backgroundLight, primary: $primary, accent: $accent, onDark: $onDark, onLight: $onLight)';
 }
 
 
@@ -323,7 +323,7 @@ abstract mixin class _$MusicAssistantMediaItemPaletteCopyWith<$Res> implements $
   factory _$MusicAssistantMediaItemPaletteCopyWith(_MusicAssistantMediaItemPalette value, $Res Function(_MusicAssistantMediaItemPalette) _then) = __$MusicAssistantMediaItemPaletteCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? primary,@JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) List<int>? backgroundLight,@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? onLight,@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? backgroundDark,@JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? onDark,@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? accent
+@JsonKey(name: MusicAssistantMediaItemPalette.backgroundDarkKey_) List<int>? backgroundDark,@JsonKey(name: MusicAssistantMediaItemPalette.backgroundLightKey_) List<int>? backgroundLight,@JsonKey(name: MusicAssistantMediaItemPalette.primaryKey_) List<int>? primary,@JsonKey(name: MusicAssistantMediaItemPalette.accentKey_) List<int>? accent,@JsonKey(name: MusicAssistantMediaItemPalette.onDarkKey_) List<int>? onDark,@JsonKey(name: MusicAssistantMediaItemPalette.onLightKey_) List<int>? onLight
 });
 
 
@@ -340,14 +340,14 @@ class __$MusicAssistantMediaItemPaletteCopyWithImpl<$Res>
 
 /// Create a copy of MusicAssistantMediaItemPalette
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? primary = freezed,Object? backgroundLight = freezed,Object? onLight = freezed,Object? backgroundDark = freezed,Object? onDark = freezed,Object? accent = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? backgroundDark = freezed,Object? backgroundLight = freezed,Object? primary = freezed,Object? accent = freezed,Object? onDark = freezed,Object? onLight = freezed,}) {
   return _then(_MusicAssistantMediaItemPalette(
-primary: freezed == primary ? _self._primary : primary // ignore: cast_nullable_to_non_nullable
+backgroundDark: freezed == backgroundDark ? _self._backgroundDark : backgroundDark // ignore: cast_nullable_to_non_nullable
 as List<int>?,backgroundLight: freezed == backgroundLight ? _self._backgroundLight : backgroundLight // ignore: cast_nullable_to_non_nullable
-as List<int>?,onLight: freezed == onLight ? _self._onLight : onLight // ignore: cast_nullable_to_non_nullable
-as List<int>?,backgroundDark: freezed == backgroundDark ? _self._backgroundDark : backgroundDark // ignore: cast_nullable_to_non_nullable
-as List<int>?,onDark: freezed == onDark ? _self._onDark : onDark // ignore: cast_nullable_to_non_nullable
+as List<int>?,primary: freezed == primary ? _self._primary : primary // ignore: cast_nullable_to_non_nullable
 as List<int>?,accent: freezed == accent ? _self._accent : accent // ignore: cast_nullable_to_non_nullable
+as List<int>?,onDark: freezed == onDark ? _self._onDark : onDark // ignore: cast_nullable_to_non_nullable
+as List<int>?,onLight: freezed == onLight ? _self._onLight : onLight // ignore: cast_nullable_to_non_nullable
 as List<int>?,
   ));
 }

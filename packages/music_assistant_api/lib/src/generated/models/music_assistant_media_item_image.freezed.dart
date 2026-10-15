@@ -15,11 +15,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MusicAssistantMediaItemImage {
 
-/// provider
-@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) String get provider;/// proxyId
-@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? get proxyId;/// path
-@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) String get path;/// type
-@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) String? get type;
+/// type
+@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) MusicAssistantImageType get type;/// path
+@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) String get path;/// provider
+@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) String get provider;/// remotelyAccessible
+@JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_) bool get remotelyAccessible;/// proxyId
+@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? get proxyId;
 /// Create a copy of MusicAssistantMediaItemImage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,16 +33,16 @@ $MusicAssistantMediaItemImageCopyWith<MusicAssistantMediaItemImage> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicAssistantMediaItemImage&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.proxyId, proxyId) || other.proxyId == proxyId)&&(identical(other.path, path) || other.path == path)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicAssistantMediaItemImage&&(identical(other.type, type) || other.type == type)&&(identical(other.path, path) || other.path == path)&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.remotelyAccessible, remotelyAccessible) || other.remotelyAccessible == remotelyAccessible)&&(identical(other.proxyId, proxyId) || other.proxyId == proxyId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,provider,proxyId,path,type);
+int get hashCode => Object.hash(runtimeType,type,path,provider,remotelyAccessible,proxyId);
 
 @override
 String toString() {
-  return 'MusicAssistantMediaItemImage(provider: $provider, proxyId: $proxyId, path: $path, type: $type)';
+  return 'MusicAssistantMediaItemImage(type: $type, path: $path, provider: $provider, remotelyAccessible: $remotelyAccessible, proxyId: $proxyId)';
 }
 
 
@@ -52,7 +53,7 @@ abstract mixin class $MusicAssistantMediaItemImageCopyWith<$Res>  {
   factory $MusicAssistantMediaItemImageCopyWith(MusicAssistantMediaItemImage value, $Res Function(MusicAssistantMediaItemImage) _then) = _$MusicAssistantMediaItemImageCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) String provider,@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? proxyId,@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) String path,@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) String? type
+@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) MusicAssistantImageType type,@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) String path,@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) String provider,@JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_) bool remotelyAccessible,@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? proxyId
 });
 
 
@@ -69,12 +70,13 @@ class _$MusicAssistantMediaItemImageCopyWithImpl<$Res>
 
 /// Create a copy of MusicAssistantMediaItemImage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? provider = null,Object? proxyId = freezed,Object? path = null,Object? type = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? path = null,Object? provider = null,Object? remotelyAccessible = null,Object? proxyId = freezed,}) {
   return _then(_self.copyWith(
-provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
-as String,proxyId: freezed == proxyId ? _self.proxyId : proxyId // ignore: cast_nullable_to_non_nullable
-as String?,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
-as String,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as MusicAssistantImageType,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,remotelyAccessible: null == remotelyAccessible ? _self.remotelyAccessible : remotelyAccessible // ignore: cast_nullable_to_non_nullable
+as bool,proxyId: freezed == proxyId ? _self.proxyId : proxyId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -160,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemImage.providerKey_)  String provider, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_)  String? proxyId, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_)  String path, @JsonKey(name: MusicAssistantMediaItemImage.typeKey_)  String? type)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemImage.typeKey_)  MusicAssistantImageType type, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_)  String path, @JsonKey(name: MusicAssistantMediaItemImage.providerKey_)  String provider, @JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_)  bool remotelyAccessible, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_)  String? proxyId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MusicAssistantMediaItemImage() when $default != null:
-return $default(_that.provider,_that.proxyId,_that.path,_that.type);case _:
+return $default(_that.type,_that.path,_that.provider,_that.remotelyAccessible,_that.proxyId);case _:
   return orElse();
 
 }
@@ -181,10 +183,10 @@ return $default(_that.provider,_that.proxyId,_that.path,_that.type);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemImage.providerKey_)  String provider, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_)  String? proxyId, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_)  String path, @JsonKey(name: MusicAssistantMediaItemImage.typeKey_)  String? type)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: MusicAssistantMediaItemImage.typeKey_)  MusicAssistantImageType type, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_)  String path, @JsonKey(name: MusicAssistantMediaItemImage.providerKey_)  String provider, @JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_)  bool remotelyAccessible, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_)  String? proxyId)  $default,) {final _that = this;
 switch (_that) {
 case _MusicAssistantMediaItemImage():
-return $default(_that.provider,_that.proxyId,_that.path,_that.type);case _:
+return $default(_that.type,_that.path,_that.provider,_that.remotelyAccessible,_that.proxyId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +203,10 @@ return $default(_that.provider,_that.proxyId,_that.path,_that.type);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: MusicAssistantMediaItemImage.providerKey_)  String provider, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_)  String? proxyId, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_)  String path, @JsonKey(name: MusicAssistantMediaItemImage.typeKey_)  String? type)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: MusicAssistantMediaItemImage.typeKey_)  MusicAssistantImageType type, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_)  String path, @JsonKey(name: MusicAssistantMediaItemImage.providerKey_)  String provider, @JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_)  bool remotelyAccessible, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_)  String? proxyId)?  $default,) {final _that = this;
 switch (_that) {
 case _MusicAssistantMediaItemImage() when $default != null:
-return $default(_that.provider,_that.proxyId,_that.path,_that.type);case _:
+return $default(_that.type,_that.path,_that.provider,_that.remotelyAccessible,_that.proxyId);case _:
   return null;
 
 }
@@ -216,17 +218,19 @@ return $default(_that.provider,_that.proxyId,_that.path,_that.type);case _:
 
 @jsonSerializable
 class _MusicAssistantMediaItemImage extends MusicAssistantMediaItemImage {
-  const _MusicAssistantMediaItemImage({@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) required this.provider, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) this.proxyId, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_) required this.path, @JsonKey(name: MusicAssistantMediaItemImage.typeKey_) this.type}): super._();
+  const _MusicAssistantMediaItemImage({@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) required this.type, @JsonKey(name: MusicAssistantMediaItemImage.pathKey_) required this.path, @JsonKey(name: MusicAssistantMediaItemImage.providerKey_) required this.provider, @JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_) this.remotelyAccessible = false, @JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) this.proxyId}): super._();
   factory _MusicAssistantMediaItemImage.fromJson(Map<String, dynamic> json) => _$MusicAssistantMediaItemImageFromJson(json);
 
-/// provider
-@override@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) final  String provider;
-/// proxyId
-@override@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) final  String? proxyId;
+/// type
+@override@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) final  MusicAssistantImageType type;
 /// path
 @override@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) final  String path;
-/// type
-@override@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) final  String? type;
+/// provider
+@override@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) final  String provider;
+/// remotelyAccessible
+@override@JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_) final  bool remotelyAccessible;
+/// proxyId
+@override@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) final  String? proxyId;
 
 /// Create a copy of MusicAssistantMediaItemImage
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicAssistantMediaItemImage&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.proxyId, proxyId) || other.proxyId == proxyId)&&(identical(other.path, path) || other.path == path)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicAssistantMediaItemImage&&(identical(other.type, type) || other.type == type)&&(identical(other.path, path) || other.path == path)&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.remotelyAccessible, remotelyAccessible) || other.remotelyAccessible == remotelyAccessible)&&(identical(other.proxyId, proxyId) || other.proxyId == proxyId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,provider,proxyId,path,type);
+int get hashCode => Object.hash(runtimeType,type,path,provider,remotelyAccessible,proxyId);
 
 @override
 String toString() {
-  return 'MusicAssistantMediaItemImage(provider: $provider, proxyId: $proxyId, path: $path, type: $type)';
+  return 'MusicAssistantMediaItemImage(type: $type, path: $path, provider: $provider, remotelyAccessible: $remotelyAccessible, proxyId: $proxyId)';
 }
 
 
@@ -261,7 +265,7 @@ abstract mixin class _$MusicAssistantMediaItemImageCopyWith<$Res> implements $Mu
   factory _$MusicAssistantMediaItemImageCopyWith(_MusicAssistantMediaItemImage value, $Res Function(_MusicAssistantMediaItemImage) _then) = __$MusicAssistantMediaItemImageCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) String provider,@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? proxyId,@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) String path,@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) String? type
+@JsonKey(name: MusicAssistantMediaItemImage.typeKey_) MusicAssistantImageType type,@JsonKey(name: MusicAssistantMediaItemImage.pathKey_) String path,@JsonKey(name: MusicAssistantMediaItemImage.providerKey_) String provider,@JsonKey(name: MusicAssistantMediaItemImage.remotelyAccessibleKey_) bool remotelyAccessible,@JsonKey(name: MusicAssistantMediaItemImage.proxyIdKey_) String? proxyId
 });
 
 
@@ -278,12 +282,13 @@ class __$MusicAssistantMediaItemImageCopyWithImpl<$Res>
 
 /// Create a copy of MusicAssistantMediaItemImage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? provider = null,Object? proxyId = freezed,Object? path = null,Object? type = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? path = null,Object? provider = null,Object? remotelyAccessible = null,Object? proxyId = freezed,}) {
   return _then(_MusicAssistantMediaItemImage(
-provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
-as String,proxyId: freezed == proxyId ? _self.proxyId : proxyId // ignore: cast_nullable_to_non_nullable
-as String?,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
-as String,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as MusicAssistantImageType,path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,remotelyAccessible: null == remotelyAccessible ? _self.remotelyAccessible : remotelyAccessible // ignore: cast_nullable_to_non_nullable
+as bool,proxyId: freezed == proxyId ? _self.proxyId : proxyId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

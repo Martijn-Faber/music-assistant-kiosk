@@ -3,29 +3,33 @@
 /// ```json
 /// {
 ///     "properties": {
-///         "bit_rate": {
-///             "type": "integer",
-///             "nullable": true
-///         },
 ///         "content_type": {
 ///             "$ref": "#/components/schemas/ContentType",
 ///             "default": "?"
 ///         },
-///         "bit_depth": {
-///             "type": "integer",
-///             "default": 16
+///         "codec_type": {
+///             "$ref": "#/components/schemas/ContentType",
+///             "default": "?"
 ///         },
 ///         "sample_rate": {
 ///             "type": "integer",
 ///             "default": 44100
 ///         },
+///         "bit_depth": {
+///             "type": "integer",
+///             "default": 16
+///         },
 ///         "channels": {
 ///             "type": "integer",
 ///             "default": 2
 ///         },
-///         "codec_type": {
-///             "$ref": "#/components/schemas/ContentType",
-///             "default": "?"
+///         "output_format_str": {
+///             "type": "string",
+///             "default": ""
+///         },
+///         "bit_rate": {
+///             "type": "integer",
+///             "nullable": true
 ///         }
 ///     },
 ///     "type": "object"
@@ -43,47 +47,54 @@ abstract class MusicAssistantAudioFormat with _$MusicAssistantAudioFormat {
 
   @jsonSerializable
   const factory MusicAssistantAudioFormat({
-    /// bitRate
-    @JsonKey(name: MusicAssistantAudioFormat.bitRateKey_) int? bitRate,
-
     /// contentType
     @Default(MusicAssistantContentType.value61)
     @JsonKey(name: MusicAssistantAudioFormat.contentTypeKey_)
     MusicAssistantContentType contentType,
 
-    /// bitDepth
-    @Default(16)
-    @JsonKey(name: MusicAssistantAudioFormat.bitDepthKey_)
-    int bitDepth,
+    /// codecType
+    @Default(MusicAssistantContentType.value61)
+    @JsonKey(name: MusicAssistantAudioFormat.codecTypeKey_)
+    MusicAssistantContentType codecType,
 
     /// sampleRate
     @Default(44100)
     @JsonKey(name: MusicAssistantAudioFormat.sampleRateKey_)
     int sampleRate,
 
+    /// bitDepth
+    @Default(16)
+    @JsonKey(name: MusicAssistantAudioFormat.bitDepthKey_)
+    int bitDepth,
+
     /// channels
     @Default(2)
     @JsonKey(name: MusicAssistantAudioFormat.channelsKey_)
     int channels,
 
-    /// codecType
-    @Default(MusicAssistantContentType.value61)
-    @JsonKey(name: MusicAssistantAudioFormat.codecTypeKey_)
-    MusicAssistantContentType codecType,
+    /// outputFormatStr
+    @Default('')
+    @JsonKey(name: MusicAssistantAudioFormat.outputFormatStrKey_)
+    String outputFormatStr,
+
+    /// bitRate
+    @JsonKey(name: MusicAssistantAudioFormat.bitRateKey_) int? bitRate,
   }) = _MusicAssistantAudioFormat;
 
   factory MusicAssistantAudioFormat.fromJson(Map<String, dynamic> json) =>
       _$MusicAssistantAudioFormatFromJson(json);
 
-  static const String bitRateKey_ = 'bit_rate';
-
   static const String contentTypeKey_ = 'content_type';
 
-  static const String bitDepthKey_ = 'bit_depth';
+  static const String codecTypeKey_ = 'codec_type';
 
   static const String sampleRateKey_ = 'sample_rate';
 
+  static const String bitDepthKey_ = 'bit_depth';
+
   static const String channelsKey_ = 'channels';
 
-  static const String codecTypeKey_ = 'codec_type';
+  static const String outputFormatStrKey_ = 'output_format_str';
+
+  static const String bitRateKey_ = 'bit_rate';
 }

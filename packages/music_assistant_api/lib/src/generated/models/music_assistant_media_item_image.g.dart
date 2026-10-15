@@ -9,17 +9,19 @@ part of 'music_assistant_media_item_image.dart';
 _MusicAssistantMediaItemImage _$MusicAssistantMediaItemImageFromJson(
   Map<String, dynamic> json,
 ) => _MusicAssistantMediaItemImage(
-  provider: json['provider'] as String,
-  proxyId: json['proxy_id'] as String?,
+  type: MusicAssistantImageType.fromJson(json['type'] as String),
   path: json['path'] as String,
-  type: json['type'] as String?,
+  provider: json['provider'] as String,
+  remotelyAccessible: json['remotely_accessible'] as bool? ?? false,
+  proxyId: json['proxy_id'] as String?,
 );
 
 Map<String, dynamic> _$MusicAssistantMediaItemImageToJson(
   _MusicAssistantMediaItemImage instance,
 ) => <String, dynamic>{
-  'provider': instance.provider,
-  'proxy_id': instance.proxyId,
+  'type': instance.type.toJson(),
   'path': instance.path,
-  'type': instance.type,
+  'provider': instance.provider,
+  'remotely_accessible': instance.remotelyAccessible,
+  'proxy_id': instance.proxyId,
 };

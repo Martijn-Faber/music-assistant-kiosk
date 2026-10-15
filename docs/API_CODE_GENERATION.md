@@ -8,10 +8,12 @@ generated filenames on Windows. Generated Dart code goes in
 `packages/music_assistant_api/lib/src/generated/`; keep handwritten code
 outside that generated folder because generation can replace its contents.
 
-After updating the spec, run code generation from the package directory:
+After replacing the full spec with the copy from your target server, refresh the
+scoped schema and run code generation from the package directory:
 
 ```sh
 dart pub get
+dart run tool/refresh_scoped_openapi.dart
 dart run swagger_to_dart
 dart run build_runner build --delete-conflicting-outputs
 ```
@@ -26,7 +28,7 @@ WebSocket method can send any Music Assistant command. The app has started using
 the new package for server info and still uses `music_assistant` for the other
 features during migration.
 
-When updating the upstream spec, copy it to
-`packages/music_assistant_api/api/music_assistant.openapi.json` and refresh the
-scoped schemas file before regenerating. The app references this package through
-a local path dependency while the client is being developed.
+The refresh script copies the app's selected schema roots and their referenced
+schemas from the full spec. It also names the inline DSP filter union so the
+generated filename stays within Windows path limits. The app references this
+package through a local path dependency while the client is being developed.
