@@ -767,7 +767,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             });
                       final currentQueueRowIndex =
                           _currentQueueRowIndexOverride ??
-                          (uriMatch >= 0 ? uriMatch : serverIndexMatch);
+                          (serverIndexMatch >= 0 ? serverIndexMatch : uriMatch);
                       if (currentQueueRowIndex >= 0 &&
                           currentQueueRowIndex !=
                               _lastAutoScrolledQueueRowIndex) {
