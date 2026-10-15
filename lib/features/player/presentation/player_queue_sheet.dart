@@ -987,13 +987,14 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               return _BufferedSwipeRow(
                                 key: ValueKey(itemKey),
                                 enabled: isBufferedUpcoming,
+                                onBlockedSwipe: _showBufferedInfoMessage,
                                 child: Dismissible(
                                 key: ValueKey(itemKey),
                                 movementDuration: const Duration(
                                   milliseconds: 220,
                                 ),
                                 resizeDuration: const Duration(
-                                  milliseconds: 260,
+                                  milliseconds: 100,
                                 ),
                                 direction:
                                     _isClearingQueue ||
@@ -1009,6 +1010,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   _dismissProgress.value = details.progress
                                       .clamp(0.0, 1.0)
                                       .toDouble();
+                                },
+                                onResize: () {
+                                  setState(() => _removingQueueItemKey = itemKey);
                                 },
                                 onDismissed: (_) {
                                   unawaited(
@@ -1054,32 +1058,12 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                                       constraints.maxWidth,
                                                     )
                                                     .toDouble();
-                                            return Container(
+                                            return _QueueActionPill(
                                               width: revealWidth,
-                                              height: 48,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFD94A4A),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: _removingQueueItemKey ==
-                                                      itemKey
-                                                  ? const SizedBox.square(
-                                                      dimension: 22,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            color: Colors.white,
-                                                          ),
-                                                    )
-                                                  : Icon(
-                                                      CupertinoIcons.minus_circle,
-                                                      color: Colors.white,
-                                                      size: (revealWidth * 0.65)
-                                                          .clamp(0.0, 24.0)
-                                                          .toDouble(),
-                                                    ),
+                                              disabled: false,
+                                              loading:
+                                                  _removingQueueItemKey ==
+                                                  itemKey,
                                             );
                                           },
                                         ),
@@ -1106,13 +1090,19 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                           child: child,
                                         ),
                                       ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 3,
-                                    ),
-                                    child: Opacity(
-                                      opacity: isPreviouslyPlayed ? .42 : 1,
-                                      child: AnimatedSwitcher(
+                                  child: AnimatedOpacity(
+                                    opacity: _removingQueueItemKey == itemKey
+                                        ? 0
+                                        : 1,
+                                    duration: const Duration(milliseconds: 100),
+                                    curve: Curves.easeOut,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 3,
+                                      ),
+                                      child: Opacity(
+                                        opacity: isPreviouslyPlayed ? .42 : 1,
+                                        child: AnimatedSwitcher(
                                         duration: const Duration(
                                           milliseconds: 220,
                                         ),
@@ -1155,6 +1145,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                       ),
                                     ),
                                   ),
+                                ),
                                 ),
                                 ),
                               );
@@ -1232,10 +1223,77 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   }
 }
 
+class _QueueActionPill extends StatelessWidget {
+  const _QueueActionPill({
+    required this.width,
+    required this.disabled,
+    this.loading = false,
+  });
+
+  final double width;
+  final bool disabled;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = SizedBox(
+      width: width,
+      height: 48,
+      child: Center(
+        child: width < 8
+            ? const SizedBox.shrink()
+            : loading
+            ? const SizedBox.square(
+                dimension: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                CupertinoIcons.minus_circle,
+                color: disabled ? Colors.white70 : Colors.white,
+                size: disabled
+                    ? 22
+                    : (width * 0.65).clamp(0.0, 24.0).toDouble(),
+              ),
+      ),
+    );
+
+    if (disabled) {
+      return GlassSurface(
+        borderRadius: 999,
+        padding: EdgeInsets.zero,
+        tint: const Color(0x55303840),
+        blurSigma: 14,
+        showShadow: false,
+        child: child,
+      );
+    }
+
+    return Container(
+      width: width,
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFD94A4A),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0x66FFFFFF), width: 0.8),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _BufferedSwipeRow extends StatefulWidget {
-  const _BufferedSwipeRow({super.key, required this.enabled, required this.child});
+  const _BufferedSwipeRow({
+    super.key,
+    required this.enabled,
+    required this.onBlockedSwipe,
+    required this.child,
+  });
 
   final bool enabled;
+  final VoidCallback onBlockedSwipe;
   final Widget child;
 
   @override
@@ -1285,7 +1343,13 @@ class _BufferedSwipeRowState extends State<_BufferedSwipeRow>
                 .clamp(-rowWidth, 0)
                 .toDouble();
           },
-          onHorizontalDragEnd: (_) => _returnToRest(),
+          onHorizontalDragEnd: (details) {
+            final attemptedDelete =
+                _drag.value <= -rowWidth * 0.15 ||
+                details.velocity.pixelsPerSecond.dx <= -700;
+            _returnToRest();
+            if (attemptedDelete) widget.onBlockedSwipe();
+          },
           onHorizontalDragCancel: _returnToRest,
           child: AnimatedBuilder(
             animation: _drag,
@@ -1300,25 +1364,9 @@ class _BufferedSwipeRowState extends State<_BufferedSwipeRow>
                     Positioned.fill(
                       child: Align(
                         alignment: Alignment.centerRight,
-                        child: GlassSurface(
-                          borderRadius: 999,
-                          padding: EdgeInsets.zero,
-                          tint: const Color(0x55303840),
-                          blurSigma: 14,
-                          showShadow: false,
-                          child: SizedBox(
-                            width: revealWidth,
-                            height: 48,
-                            child: Center(
-                              child: revealWidth < 8
-                                  ? const SizedBox.shrink()
-                                  : const Icon(
-                                      CupertinoIcons.minus_circle,
-                                      color: Colors.white70,
-                                      size: 22,
-                                    ),
-                            ),
-                          ),
+                        child: _QueueActionPill(
+                          width: revealWidth,
+                          disabled: true,
                         ),
                       ),
                     ),
