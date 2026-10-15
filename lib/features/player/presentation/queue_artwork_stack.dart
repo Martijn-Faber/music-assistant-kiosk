@@ -40,6 +40,12 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   MusicAssistantRepository get repository => widget.repository;
   PlayerQueueController get _queueController => widget.queueController;
 
+  String? _queueItemArtwork(MusicAssistantQueueItem item) =>
+      RecentMediaItem.imageUrlFromQueueItem(
+        item,
+        album: _queueController.albumByQueueItemId[item.queueItemId],
+      );
+
   String? _displayedArtworkUrl;
   String? _displayedArtworkTrackIdentity;
   int? _displayedQueueIndexHint;
@@ -245,9 +251,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       // artwork matching the new player URI instead of assuming one-step next.
       _displayedQueueIndexHint = swipeTargetQueueIndex;
       final promotedArtwork = queue != null && swipeTargetQueueIndex != null
-          ? RecentMediaItem.imageUrlFromQueueItem(
-              queueItems[swipeTargetQueueIndex],
-            )
+          ? _queueItemArtwork(queueItems[swipeTargetQueueIndex])
           : widget.player.currentMedia?.imageUrl;
       _transitionFromArtwork = oldWidget.player.currentMedia?.imageUrl;
       // Use the queue item's artwork for the selected track when available;
@@ -470,10 +474,10 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final upcomingItems = _upcomingQueueItems;
     final nextArtworkUrl = upcomingItems.isEmpty
         ? null
-        : RecentMediaItem.imageUrlFromQueueItem(upcomingItems.first);
+        : _queueItemArtwork(upcomingItems.first);
     final followingArtworkUrl = upcomingItems.length < 2
         ? null
-        : RecentMediaItem.imageUrlFromQueueItem(upcomingItems[1]);
+        : _queueItemArtwork(upcomingItems[1]);
     final stackHeight = size * 1.1;
     final inTransition =
         _transitionFromArtwork != null && _transitionToArtwork != null;
@@ -518,7 +522,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
               ? _transitionFromArtwork
               : index == toIndex
               ? _transitionToArtwork
-              : RecentMediaItem.imageUrlFromQueueItem(items[index]);
+              : _queueItemArtwork(items[index]);
 
           if (toIndex > fromIndex) {
             // Replay the on-screen swipe for every skipped track: the

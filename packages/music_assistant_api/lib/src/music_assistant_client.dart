@@ -5,9 +5,29 @@ import 'dart:io';
 import 'connection_state.dart';
 import 'exceptions.dart';
 import 'events.dart';
+import 'extra_attribute_value.dart';
 import 'generated/models/music_assistant_player.dart';
 import 'generated/models/music_assistant_player_queue.dart';
 import 'generated/models/music_assistant_queue_item.dart';
+
+/// The active queue and its typed items fetched together for app presentation.
+class MusicAssistantQueueSnapshot {
+  const MusicAssistantQueueSnapshot({
+    required this.queue,
+    required this.items,
+    required this.queueExtraAttributes,
+    required this.itemExtraAttributesByQueueItemId,
+    required this.albumByQueueItemId,
+  });
+
+  final MusicAssistantPlayerQueue queue;
+  final List<MusicAssistantQueueItem> items;
+  final MusicAssistantExtraAttributes queueExtraAttributes;
+  /// Extra attributes keyed by queue item ID, including current/next summaries.
+  final Map<String, MusicAssistantExtraAttributes>
+  itemExtraAttributesByQueueItemId;
+  final Map<String, MusicAssistantAlbumOrItemMapping> albumByQueueItemId;
+}
 
 /// WebSocket client for Music Assistant's command API.
 ///
@@ -237,10 +257,146 @@ class MusicAssistantClient {
     return (itemsResponse as List? ?? const [])
         .whereType<Map>()
         .map(
-          (item) =>
-              MusicAssistantQueueItem.fromJson(Map<String, dynamic>.from(item)),
+          (item) => MusicAssistantQueueItem.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
         )
         .toList(growable: false);
+  }
+
+  /// Fetches the active queue and its items as generated, typed models.
+  Future<MusicAssistantQueueSnapshot> getActiveQueueSnapshot(
+    String playerId, {
+    int limit = 500,
+  }) async {
+    late final MusicAssistantPlayerQueue queue;
+    late final MusicAssistantExtraAttributes queueExtraAttributes;
+    final itemAttributesById = <String, MusicAssistantExtraAttributes>{};
+    final albumsById = <String, MusicAssistantAlbumOrItemMapping>{};
+    try {
+      final queueResponse = await sendCommand(
+        'player_queues/get_active_queue',
+        args: {'player_id': playerId},
+      );
+      if (queueResponse == null) {
+        queue = MusicAssistantPlayerQueue(
+          queueId: playerId,
+          active: false,
+          displayName: playerId,
+          available: false,
+          items: 0,
+          currentIndex: null,
+        );
+        queueExtraAttributes = const {};
+      } else {
+        if (queueResponse is! Map) {
+          throw const FormatException('The server returned invalid queue data.');
+        }
+        final queueData = Map<String, dynamic>.from(queueResponse);
+        queueExtraAttributes = _takeExtraAttributes(queueData);
+        for (final key in ['current_item', 'next_item']) {
+          final item = queueData[key];
+          if (item is Map) {
+            final itemData = Map<String, dynamic>.from(item);
+            _prepareQueueItem(itemData, itemAttributesById, albumsById);
+            queueData[key] = itemData;
+          }
+        }
+        queue = MusicAssistantPlayerQueue.fromJson(queueData);
+      }
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        FormatException('Failed to decode the active queue: $error'),
+        stackTrace,
+      );
+    }
+    late final List<MusicAssistantQueueItem> items;
+    try {
+      final itemsResponse = await sendCommand(
+        'player_queues/items',
+        args: {'queue_id': queue.queueId, 'limit': limit, 'offset': 0},
+      );
+      if (itemsResponse != null && itemsResponse is! List) {
+        throw const FormatException('The server returned invalid queue items.');
+      }
+      final decodedItems = <MusicAssistantQueueItem>[];
+      for (final value in itemsResponse as List? ?? const []) {
+        if (value is! Map) continue;
+        final itemData = Map<String, dynamic>.from(value);
+        _prepareQueueItem(itemData, itemAttributesById, albumsById);
+        decodedItems.add(MusicAssistantQueueItem.fromJson(itemData));
+      }
+      items = List.unmodifiable(decodedItems);
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(
+        FormatException(
+          'Failed to load queue items for ${queue.queueId}: $error',
+        ),
+        stackTrace,
+      );
+    }
+    return MusicAssistantQueueSnapshot(
+      queue: queue,
+      items: items,
+      queueExtraAttributes: queueExtraAttributes,
+      itemExtraAttributesByQueueItemId: Map.unmodifiable(itemAttributesById),
+      albumByQueueItemId: Map.unmodifiable(albumsById),
+    );
+  }
+
+  void _prepareQueueItem(
+    Map<String, dynamic> itemData,
+    Map<String, MusicAssistantExtraAttributes> extraAttributesById,
+    Map<String, MusicAssistantAlbumOrItemMapping> albumsById,
+  ) {
+    // The Python QueueItem model intentionally compacts nested Track albums
+    // to ItemMapping to reduce queue payload size. OpenAPI types Track.album
+    // as a full Album, so preserve the compact mapping separately and omit it
+    // only from the generated model's decode input.
+    final attributes = _takeExtraAttributes(itemData);
+    final itemId = itemData['queue_item_id'];
+    if (attributes.isNotEmpty && itemId is String) {
+      extraAttributesById[itemId] = attributes;
+    }
+
+    final rawMediaItem = itemData['media_item'];
+    if (rawMediaItem is! Map) return;
+    final mediaItem = Map<String, dynamic>.from(rawMediaItem);
+    final rawAlbum = mediaItem['album'];
+    if (rawAlbum is! Map) return;
+
+    final album = Map<String, dynamic>.from(rawAlbum);
+    final parsedAlbum = MusicAssistantAlbumOrItemMapping.fromJson(album);
+    // A full Album is valid for the generated Track model. Only lift the
+    // compact ItemMapping form, which that generated field cannot represent.
+    if (album['provider_mappings'] is! List) {
+      mediaItem.remove('album');
+      itemData['media_item'] = mediaItem;
+    }
+    if (itemId is String) albumsById[itemId] = parsedAlbum;
+  }
+
+  MusicAssistantExtraAttributes _takeExtraAttributes(
+    Map<String, dynamic> modelData,
+  ) {
+    // The server's OpenAPI schema says these map values are strings, but the
+    // shared Python models define EXTRA_ATTRIBUTES_TYPES as str | int | float
+    // | bool | None. Extract them before generated decoding so valid values
+    // such as booleans are retained without changing the OpenAPI spec or
+    // generated models.
+    final raw = modelData.remove('extra_attributes');
+    if (raw == null) return const {};
+    if (raw is! Map) {
+      throw const FormatException('extra_attributes must be an object.');
+    }
+    return Map.unmodifiable(
+      raw.map(
+        (key, value) => MapEntry(
+          key.toString(),
+          MusicAssistantExtraAttributeValue.fromJson(value),
+        ),
+      ),
+    );
   }
 
   Future<Object?> _sendCommand(

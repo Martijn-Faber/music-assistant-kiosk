@@ -266,7 +266,9 @@ class _SessionGateState extends State<SessionGate> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _playerSetupError = 'Could not load players. Try again.');
+        setState(
+          () => _playerSetupError = 'Could not load players. Try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isRefreshingSetupPlayers = false);
@@ -281,23 +283,25 @@ class _SessionGateState extends State<SessionGate> {
         final previousPlayer = _players
             .where((item) => item.playerId == player.playerId)
             .firstOrNull;
-        final playerWithVolume =
-            player.volumeLevel == null && previousPlayer?.volumeLevel != null
-            ? player.copyWith(volumeLevel: previousPlayer!.volumeLevel)
-            : player;
+        final playerWithVolume = player.copyWith(
+          volumeLevel: player.volumeLevel ?? previousPlayer?.volumeLevel,
+          groupVolume: player.groupVolume ?? previousPlayer?.groupVolume,
+        );
         final updatedPlayer = playerWithVolume;
         final trackChanged =
             previousPlayer == null ||
             previousPlayer.currentMedia?.title !=
                 updatedPlayer.currentMedia?.title ||
-            previousPlayer.currentMedia?.uri != updatedPlayer.currentMedia?.uri ||
+            previousPlayer.currentMedia?.uri !=
+                updatedPlayer.currentMedia?.uri ||
             previousPlayer.currentMedia?.artist !=
                 updatedPlayer.currentMedia?.artist ||
             previousPlayer.currentMedia?.album !=
                 updatedPlayer.currentMedia?.album;
         final volumeChanged =
             previousPlayer != null &&
-            previousPlayer.volumeLevel != updatedPlayer.volumeLevel;
+            previousPlayer.effectiveVolumeLevel !=
+                updatedPlayer.effectiveVolumeLevel;
 
         setState(() {
           final index = _players.indexWhere(
@@ -420,14 +424,29 @@ class _SessionGateState extends State<SessionGate> {
     final player = _players
         .where((item) => item.playerId == playerId)
         .firstOrNull;
-    final currentVolume = player?.volumeLevel ??
-        (await repository.fetchPlayer(playerId)).volumeLevel;
-    if (currentVolume == null) return false;
+    final currentVolume =
+        player?.effectiveVolumeLevel ??
+        (await repository.fetchPlayer(playerId)).effectiveVolumeLevel;
+    if (currentVolume == null) {
+      // The step commands still work when Music Assistant has not supplied a
+      // volume yet. The popup can show a percentage once player_updated
+      // includes that value.
+      await repository.adjustVolume(playerId, increase: increase);
+      return true;
+    }
     final nextVolume = (currentVolume + (increase ? 5 : -5))
         .clamp(0, 100)
         .toInt();
     if (nextVolume == currentVolume) return false;
-    await repository.setPlayerVolume(playerId, nextVolume);
+    // Show the expected level immediately; player events and the follow-up
+    // fetch will reconcile it with Music Assistant's authoritative value.
+    final index = _players.indexWhere((item) => item.playerId == playerId);
+    if (index != -1 && mounted) {
+      setState(() {
+        _players[index] = _players[index].copyWith(groupVolume: nextVolume);
+      });
+    }
+    await repository.setGroupVolume(playerId, nextVolume);
     return true;
   }
 
@@ -456,11 +475,10 @@ class _SessionGateState extends State<SessionGate> {
       final currentPlayer = _players
           .where((player) => player.playerId == playerId)
           .firstOrNull;
-      final playerWithVolume =
-          refreshedPlayer.volumeLevel == null &&
-              currentPlayer?.volumeLevel != null
-          ? refreshedPlayer.copyWith(volumeLevel: currentPlayer!.volumeLevel)
-          : refreshedPlayer;
+      final playerWithVolume = refreshedPlayer.copyWith(
+        volumeLevel: refreshedPlayer.volumeLevel ?? currentPlayer?.volumeLevel,
+        groupVolume: refreshedPlayer.groupVolume ?? currentPlayer?.groupVolume,
+      );
       final playerToStore = playerWithVolume;
 
       setState(() {
@@ -480,9 +498,7 @@ class _SessionGateState extends State<SessionGate> {
   }
 
   void _markPlayerIdle(String playerId) {
-    final index = _players.indexWhere(
-      (player) => player.playerId == playerId,
-    );
+    final index = _players.indexWhere((player) => player.playerId == playerId);
     if (index == -1) return;
     setState(() {
       final player = _players[index];

@@ -193,16 +193,26 @@ class MusicAssistantRepository {
     return queue;
   }
 
-  Future<List<mass.MusicAssistantQueueItem>> fetchQueueItems(
-    String queueId,
-  ) => _playerApiClient.getQueueItems(queueId, limit: 500);
+  Future<List<mass.MusicAssistantQueueItem>> fetchQueueItems(String queueId) =>
+      _playerApiClient.getQueueItems(queueId, limit: 500);
+
+  Future<mass.MusicAssistantQueueSnapshot> fetchActiveQueueSnapshot(
+    String playerId,
+  ) async {
+    final snapshot = await _playerApiClient.getActiveQueueSnapshot(
+      playerId,
+      limit: 500,
+    );
+    _activeQueueIds[playerId] = snapshot.queue.queueId;
+    return snapshot;
+  }
 
   /// Listen for queue changes from the new SDK's generic WebSocket event
   /// stream. Queue events are scoped to the queue ID (or player ID for
   /// queue_added, before the queue ID is known).
   void Function() listenToQueueEvents({
     required String playerId,
-    required void Function(Map<String, dynamic> event) onEvent,
+    required void Function(mass.MusicAssistantEvent event) onEvent,
   }) {
     const queueEventNames = {
       'queue_added',
@@ -211,9 +221,9 @@ class MusicAssistantRepository {
       'queue_time_updated',
     };
     final subscription = _playerApiClient.events.listen((event) {
-      if (!queueEventNames.contains(event['event'])) return;
-      final eventObjectId = event['object_id'] ?? event['objectId'];
-      final eventData = event['data'];
+      if (!queueEventNames.contains(event.eventName)) return;
+      final eventObjectId = event.objectId;
+      final eventData = event.data;
       final dataQueueId = eventData is Map
           ? eventData['queue_id'] ??
                 eventData['queueId'] ??
@@ -422,58 +432,24 @@ class MusicAssistantRepository {
   void Function() listenToPlayerEvents({
     required void Function(mass.MusicAssistantPlayer player) onChanged,
     required void Function(String playerId) onRemoved,
-  }) {
-    return _client.subscribe(
-      (event) {
-        if (event.type == EventType.playerRemoved) {
-          final playerId = event.objectId;
-          if (playerId != null) onRemoved(playerId);
-          return;
-        }
-
-        final data = event.data;
-        if (data is! Map) return;
-        final playerData = Map<String, dynamic>.from(data);
-        final playerId = event.objectId ?? playerData['player_id'];
-        if (playerId is! String) return;
-        playerData['player_id'] = playerId;
-        if (playerData['name'] is! String) playerData['name'] = playerId;
-
-        final mass.MusicAssistantPlayer player;
-        try {
-          player = mass.MusicAssistantPlayer.fromJson(playerData);
-        } catch (_) {
-          return;
-        }
-        onChanged(player);
-      },
-      eventTypes: {
-        EventType.playerAdded,
-        EventType.playerUpdated,
-        EventType.playerRemoved,
-      },
-    );
-  }
+  }) => _playerApiClient.subscribeToPlayerChanges(
+    onChanged: onChanged,
+    onRemoved: onRemoved,
+  );
 
   Future<void> adjustVolume(String playerId, {required bool increase}) async {
     if (increase) {
-      await _client.players.groupVolumeUp(playerId);
+      await _playerApiClient.groupVolumeUp(playerId);
     } else {
-      await _client.players.groupVolumeDown(playerId);
+      await _playerApiClient.groupVolumeDown(playerId);
     }
   }
 
   Future<void> setGroupVolume(String playerId, int volumeLevel) =>
-      _client.players.groupVolume(playerId, volumeLevel);
+      _playerApiClient.setGroupVolume(playerId, volumeLevel);
 
-  Future<void> setPlayerVolume(String playerId, int volumeLevel) async {
-    // Music Assistant expects `volume_level` for this command. The SDK's
-    // volumeSet helper sends `volume`, which the server does not recognize.
-    await _client.sendCommand(
-      'players/cmd/volume_set',
-      args: {'player_id': playerId, 'volume_level': volumeLevel},
-    );
-  }
+  Future<void> setPlayerVolume(String playerId, int volumeLevel) =>
+      _playerApiClient.setPlayerVolume(playerId, volumeLevel);
 
   Future<void> togglePlayback(String playerId) =>
       _client.players.playPause(playerId);

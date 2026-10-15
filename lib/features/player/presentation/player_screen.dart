@@ -116,7 +116,7 @@ class PlayerScreen extends StatelessWidget {
   }
 
   Widget _volumeFeedbackBar(MusicAssistantPlayer player) {
-    final volume = player.volumeLevel?.clamp(0, 100);
+    final volume = player.effectiveVolumeLevel?.clamp(0, 100);
     return GlassPill(
       key: const ValueKey('volume-feedback-visible'),
       constraints: const BoxConstraints(maxWidth: 300),
@@ -125,7 +125,9 @@ class PlayerScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            volume == 0 ? CupertinoIcons.speaker_slash : CupertinoIcons.speaker_2,
+            volume == 0
+                ? CupertinoIcons.speaker_slash
+                : CupertinoIcons.speaker_2,
             color: Colors.white,
             size: GlassTokens.iconSizeS,
           ),
@@ -379,9 +381,12 @@ class PlayerScreen extends StatelessWidget {
                 player.available == false
                     ? 'UNAVAILABLE'
                     : qualityLabel ?? 'QUALITY UNKNOWN',
-                style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize12),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: GlassTokens.fontSize12,
+                ),
               ),
-              if (player.volumeLevel != null) ...[
+              if (player.effectiveVolumeLevel != null) ...[
                 const SizedBox(width: 14),
                 const Icon(
                   CupertinoIcons.speaker_2,
@@ -390,8 +395,11 @@ class PlayerScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${player.volumeLevel}%',
-                  style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize12),
+                  '${player.effectiveVolumeLevel}%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: GlassTokens.fontSize12,
+                  ),
                 ),
               ],
             ],
@@ -401,14 +409,20 @@ class PlayerScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             playerActionError!,
-            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: GlassTokens.fontSize11),
+            style: const TextStyle(
+              color: Color(0xFFFF8E7C),
+              fontSize: GlassTokens.fontSize11,
+            ),
           ),
         ],
         if (error != null) ...[
           const SizedBox(height: 6),
           Text(
             error!,
-            style: const TextStyle(color: Color(0xFFFF8E7C), fontSize: GlassTokens.fontSize11),
+            style: const TextStyle(
+              color: Color(0xFFFF8E7C),
+              fontSize: GlassTokens.fontSize11,
+            ),
           ),
         ],
       ],
@@ -497,7 +511,10 @@ class PlayerScreen extends StatelessWidget {
       final painter = TextPainter(
         text: TextSpan(
           text: text,
-          style: TextStyle(fontSize: fontSize.toDouble(), fontWeight: fontWeight),
+          style: TextStyle(
+            fontSize: fontSize.toDouble(),
+            fontWeight: fontWeight,
+          ),
         ),
         maxLines: maxLines,
         ellipsis: '\u2026',
@@ -523,7 +540,11 @@ class _NothingPlayingView extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(CupertinoIcons.waveform, size: GlassTokens.iconSizeXl, color: Color(0xDDE9F0EB)),
+        Icon(
+          CupertinoIcons.waveform,
+          size: GlassTokens.iconSizeXl,
+          color: Color(0xDDE9F0EB),
+        ),
         SizedBox(height: 12),
         Text(
           'Nothing is playing',
@@ -536,7 +557,10 @@ class _NothingPlayingView extends StatelessWidget {
         SizedBox(height: 6),
         Text(
           'Swipe to choose something to play',
-          style: TextStyle(color: Color(0xFFD8E0DB), fontSize: GlassTokens.fontSize12),
+          style: TextStyle(
+            color: Color(0xFFD8E0DB),
+            fontSize: GlassTokens.fontSize12,
+          ),
         ),
       ],
     ),
@@ -738,9 +762,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
                         IgnorePointer(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                cornerRadius,
-                              ),
+                              borderRadius: BorderRadius.circular(cornerRadius),
                               border: Border.all(
                                 color: Color.fromARGB(
                                   borderAlpha,
@@ -803,5 +825,3 @@ class _PlayerPagesState extends State<_PlayerPages> {
     ],
   );
 }
-
-

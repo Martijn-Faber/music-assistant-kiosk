@@ -73,11 +73,23 @@ class RecentMediaItem {
     return null;
   }
 
-  static String? imageUrlFromQueueItem(MusicAssistantQueueItem item) {
+  static String? imageUrlFromQueueItem(
+    MusicAssistantQueueItem item, {
+    MusicAssistantAlbumOrItemMapping? album,
+  }) {
     final mediaItem = item.mediaItem;
+    final albumImage = switch (album) {
+      MusicAssistantFullAlbum(:final value) =>
+        value.metadata?.images?.isNotEmpty == true
+            ? value.metadata!.images!.first.path
+            : null,
+      MusicAssistantMappedAlbum(:final value) => value.image?.path,
+      null => null,
+    };
     return _firstString([
       item.image?.path,
-      mediaItem?.album?.imageUrl,
+      albumImage,
+      ...?mediaItem?.album?.metadata?.images?.map((image) => image.path),
       ...?mediaItem?.metadata?.images?.map((image) => image.path),
     ]);
   }
@@ -98,6 +110,15 @@ class RecentMediaItem {
 
   static String? _artistName(dynamic value) {
     if (value is String) return value;
+    if (value is MusicAssistantArtistOrItemMappingUnionArtist) {
+      return value.value.name;
+    }
+    if (value is MusicAssistantArtistOrItemMappingUnionItemMapping) {
+      return value.value.name;
+    }
+    if (value is MusicAssistantArtistOrItemMappingUnionFallback) {
+      return _firstString([value.value['name']]);
+    }
     if (value is Map) {
       final artist = value['name'];
       return artist is String ? artist : null;

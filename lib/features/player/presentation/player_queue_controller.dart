@@ -19,6 +19,10 @@ class PlayerQueueController extends ChangeNotifier {
 
   MusicAssistantPlayerQueue? queue;
   List<MusicAssistantQueueItem> items = const [];
+  MusicAssistantExtraAttributes queueExtraAttributes = const {};
+  Map<String, MusicAssistantExtraAttributes> itemExtraAttributesByQueueItemId =
+      const {};
+  Map<String, MusicAssistantAlbumOrItemMapping> albumByQueueItemId = const {};
   Future<void>? _loading;
   Timer? _refreshTimer;
   void Function()? _unsubscribeFromQueueEvents;
@@ -43,11 +47,14 @@ class PlayerQueueController extends ChangeNotifier {
 
   Future<void> _fetch() async {
     try {
-      final result = await repository.fetchActiveQueue(playerId);
-      final queueItems = await repository.fetchQueueItems(result.queueId);
+      final snapshot = await repository.fetchActiveQueueSnapshot(playerId);
       if (!_disposed) {
-        queue = result;
-        items = queueItems;
+        queue = snapshot.queue;
+        items = snapshot.items;
+        queueExtraAttributes = snapshot.queueExtraAttributes;
+        itemExtraAttributesByQueueItemId =
+            snapshot.itemExtraAttributesByQueueItemId;
+        albumByQueueItemId = snapshot.albumByQueueItemId;
         notifyListeners();
       }
     } finally {
@@ -55,8 +62,8 @@ class PlayerQueueController extends ChangeNotifier {
     }
   }
 
-  void _onQueueEvent(Map<String, dynamic> event) {
-    final type = event['event'];
+  void _onQueueEvent(MusicAssistantEvent event) {
+    final type = event.eventName;
     if (type != 'queue_items_updated' &&
         type != 'queue_added' &&
         type != 'queue_updated') {

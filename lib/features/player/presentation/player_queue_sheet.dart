@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
@@ -670,12 +671,17 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       if (snapshot.hasError && loadedQueue == null) {
                         return SingleChildScrollView(
                           controller: scrollController,
-                          child: const SizedBox(
+                          child: SizedBox(
                             height: 240,
                             child: Center(
                               child: Text(
-                                'Could not load the queue.',
-                                style: TextStyle(color: Colors.white70),
+                                kDebugMode
+                                    ? 'Could not load the queue.\n${snapshot.error}'
+                                    : 'Could not load the queue.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                ),
                               ),
                             ),
                           ),
@@ -865,7 +871,12 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     const SizedBox(width: 10),
                                     ArtworkImage(
                                       imageUrl: RecentMediaItem
-                                          .imageUrlFromQueueItem(item),
+                                          .imageUrlFromQueueItem(
+                                            item,
+                                            album: widget.queueController
+                                                .albumByQueueItemId[item
+                                                    .queueItemId],
+                                          ),
                                       serverUrl: widget.repository.serverUrl,
                                       token: widget.repository.token,
                                       size: 48,
@@ -1117,7 +1128,14 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   String? _queueArtist(MusicAssistantQueueItem item) {
     final artists = item.mediaItem?.artists
-        ?.map((artist) => artist.name)
+        ?.map((artist) => switch (artist) {
+          MusicAssistantArtistOrItemMappingUnionArtist(:final value) =>
+            value.name,
+          MusicAssistantArtistOrItemMappingUnionItemMapping(:final value) =>
+            value.name,
+          MusicAssistantArtistOrItemMappingUnionFallback(:final value) =>
+            value['name'] as String?,
+        })
         .whereType<String>()
         .where((name) => name.isNotEmpty)
         .toList();
