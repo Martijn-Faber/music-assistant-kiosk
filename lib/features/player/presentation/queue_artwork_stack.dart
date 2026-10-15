@@ -487,8 +487,11 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         ? null
         : _queueItemArtwork(upcomingItems[1]);
     final stackHeight = size * 1.1;
+    final hasMultipleQueueItems = _queueController.items.length > 1;
     final inTransition =
-        _transitionFromArtwork != null && _transitionToArtwork != null;
+        hasMultipleQueueItems &&
+        _transitionFromArtwork != null &&
+        _transitionToArtwork != null;
 
     return AnimatedBuilder(
       animation: Listenable.merge([
@@ -515,6 +518,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
             pageScrollFrom != null &&
             pageScrollTo != null &&
             pageScrollItems != null &&
+            _queueController.items.length > 1 &&
             pageScrollItems.isNotEmpty &&
             pageScrollFrom >= 0 &&
             pageScrollTo >= 0 &&
@@ -776,7 +780,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       child: Transform.scale(
         scale: scale,
         alignment: Alignment.topCenter,
-        child: isCurrentArtwork
+        child: isCurrentArtwork && _queueController.items.length > 1
             ? _interactiveCurrentArtwork(imageUrl, size)
             : _artworkCard(imageUrl, size),
       ),
