@@ -6,9 +6,12 @@ import 'connection_state.dart';
 import 'exceptions.dart';
 import 'events.dart';
 import 'extra_attribute_value.dart';
+import 'generated/models/music_assistant_media_collection.dart';
 import 'generated/models/music_assistant_player.dart';
 import 'generated/models/music_assistant_player_queue.dart';
+import 'generated/models/music_assistant_playlist.dart';
 import 'generated/models/music_assistant_queue_item.dart';
+import 'generated/models/music_assistant_radio.dart';
 
 /// The active queue and its typed items fetched together for app presentation.
 class MusicAssistantQueueSnapshot {
@@ -23,6 +26,7 @@ class MusicAssistantQueueSnapshot {
   final MusicAssistantPlayerQueue queue;
   final List<MusicAssistantQueueItem> items;
   final MusicAssistantExtraAttributes queueExtraAttributes;
+
   /// Extra attributes keyed by queue item ID, including current/next summaries.
   final Map<String, MusicAssistantExtraAttributes>
   itemExtraAttributesByQueueItemId;
@@ -183,6 +187,63 @@ class MusicAssistantClient {
               MusicAssistantPlayer.fromJson(Map<String, dynamic>.from(player)),
         )
         .toList(growable: false);
+  }
+
+  /// Fetches favorite radios in the response's original array shape.
+  ///
+  /// Each array element is either a [MusicAssistantRadio] or a
+  /// [MusicAssistantMediaCollection] containing radio item maps.
+  Future<List<Object>> getFavoriteRadios() async {
+    final response = await sendCommand('music/radios/library_items');
+    if (response is! List) {
+      throw const FormatException('The server returned invalid radio items.');
+    }
+    return [
+      for (final value in response)
+        if (value is Map)
+          if (value['items'] is List &&
+              value['item_id'] is String &&
+              value['provider_mappings'] is List)
+            MusicAssistantMediaCollection.fromJson(
+              Map<String, dynamic>.from(value),
+            )
+          else
+            MusicAssistantRadio.fromJson(Map<String, dynamic>.from(value))
+        else
+          throw const FormatException('The server returned an invalid radio.'),
+    ];
+  }
+
+  /// Fetches favorite playlists in the response's original array shape.
+  ///
+  /// Each array element is either a [MusicAssistantPlaylist] or a
+  /// [MusicAssistantMediaCollection] containing playlist item maps.
+  Future<List<Object>> getFavoritePlaylists() async {
+    final response = await sendCommand(
+      'music/playlists/library_items',
+      args: {'favorite': true},
+    );
+    if (response is! List) {
+      throw const FormatException(
+        'The server returned invalid playlist items.',
+      );
+    }
+    return [
+      for (final value in response)
+        if (value is Map)
+          if (value['items'] is List &&
+              value['item_id'] is String &&
+              value['provider_mappings'] is List)
+            MusicAssistantMediaCollection.fromJson(
+              Map<String, dynamic>.from(value),
+            )
+          else
+            MusicAssistantPlaylist.fromJson(Map<String, dynamic>.from(value))
+        else
+          throw const FormatException(
+            'The server returned an invalid playlist.',
+          ),
+    ];
   }
 
   /// Sets the volume of an individual player.

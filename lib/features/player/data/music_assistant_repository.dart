@@ -8,8 +8,6 @@ import 'package:music_assistant_api/music_assistant_api.dart' as mass;
 
 import '../domain/playback_quality_info.dart';
 import '../domain/recent_media_item.dart';
-import '../domain/radio_station.dart';
-import '../domain/playlist.dart';
 
 class MusicAssistantRepository {
   MusicAssistantRepository._(this._client, this._playerApiClient);
@@ -284,21 +282,20 @@ class MusicAssistantRepository {
     );
   }
 
-  Future<List<RadioStation>> fetchRadioStations() async {
-    final response = await _client.sendCommand('music/radios/library_items');
-    final rawItems = switch (response) {
-      List<dynamic> items => items,
-      Map<dynamic, dynamic> result when result['items'] is List =>
-        result['items'] as List<dynamic>,
-      _ => const <dynamic>[],
-    };
-
-    final stations = <RadioStation>[];
-    for (final item in rawItems.whereType<Map>()) {
-      try {
-        stations.add(RadioStation.fromMap(Map<String, dynamic>.from(item)));
-      } on FormatException {
-        continue;
+  Future<List<mass.MusicAssistantRadio>> fetchRadioStations() async {
+    final stations = <mass.MusicAssistantRadio>[];
+    for (final entry in await _playerApiClient.getFavoriteRadios()) {
+      switch (entry) {
+        case final mass.MusicAssistantRadio radio:
+          stations.add(radio);
+        case mass.MusicAssistantMediaCollection(:final items?):
+          for (final item in items) {
+            try {
+              stations.add(mass.MusicAssistantRadio.fromJson(item));
+            } on Object {
+              // Skip malformed collection entries while retaining the rest.
+            }
+          }
       }
     }
     return stations;
@@ -376,18 +373,14 @@ class MusicAssistantRepository {
     }
   }
 
-  Future<void> playRadio(String playerId, RadioStation station) async {
+  Future<void> playRadio(
+    String playerId,
+    mass.MusicAssistantRadio station,
+  ) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
-
-    final mediaUri = station.media['uri'];
-    final uri = mediaUri is String
-        ? mediaUri
-        : station.id.contains('://')
-        ? station.id
-        : null;
     await _client.playerQueues.playMedia(
       queue?.queueId ?? playerId,
-      uri ?? station.media,
+      station.uri ?? station.itemId,
     );
   }
 
@@ -400,32 +393,33 @@ class MusicAssistantRepository {
     );
   }
 
-  Future<List<Playlist>> fetchPlaylists() async {
+  Future<List<mass.MusicAssistantPlaylist>> fetchPlaylists() async {
     try {
-      final response = await _client.sendCommand(
-        'music/playlists/library_items',
-        args: {'favorite': true},
-      );
-      final rawItems = switch (response) {
-        List<dynamic> items => items,
-        Map<dynamic, dynamic> result when result['items'] is List =>
-          result['items'] as List<dynamic>,
-        _ => const <dynamic>[],
-      };
-      return [
-        for (final item in rawItems.whereType<Map>())
-          Playlist.fromJson(Map<String, dynamic>.from(item)),
-      ].where((playlist) => playlist.uri.isNotEmpty).toList();
+      final playlists = <mass.MusicAssistantPlaylist>[];
+      for (final entry in await _playerApiClient.getFavoritePlaylists()) {
+        switch (entry) {
+          case final mass.MusicAssistantPlaylist playlist:
+            playlists.add(playlist);
+          case mass.MusicAssistantMediaCollection(:final items?):
+            playlists.addAll(items.map(mass.MusicAssistantPlaylist.fromJson));
+        }
+      }
+      return playlists
+          .where((playlist) => (playlist.uri ?? playlist.itemId).isNotEmpty)
+          .toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> playPlaylist(String playerId, Playlist playlist) async {
+  Future<void> playPlaylist(
+    String playerId,
+    mass.MusicAssistantPlaylist playlist,
+  ) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
     await _client.playerQueues.playMedia(
       queue?.queueId ?? playerId,
-      playlist.uri,
+      playlist.uri ?? playlist.itemId,
     );
   }
 

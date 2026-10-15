@@ -84,4 +84,5 @@ export 'music_assistant_album_type.dart';
 export 'music_assistant_audio_metadata.dart';
 export 'music_assistant_radio.dart';
 export 'music_assistant_playlist.dart';
+export 'music_assistant_media_collection.dart';
 export 'music_assistant_audio_dsp_filter.dart';

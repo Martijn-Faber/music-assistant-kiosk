@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/features/player/presentation/album_backdrop.dart';
 import 'package:app/features/connection/presentation/connection_screen.dart';
-import 'package:app/features/player/domain/radio_station.dart';
+import 'package:music_assistant_api/music_assistant_api.dart';
 
 void main() {
   testWidgets('shows Music Assistant sign-in fields', (tester) async {
@@ -49,17 +49,16 @@ void main() {
   });
 
   test('parses a radio station library item', () {
-    final station = RadioStation.fromMap({
-      'media_item': {
-        'media_type': 'radio',
-        'item_id': 'jazz-fm',
-        'uri': 'provider://radio/jazz-fm',
-        'name': 'Jazz FM',
-      },
+    final station = MusicAssistantRadio.fromJson({
+      'item_id': 'jazz-fm',
+      'provider': 'test',
+      'uri': 'provider://radio/jazz-fm',
+      'name': 'Jazz FM',
+      'provider_mappings': [],
     });
 
-    expect(station.id, 'provider://radio/jazz-fm');
+    expect(station.uri, 'provider://radio/jazz-fm');
     expect(station.name, 'Jazz FM');
-    expect(station.media['media_type'], 'radio');
+    expect(station.mediaType, MusicAssistantMediaType.radio);
   });
 }

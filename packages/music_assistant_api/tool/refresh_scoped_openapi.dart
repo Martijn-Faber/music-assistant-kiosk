@@ -11,6 +11,7 @@ const _modelRoots = [
   'Track',
   'Radio',
   'Playlist',
+  'MediaCollection',
   'MediaItemMetadata',
   'MediaItemImage',
   'MediaItemPalette',

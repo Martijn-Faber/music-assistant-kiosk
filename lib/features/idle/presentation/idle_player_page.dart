@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:app/features/player/data/music_assistant_repository.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
-import 'package:app/features/player/domain/playlist.dart';
-import 'package:app/features/player/domain/radio_station.dart';
 import '../../../design_system/glass_card.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
@@ -13,6 +11,29 @@ import '../../player/presentation/artwork_image.dart';
 import '../../player/presentation/provider_identity.dart';
 
 import 'package:app/models/media_item_palette.dart';
+
+String _radioUri(MusicAssistantRadio radio) => radio.uri ?? radio.itemId;
+
+String? _radioImageUrl(MusicAssistantRadio radio) =>
+    radio.metadata?.images?.firstOrNull?.path;
+
+String? _radioImageProxyId(MusicAssistantRadio radio) => radio.metadata?.images
+    ?.map((image) => image.proxyId)
+    .whereType<String>()
+    .firstOrNull;
+
+String? _radioProvider(MusicAssistantRadio radio) {
+  for (final mapping in radio.providerMappings) {
+    final provider = mapping.providerDomain.isNotEmpty
+        ? mapping.providerDomain
+        : mapping.providerInstance;
+    if (provider.isNotEmpty) return provider.split('--').first;
+  }
+  return null;
+}
+
+String? _playlistImageUrl(MusicAssistantPlaylist playlist) =>
+    playlist.metadata?.images?.firstOrNull?.path;
 
 class IdlePlayerPage extends StatefulWidget {
   const IdlePlayerPage({
@@ -51,23 +72,23 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   Future<_IdleContent> _loadContent() async {
     final results = await Future.wait<Object>([
       widget.repository.fetchRadioStations().catchError(
-            (_) => <RadioStation>[],
-          ),
+        (_) => <MusicAssistantRadio>[],
+      ),
       widget.repository.fetchPlaylists().catchError(
-            (_) => <Playlist>[],
-          ),
+        (_) => <MusicAssistantPlaylist>[],
+      ),
     ]);
     return _IdleContent(
-      stations: (results[0] as List<RadioStation>)
-          .where((station) => station.isFavorite)
+      stations: (results[0] as List<MusicAssistantRadio>)
+          .where((station) => station.favorite)
           .toList(),
-      playlists: results[1] as List<Playlist>,
+      playlists: results[1] as List<MusicAssistantPlaylist>,
     );
   }
 
-  Future<void> _playStation(RadioStation station) async {
+  Future<void> _playStation(MusicAssistantRadio station) async {
     if (_startingStationId != null || _startingPlaylistUri != null) return;
-    setState(() => _startingStationId = station.id);
+    setState(() => _startingStationId = _radioUri(station));
     try {
       await widget.repository.playRadio(widget.player.playerId, station);
       widget.onPlaybackStarted();
@@ -80,9 +101,9 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     }
   }
 
-  Future<void> _playPlaylist(Playlist playlist) async {
+  Future<void> _playPlaylist(MusicAssistantPlaylist playlist) async {
     if (_startingStationId != null || _startingPlaylistUri != null) return;
-    setState(() => _startingPlaylistUri = playlist.uri);
+    setState(() => _startingPlaylistUri = playlist.uri ?? playlist.itemId);
     try {
       await widget.repository.playPlaylist(widget.player.playerId, playlist);
       widget.onPlaybackStarted();
@@ -95,9 +116,9 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
 
   void _showPlayError() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Kon afspelen niet starten.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Kon afspelen niet starten.')));
   }
 
   @override
@@ -117,7 +138,8 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                 return const _LoadingCards();
               }
 
-              final content = snapshot.data ??
+              final content =
+                  snapshot.data ??
                   const _IdleContent(stations: [], playlists: []);
               final stations = content.stations;
               final playlists = content.playlists;
@@ -182,7 +204,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                                         repository: widget.repository,
                                         isLoading:
                                             _startingPlaylistUri ==
-                                                playlist.uri,
+                                            (playlist.uri ?? playlist.itemId),
                                         onTap: playerAvailable && !isBusy
                                             ? () => _playPlaylist(playlist)
                                             : null,
@@ -213,7 +235,11 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
   }) {
     return Row(
       children: [
-        Icon(icon, size: GlassTokens.iconSizeXs, color: const Color(0xFFCFD7D3)),
+        Icon(
+          icon,
+          size: GlassTokens.iconSizeXs,
+          color: const Color(0xFFCFD7D3),
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -228,10 +254,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
             ),
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 6),
-          trailing,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 6), trailing],
       ],
     );
   }
@@ -240,8 +263,8 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
 class _IdleContent {
   const _IdleContent({required this.stations, required this.playlists});
 
-  final List<RadioStation> stations;
-  final List<Playlist> playlists;
+  final List<MusicAssistantRadio> stations;
+  final List<MusicAssistantPlaylist> playlists;
 }
 
 class _RadioStationPager extends StatefulWidget {
@@ -252,10 +275,10 @@ class _RadioStationPager extends StatefulWidget {
     required this.onSelect,
   });
 
-  final List<RadioStation> stations;
+  final List<MusicAssistantRadio> stations;
   final MusicAssistantRepository repository;
   final String? loadingStationId;
-  final ValueChanged<RadioStation>? onSelect;
+  final ValueChanged<MusicAssistantRadio>? onSelect;
 
   @override
   State<_RadioStationPager> createState() => _RadioStationPagerState();
@@ -274,11 +297,11 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
   Future<void> _loadPalettes() async {
     final entries = await Future.wait<MapEntry<String, MediaItemPalette>?>(
       widget.stations.map((station) async {
-        final imageId = station.imageProxyId;
+        final imageId = _radioImageProxyId(station);
         if (imageId == null) return null;
         try {
           final palette = await widget.repository.fetchImagePalette(imageId);
-          return palette == null ? null : MapEntry(station.id, palette);
+          return palette == null ? null : MapEntry(_radioUri(station), palette);
         } catch (_) {
           return null;
         }
@@ -293,21 +316,17 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
   }
 
   Color _paletteColor(MediaItemPalette? palette) =>
-    palette?.backgroundDarkColor ??
-    palette?.primaryColor ??
-    palette?.accentColor ??
-    const Color(0xFF27312F);
+      palette?.backgroundDarkColor ??
+      palette?.primaryColor ??
+      palette?.accentColor ??
+      const Color(0xFF27312F);
 
   @override
   Widget build(BuildContext context) {
     final station = widget.stations[_page.clamp(0, widget.stations.length - 1)];
-    final palette = _palettes[station.id];
+    final palette = _palettes[_radioUri(station)];
     final background = _paletteColor(palette);
-    final surfaceColor = Color.lerp(
-      const Color(0xFF101819),
-      background,
-      0.7,
-    )!;
+    final surfaceColor = Color.lerp(const Color(0xFF101819), background, 0.7)!;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
@@ -329,11 +348,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
             blurRadius: 18,
             offset: Offset(0, 8),
           ),
-          BoxShadow(
-            color: Color(0x18FFFFFF),
-            blurRadius: 1,
-            spreadRadius: 0.5,
-          ),
+          BoxShadow(color: Color(0x18FFFFFF), blurRadius: 1, spreadRadius: 0.5),
         ],
       ),
       clipBehavior: Clip.antiAlias,
@@ -346,15 +361,17 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
             itemBuilder: (context, index) {
               final item = widget.stations[index];
               final provider = artworkImageProvider(
-                imageUrl: item.imageUrl,
+                imageUrl: _radioImageUrl(item),
                 serverUrl: widget.repository.serverUrl,
                 token: widget.repository.token,
               );
-              final isLoading = widget.loadingStationId == item.id;
+              final isLoading = widget.loadingStationId == _radioUri(item);
               return Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onSelect == null ? null : () => widget.onSelect!(item),
+                  onTap: widget.onSelect == null
+                      ? null
+                      : () => widget.onSelect!(item),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     child: Column(
@@ -370,21 +387,26 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                               children: [
                                 if (provider == null)
                                   const _PlaceholderTile(
-                                    icon: CupertinoIcons.antenna_radiowaves_left_right,
+                                    icon: CupertinoIcons
+                                        .antenna_radiowaves_left_right,
                                   )
                                 else
                                   Image(
                                     image: provider,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => const _PlaceholderTile(
-                                      icon: CupertinoIcons.antenna_radiowaves_left_right,
-                                    ),
+                                    errorBuilder: (_, _, _) =>
+                                        const _PlaceholderTile(
+                                          icon: CupertinoIcons
+                                              .antenna_radiowaves_left_right,
+                                        ),
                                   ),
                                 if (isLoading)
                                   const ColoredBox(
                                     color: Color(0x77000000),
                                     child: Center(
-                                      child: CircularProgressIndicator(color: Colors.white),
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                               ],
@@ -413,28 +435,31 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
               );
             },
           ),
-          if (station.provider != null)
-          Positioned(
-            top: 2,
-            right: 2,
-            child: IconButton(
-              tooltip: 'Radio station details',
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              padding: const EdgeInsets.all(14),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => _RadioProviderDetailsDialog(
-                  station: station,
-                  repository: widget.repository,
+          if (_radioProvider(station) != null)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: IconButton(
+                tooltip: 'Radio station details',
+                constraints: const BoxConstraints.tightFor(
+                  width: 48,
+                  height: 48,
+                ),
+                padding: const EdgeInsets.all(14),
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => _RadioProviderDetailsDialog(
+                    station: station,
+                    repository: widget.repository,
+                  ),
+                ),
+                icon: const Icon(
+                  CupertinoIcons.info,
+                  size: GlassTokens.iconSizeS,
+                  color: Colors.white70,
                 ),
               ),
-              icon: const Icon(
-                CupertinoIcons.info,
-                size: GlassTokens.iconSizeS,
-                color: Colors.white70,
-              ),
             ),
-          ),
         ],
       ),
     );
@@ -447,7 +472,7 @@ class _RadioProviderDetailsDialog extends StatelessWidget {
     required this.repository,
   });
 
-  final RadioStation station;
+  final MusicAssistantRadio station;
   final MusicAssistantRepository repository;
 
   @override
@@ -483,7 +508,7 @@ class _RadioProviderDetailsDialog extends StatelessWidget {
           const SizedBox(height: 8),
           ProviderIdentity(
             repository: repository,
-            providerId: station.provider,
+            providerId: _radioProvider(station),
             iconSize: GlassTokens.iconSizeXl,
             textSize: GlassTokens.fontSize18,
             spacing: 12,
@@ -511,7 +536,7 @@ class _PlaylistRow extends StatelessWidget {
     required this.isLoading,
   });
 
-  final Playlist playlist;
+  final MusicAssistantPlaylist playlist;
   final MusicAssistantRepository repository;
   final VoidCallback? onTap;
   final bool isLoading;
@@ -522,61 +547,61 @@ class _PlaylistRow extends StatelessWidget {
       onTap: onTap,
       padding: const EdgeInsets.all(10),
       child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(width: 52, height: 52, child: _artwork()),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(width: 52, height: 52, child: _artwork()),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        playlist.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFF1F4EA),
-                          fontSize: GlassTokens.fontSize14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (playlist.owner != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          playlist.owner!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFAAB7B4),
-                            fontSize: GlassTokens.fontSize11,
-                          ),
-                        ),
-                      ],
-                    ],
+                Text(
+                  playlist.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFF1F4EA),
+                    fontSize: GlassTokens.fontSize14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (isLoading)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFFE9F0EB),
-                      ),
+                if (playlist.owner.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    playlist.owner,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFAAB7B4),
+                      fontSize: GlassTokens.fontSize11,
                     ),
-                  )
+                  ),
+                ],
               ],
             ),
+          ),
+          if (isLoading)
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFFE9F0EB),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _artwork() {
     final provider = artworkImageProvider(
-      imageUrl: playlist.imageUrl,
+      imageUrl: _playlistImageUrl(playlist),
       serverUrl: repository.serverUrl,
       token: repository.token,
     );
@@ -596,16 +621,15 @@ class _PlaceholderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-        color: const Color(0xFF263333),
-        child:
-            Center(
-              child: Icon(
-                icon,
-                color: const Color(0xFFCFD7D3),
-                size: GlassTokens.iconSizeM,
-              ),
-            ),
-      );
+    color: const Color(0xFF263333),
+    child: Center(
+      child: Icon(
+        icon,
+        color: const Color(0xFFCFD7D3),
+        size: GlassTokens.iconSizeM,
+      ),
+    ),
+  );
 }
 
 class _EmptyPlaceholder extends StatelessWidget {
@@ -615,14 +639,17 @@ class _EmptyPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassSurface(
-        borderRadius: 10,
-        child: Center(
-          child: Text(
-            message,
-            style: const TextStyle(color: Color(0xFFAAB7B4), fontSize: GlassTokens.fontSize11),
-          ),
+    borderRadius: 10,
+    child: Center(
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: Color(0xFFAAB7B4),
+          fontSize: GlassTokens.fontSize11,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _LoadingCards extends StatelessWidget {
@@ -630,12 +657,12 @@ class _LoadingCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Center(
-        child: SizedBox.square(
-          dimension: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Color(0xFFE9F0EB),
-          ),
-        ),
-      );
+    child: SizedBox.square(
+      dimension: 22,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: Color(0xFFE9F0EB),
+      ),
+    ),
+  );
 }
