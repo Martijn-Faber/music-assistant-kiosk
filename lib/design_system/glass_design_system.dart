@@ -4,6 +4,7 @@ export 'glass_dropdown.dart';
 export 'glass_icon_button.dart';
 export 'glass_inline_button.dart';
 export 'glass_info_row.dart';
+export 'global_snackbar.dart';
 export 'glass_page_heading.dart';
 export 'glass_pill.dart';
 export 'glass_outline_button.dart';

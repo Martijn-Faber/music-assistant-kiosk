@@ -15,6 +15,7 @@ import 'player_queue_controller.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
+import '../../../design_system/global_snackbar.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerQueueSheet extends StatefulWidget {
@@ -65,8 +66,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   late String? _currentPlayingUri;
   late final void Function() _unsubscribeFromPlayerEvents;
   Timer? _queueRefreshTimer;
-  Timer? _bufferedInfoTimer;
-  OverlayEntry? _bufferedInfoEntry;
   bool _queueRefreshInFlight = false;
   bool _queueRefreshPending = false;
 
@@ -277,37 +276,20 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   }
 
   void _showBufferedInfoMessage() {
-    _bufferedInfoTimer?.cancel();
-    _bufferedInfoEntry?.remove();
-
-    final entry = OverlayEntry(
-      builder: (context) => Positioned(
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.paddingOf(context).bottom + 28,
-        child: SafeArea(
-          top: false,
-          child: Material(
-            color: const Color(0xEE263238),
-            elevation: 8,
-            borderRadius: BorderRadius.circular(14),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              child: Text(
-                'This track is already buffered by the player to play next.',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-      ),
+    GlobalSnackbarHost.show(
+      context,
+      message: 'This track is already buffered by the player to play next.',
+      kind: GlobalSnackbarKind.info,
     );
-    Overlay.of(context, rootOverlay: true).insert(entry);
-    _bufferedInfoEntry = entry;
-    _bufferedInfoTimer = Timer(const Duration(seconds: 3), () {
-      entry.remove();
-      if (identical(_bufferedInfoEntry, entry)) _bufferedInfoEntry = null;
-    });
+  }
+
+  void _showBufferedDeleteWarning() {
+    GlobalSnackbarHost.show(
+      context,
+      message:
+          'You can’t delete this track because it’s already buffered to play next.',
+      kind: GlobalSnackbarKind.warning,
+    );
   }
 
   @override
@@ -315,8 +297,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     _unsubscribeFromPlayerEvents();
     widget.queueController.removeListener(_onSharedQueueChanged);
     _queueRefreshTimer?.cancel();
-    _bufferedInfoTimer?.cancel();
-    _bufferedInfoEntry?.remove();
     _dismissProgress.dispose();
     _sheetController.dispose();
     super.dispose();
@@ -977,7 +957,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                           height: 44,
                                         ),
                                         icon: const Icon(
-                                          CupertinoIcons.info_circle,
+                                          Icons.hourglass_top_rounded,
                                           color: Colors.white38,
                                           size: 16,
                                         ),
@@ -987,7 +967,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               return _BufferedSwipeRow(
                                 key: ValueKey(itemKey),
                                 enabled: isBufferedUpcoming,
-                                onBlockedSwipe: _showBufferedInfoMessage,
+                                onBlockedSwipe: _showBufferedDeleteWarning,
                                 child: Dismissible(
                                 key: ValueKey(itemKey),
                                 movementDuration: const Duration(
