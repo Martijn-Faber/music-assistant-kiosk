@@ -17,4 +17,9 @@ class AuthResource {
     }
     return MusicAssistantUser.fromJson(Map<String, dynamic>.from(response));
   }
+
+  /// Revokes the token used by this connection.
+  Future<void> logout() async {
+    await _sendCommand('auth/logout');
+  }
 }

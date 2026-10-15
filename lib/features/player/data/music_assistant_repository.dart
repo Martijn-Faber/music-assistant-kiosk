@@ -464,4 +464,6 @@ class MusicAssistantRepository {
   Future<void> disconnect() async {
     await Future.wait([_client.disconnect(), _playerApiClient.dispose()]);
   }
+
+  Future<void> logout() => _playerApiClient.auth.logout();
 }

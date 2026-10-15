@@ -199,8 +199,15 @@ class _SessionGateState extends State<SessionGate> {
     await _setVolumeControlEnabled(false);
     _unsubscribeFromPlayers?.call();
     _unsubscribeFromPlayers = null;
-    await _repository?.disconnect();
-    await _sessionStorage.clearCredentials();
+    final repository = _repository;
+    try {
+      await repository?.logout();
+    } catch (_) {
+      // Local sign-out still needs to complete if the server is unreachable.
+    } finally {
+      await repository?.disconnect();
+      await _sessionStorage.clearCredentials();
+    }
     if (!mounted) return;
 
     _qualityRequest++;
