@@ -57,8 +57,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   int? _currentQueueRowIndexOverride;
   bool _didPositionQueueAtCurrentItem = false;
   bool _queuePositioned = false;
-  bool _routeEntered = false;
-  Animation<double>? _routeAnimation;
   int? _lastAutoScrolledQueueRowIndex;
   late String? _currentPlayingUri;
   late final void Function() _unsubscribeFromPlayerEvents;
@@ -250,24 +248,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   String? _stableQueueItemId(MusicAssistantQueueItem item) =>
       item.queueItemId.isNotEmpty ? item.queueItemId : null;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final animation = ModalRoute.of(context)?.animation;
-    if (identical(animation, _routeAnimation)) return;
-    _routeAnimation?.removeStatusListener(_onRouteStatusChanged);
-    _routeAnimation = animation;
-    _routeEntered =
-        animation == null || animation.status == AnimationStatus.completed;
-    animation?.addStatusListener(_onRouteStatusChanged);
-  }
-
-  void _onRouteStatusChanged(AnimationStatus status) {
-    if (status == AnimationStatus.completed && mounted && !_routeEntered) {
-      setState(() => _routeEntered = true);
-    }
-  }
-
   Future<void> _toggleAutoplay() async {
     final current = _autoplayEnabled;
     if (current == null || _isTogglingAutoplay) return;
@@ -292,7 +272,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   @override
   void dispose() {
-    _routeAnimation?.removeStatusListener(_onRouteStatusChanged);
     _unsubscribeFromPlayerEvents();
     widget.queueController.removeListener(_onSharedQueueChanged);
     _queueRefreshTimer?.cancel();
@@ -675,8 +654,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       final loadedQueue = widget.queueController.queue;
                       if ((loadedQueue == null &&
                               snapshot.connectionState !=
-                                  ConnectionState.done) ||
-                          !_routeEntered) {
+                                  ConnectionState.done)) {
                         return SingleChildScrollView(
                           controller: scrollController,
                           child: SizedBox(

@@ -228,8 +228,8 @@ class PlayerScreen extends StatelessWidget {
               context: context,
               isScrollControlled: true,
               sheetAnimationStyle: const AnimationStyle(
-                duration: Duration(milliseconds: 420),
-                reverseDuration: Duration(milliseconds: 520),
+                duration: Duration(milliseconds: 240),
+                reverseDuration: Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 reverseCurve: Curves.easeInOutCubic,
               ),
