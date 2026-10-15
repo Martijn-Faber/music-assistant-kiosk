@@ -174,6 +174,7 @@ class PlayerScreen extends StatelessWidget {
 
   Widget _playerContent(BuildContext context, MusicAssistantPlayer? player) {
     final settingsPage = PlayerSettingsPage(
+      user: repository.user,
       serverInfo: serverInfo,
       players: players,
       selectedPlayerId: selectedPlayerId,

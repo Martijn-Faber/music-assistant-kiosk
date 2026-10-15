@@ -1,4 +1,5 @@
 export 'music_assistant_server_info_message.dart';
+export 'music_assistant_user.dart';
 export 'music_assistant_core_state.dart';
 export 'music_assistant_player.dart';
 export 'music_assistant_player_type.dart';

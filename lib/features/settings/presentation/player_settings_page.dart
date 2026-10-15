@@ -8,6 +8,7 @@ import '../../../design_system/glass_design_system.dart';
 class PlayerSettingsPage extends StatefulWidget {
   const PlayerSettingsPage({
     super.key,
+    required this.user,
     required this.players,
     required this.selectedPlayerId,
     required this.serverAddress,
@@ -20,6 +21,7 @@ class PlayerSettingsPage extends StatefulWidget {
   });
 
   final List<MusicAssistantPlayer> players;
+  final MusicAssistantUser user;
   final String? selectedPlayerId;
   final String serverAddress;
   final MusicAssistantServerInfoMessage? serverInfo;
@@ -65,6 +67,28 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                       fontSize: GlassTokens.fontSize28,
                       fontWeight: FontWeight.w600,
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  const GlassSectionLabel('SIGNED IN AS'),
+                  const SizedBox(height: 8),
+                  GlassInfoRow(
+                    icon: CupertinoIcons.person,
+                    leading: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: const Color(0xFF52625E),
+                      foregroundImage:
+                          widget.user.avatarUrl?.trim().isNotEmpty == true
+                          ? NetworkImage(widget.user.avatarUrl!.trim())
+                          : null,
+                      child: const Icon(
+                        CupertinoIcons.person,
+                        size: 18,
+                        color: Color(0xFFE9F0EB),
+                      ),
+                    ),
+                    value: widget.user.displayName?.trim().isNotEmpty == true
+                        ? '${widget.user.displayName} (${widget.user.username})'
+                        : widget.user.username,
                   ),
                   const SizedBox(height: 18),
                   const GlassSectionLabel('PLAYER ON SCREEN'),

@@ -4,6 +4,7 @@ export 'src/events.dart';
 export 'src/extra_attribute_value.dart';
 export 'src/library_item.dart';
 export 'src/music_assistant_client.dart';
+export 'src/resources/auth_resource.dart';
 export 'src/player_extensions.dart';
 export 'src/rest_client.dart';
 export 'src/resources/music_resource.dart';

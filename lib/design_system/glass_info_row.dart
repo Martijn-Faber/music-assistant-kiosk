@@ -4,10 +4,11 @@ import 'glass_surface.dart';
 import 'glass_tokens.dart';
 
 class GlassInfoRow extends StatelessWidget {
-  const GlassInfoRow({super.key, required this.icon, required this.value});
+  const GlassInfoRow({super.key, required this.icon, required this.value, this.leading});
 
   final IconData icon;
   final String value;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) => GlassSurface(
@@ -16,7 +17,8 @@ class GlassInfoRow extends StatelessWidget {
     tint: GlassTokens.surfaceTintSubtle,
     child: Row(
       children: [
-        Icon(icon, size: GlassTokens.iconSizeM, color: GlassTokens.textSecondary),
+        leading ??
+            Icon(icon, size: GlassTokens.iconSizeM, color: GlassTokens.textSecondary),
         const SizedBox(width: 12),
         Expanded(
           child: Text(

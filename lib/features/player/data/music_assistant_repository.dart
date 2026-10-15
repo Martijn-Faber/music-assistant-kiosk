@@ -10,10 +10,11 @@ import '../domain/playback_quality_info.dart';
 import '../domain/recent_media_item.dart';
 
 class MusicAssistantRepository {
-  MusicAssistantRepository._(this._client, this._playerApiClient);
+  MusicAssistantRepository._(this._client, this._playerApiClient, this.user);
 
   final MusicAssistantClient _client;
   final mass.MusicAssistantClient _playerApiClient;
+  final mass.MusicAssistantUser user;
 
   String get serverUrl => _client.serverUrl;
   String get token => _client.token;
@@ -63,7 +64,8 @@ class MusicAssistantRepository {
     try {
       await client.connect();
       await playerApiClient.connect();
-      return MusicAssistantRepository._(client, playerApiClient);
+      final user = await playerApiClient.auth.me();
+      return MusicAssistantRepository._(client, playerApiClient, user);
     } catch (_) {
       await client.disconnect();
       await playerApiClient.dispose();

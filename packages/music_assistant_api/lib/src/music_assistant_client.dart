@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'connection_state.dart';
+import 'resources/auth_resource.dart';
 import 'exceptions.dart';
 import 'events.dart';
 import 'extra_attribute_value.dart';
@@ -48,6 +49,7 @@ class MusicAssistantClient {
   final Duration requestTimeout;
 
   late final MusicResource music = MusicResource(sendCommand);
+  late final AuthResource auth = AuthResource(sendCommand);
   late final PlayersResource players = PlayersResource(
     all: _getPlayers,
     get: _getPlayer,
