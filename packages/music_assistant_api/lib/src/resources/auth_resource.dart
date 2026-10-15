@@ -1,4 +1,5 @@
 import '../generated/models/music_assistant_user.dart';
+import '../generated/models/music_assistant_login_result.dart';
 
 /// Authentication endpoints.
 class AuthResource {
@@ -43,5 +44,26 @@ class AuthResource {
       );
     }
     return url;
+  }
+
+  /// Authenticates with a provider without authenticating the WebSocket first.
+  Future<MusicAssistantLoginResult> login({
+    String? providerId,
+    required String username,
+    required String password,
+  }) async {
+    final response = await _sendUnauthenticatedCommand(
+      'auth/login',
+      args: {
+        if (providerId != null) 'provider_id': providerId,
+        'credentials': {'username': username, 'password': password},
+      },
+    );
+    if (response is! Map) {
+      throw const FormatException('The server returned an invalid login response.');
+    }
+    return MusicAssistantLoginResult.fromJson(
+      Map<String, dynamic>.from(response),
+    );
   }
 }

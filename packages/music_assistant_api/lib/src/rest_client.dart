@@ -33,24 +33,6 @@ class MusicAssistantRestClient {
         .toList(growable: false);
   }
 
-  Future<Map<String, dynamic>> login({
-    String? providerId,
-    required Map<String, Object?> credentials,
-  }) async {
-    final response = await _request(
-      'POST',
-      '/auth/login',
-      body: {
-        if (providerId != null) 'provider_id': providerId,
-        'credentials': credentials,
-      },
-    );
-    if (response is! Map) {
-      throw const FormatException('The server returned an invalid login response.');
-    }
-    return Map<String, dynamic>.from(response);
-  }
-
   Future<Map<String, dynamic>> setup({
     required String username,
     required String password,
