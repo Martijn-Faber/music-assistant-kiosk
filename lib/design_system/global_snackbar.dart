@@ -34,9 +34,38 @@ class _GlobalSnackbarHostState extends State<GlobalSnackbarHost> {
   int _nextId = 0;
 
   void _show(String text, GlobalSnackbarKind kind, Duration duration) {
-    final message = _SnackbarMessage(id: _nextId++, text: text, kind: kind);
-    setState(() => _messages.add(message));
-    message.timer = Timer(duration, () => _dismiss(message.id));
+    if (_messages.isNotEmpty) {
+      // Only the front item counts down. Pause it while it sits behind a new
+      // notice so each queued item gets its own time in front.
+      _messages.last.timer?.cancel();
+    }
+    final message = _SnackbarMessage(
+      id: _nextId++,
+      text: text,
+      kind: kind,
+      duration: duration,
+    );
+    setState(() {
+      _messages.add(message);
+      if (_messages.length > 3) {
+        final dropped = _messages.removeAt(0);
+        dropped.timer?.cancel();
+      }
+    });
+    _startTimer(message);
+  }
+
+  void _startTimer(_SnackbarMessage message) {
+    message.timer?.cancel();
+    message.timer = Timer(message.duration, () => _dismiss(message.id));
+  }
+
+  void _dismissAll() {
+    if (_messages.isEmpty) return;
+    for (final message in _messages) {
+      message.timer?.cancel();
+    }
+    setState(_messages.clear);
   }
 
   void _dismiss(int id) {
@@ -48,8 +77,12 @@ class _GlobalSnackbarHostState extends State<GlobalSnackbarHost> {
       }
     }
     if (message == null) return;
+    final wasFront = identical(_messages.last, message);
     message.timer?.cancel();
-    if (mounted) setState(() => _messages.remove(message));
+    if (mounted) {
+      setState(() => _messages.remove(message));
+      if (wasFront && _messages.isNotEmpty) _startTimer(_messages.last);
+    }
   }
 
   @override
@@ -72,12 +105,15 @@ class _GlobalSnackbarHostState extends State<GlobalSnackbarHost> {
           bottom: MediaQuery.paddingOf(context).bottom + 8,
           child: SafeArea(
             top: false,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: _SnackbarCardStack(
-                messages: _messages,
-                width: MediaQuery.sizeOf(context).width - 32,
-                onDismiss: _dismiss,
+            child: LayoutBuilder(
+              builder: (context, constraints) => Align(
+                alignment: Alignment.bottomCenter,
+                child: _SnackbarCardStack(
+                  messages: _messages,
+                  width: constraints.maxWidth,
+                  onDismiss: _dismiss,
+                  onDismissStack: _dismissAll,
+                ),
               ),
             ),
           ),
@@ -87,11 +123,17 @@ class _GlobalSnackbarHostState extends State<GlobalSnackbarHost> {
 }
 
 class _SnackbarMessage {
-  _SnackbarMessage({required this.id, required this.text, required this.kind});
+  _SnackbarMessage({
+    required this.id,
+    required this.text,
+    required this.kind,
+    required this.duration,
+  });
 
   final int id;
   final String text;
   final GlobalSnackbarKind kind;
+  final Duration duration;
   Timer? timer;
 }
 
@@ -100,11 +142,13 @@ class _SnackbarCardStack extends StatelessWidget {
     required this.messages,
     required this.width,
     required this.onDismiss,
+    required this.onDismissStack,
   });
 
   final List<_SnackbarMessage> messages;
   final double width;
   final ValueChanged<int> onDismiss;
+  final VoidCallback onDismissStack;
 
   @override
   Widget build(BuildContext context) {
@@ -120,49 +164,67 @@ class _SnackbarCardStack extends StatelessWidget {
         onDismiss: () => onDismiss(message.id),
       ),
     );
+    Widget backingCard() => SizedBox(
+      width: width,
+      child: const GlassSurface(
+        borderRadius: GlassTokens.radiusMedium,
+        padding: EdgeInsets.zero,
+        tint: Color(0xCC1B2528),
+        border: Border.fromBorderSide(BorderSide(color: GlassTokens.border)),
+        blurSigma: 20,
+        child: SizedBox(height: 46),
+      ),
+    );
 
     return Padding(
       // Reserve room for older cards below, so adding messages never moves
       // the newest card from its anchored position.
       padding: const EdgeInsets.only(bottom: 24),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          for (var index = 0; index < visibleMessages.length - 1; index++)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-              left: 0,
-              right: 0,
-              top: (visibleMessages.length - index - 1) * 12,
-              child: AnimatedScale(
+      child: Dismissible(
+        key: const ValueKey('snackbar-stack'),
+        direction: DismissDirection.down,
+        resizeDuration: const Duration(milliseconds: 160),
+        onDismissed: (_) => onDismissStack(),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            for (var index = 0; index < visibleMessages.length - 1; index++)
+              AnimatedPositioned(
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                scale: index == visibleMessages.length - 2 ? .96 : .92,
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: .68,
-                    child: card(visibleMessages[index]),
+                left: 0,
+                right: 0,
+                key: ValueKey('backing-${visibleMessages[index].id}'),
+                top: (visibleMessages.length - index - 1) * 5 + 9,
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  scale: 1 - (visibleMessages.length - index - 1) * .04,
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: .68,
+                      child: backingCard(),
+                    ),
                   ),
                 ),
               ),
-            ),
-          TweenAnimationBuilder<double>(
-            key: ValueKey('incoming-${newest.id}'),
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeOutBack,
-            builder: (context, progress, child) => Opacity(
-              opacity: progress.clamp(0, 1),
-              child: Transform.translate(
-                offset: Offset(0, 22 * (1 - progress)),
-                child: child,
+            TweenAnimationBuilder<double>(
+              key: ValueKey('incoming-${newest.id}'),
+              tween: Tween(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 420),
+              curve: Curves.easeOutBack,
+              builder: (context, progress, child) => Opacity(
+                opacity: progress.clamp(0, 1),
+                child: Transform.translate(
+                  offset: Offset(0, 22 * (1 - progress)),
+                  child: child,
+                ),
               ),
+              child: card(newest),
             ),
-            child: card(newest),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -203,30 +265,42 @@ class _GlobalSnackbarCard extends StatelessWidget {
         tint: const Color(0xCC1B2528),
         border: Border.all(color: GlassTokens.border, width: 0.8),
         blurSigma: 20,
-        child: Row(
-          children: [
-            Icon(icon, color: accentColor, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message.text,
-                softWrap: true,
-                overflow: TextOverflow.clip,
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: GlassTokens.textPrimary,
-                  fontSize: GlassTokens.fontSize13,
-                  decoration: TextDecoration.none,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final showDismissButton = constraints.maxWidth >= 176;
+            return Row(
+              children: [
+                Icon(icon, color: accentColor, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    message.text,
+                    softWrap: true,
+                    overflow: TextOverflow.clip,
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: GlassTokens.textPrimary,
+                      fontSize: GlassTokens.fontSize13,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: onDismiss,
-              icon: const Icon(Icons.close_rounded, size: 18),
-              color: GlassTokens.textSecondary,
-              visualDensity: VisualDensity.compact,
-            ),
-          ],
+                if (showDismissButton) ...[
+                  const SizedBox(width: 6),
+                  IconButton(
+                    onPressed: onDismiss,
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    color: GlassTokens.textSecondary,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
