@@ -35,13 +35,17 @@ class NowPlayingPage extends StatefulWidget {
   State<NowPlayingPage> createState() => _NowPlayingPageState();
 }
 
-class _NowPlayingPageState extends State<NowPlayingPage> {
+class _NowPlayingPageState extends State<NowPlayingPage>
+    with AutomaticKeepAliveClientMixin<NowPlayingPage> {
   MusicAssistantPlayer get player => widget.player;
   MusicAssistantRepository get repository => widget.repository;
   ValueChanged<PlayerQueueController> get onShowQueue => widget.onShowQueue;
   String? get qualityLabel => widget.qualityLabel;
   String? get playerActionError => widget.playerActionError;
   String? get error => widget.error;
+
+  @override
+  bool get wantKeepAlive => true;
 
   late PlayerQueueController _queueController;
 
@@ -81,7 +85,9 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   }
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context) {
+    super.build(context);
+    return LayoutBuilder(
     builder: (context, constraints) {
       final wide = constraints.maxWidth > constraints.maxHeight;
       final compact = constraints.maxWidth < 560;
@@ -163,7 +169,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         ],
       );
     },
-  );
+    );
+  }
 
   Widget _details(
     BuildContext context,
