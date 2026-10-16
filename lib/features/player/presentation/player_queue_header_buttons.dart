@@ -5,6 +5,7 @@ import '../../../design_system/glass_icon_button.dart';
 import '../../../design_system/glass_icon_toggle_button.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/global_snackbar.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../data/music_assistant_repository.dart';
 import 'player_queue_controller.dart';
 
@@ -71,7 +72,7 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
       setState(() => _shuffleEnabled = current);
       GlobalSnackbarHost.show(
         context,
-        message: 'Could not change shuffle.',
+        message: AppLocalizations.of(context).queueShuffleChangeFailed,
         kind: GlobalSnackbarKind.error,
       );
     } finally {
@@ -93,10 +94,10 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
       icon: CupertinoIcons.shuffle,
       type: GlassIconButtonType.secondary,
       tooltip: unavailable
-          ? 'Shuffle is unavailable for dynamic queues'
+          ? AppLocalizations.of(context).queueShuffleUnavailable
           : enabled == true
-              ? 'Disable shuffle'
-              : 'Enable shuffle',
+              ? AppLocalizations.of(context).queueDisableShuffleTooltip
+              : AppLocalizations.of(context).queueEnableShuffleTooltip,
       disabled: unavailable || enabled == null,
       isSelected: enabled == true,
       isLoading: _isToggling,
@@ -165,7 +166,7 @@ class _PlayerQueueAutoplayButtonState extends State<PlayerQueueAutoplayButton> {
       setState(() => _enabled = current);
       GlobalSnackbarHost.show(
         context,
-        message: 'Could not change autoplay.',
+        message: AppLocalizations.of(context).queueAutoplayChangeFailed,
         kind: GlobalSnackbarKind.error,
       );
     } finally {
@@ -185,7 +186,9 @@ class _PlayerQueueAutoplayButtonState extends State<PlayerQueueAutoplayButton> {
     return GlassIconToggleButton(
       icon: CupertinoIcons.repeat,
       type: GlassIconButtonType.secondary,
-      tooltip: enabled == true ? 'Disable autoplay' : 'Enable autoplay',
+      tooltip: enabled == true
+          ? AppLocalizations.of(context).queueDisableAutoplayTooltip
+          : AppLocalizations.of(context).queueEnableAutoplayTooltip,
       disabled: enabled == null,
       isSelected: enabled == true,
       isLoading: _isToggling,
@@ -210,7 +213,7 @@ class PlayerQueueClearButton extends StatelessWidget {
   Widget build(BuildContext context) => GlassIconButton(
         icon: CupertinoIcons.trash,
         type: GlassIconButtonType.secondary,
-        tooltip: 'Clear queue',
+        tooltip: AppLocalizations.of(context).queueClearTooltip,
         disabled: isClearing || isRemovingQueueItem,
         onPressed: onPressed,
         child: isClearing
@@ -234,7 +237,7 @@ class PlayerQueueCloseButton extends StatelessWidget {
   Widget build(BuildContext context) => GlassIconButton(
         icon: CupertinoIcons.xmark,
         type: GlassIconButtonType.secondary,
-        tooltip: 'Close queue',
+        tooltip: AppLocalizations.of(context).queueCloseTooltip,
         onPressed: onPressed,
       );
 }

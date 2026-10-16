@@ -3,6 +3,7 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/glass_design_system.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// Settings as a regular pager destination, sized for the kiosk display.
 class PlayerSettingsPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class PlayerSettingsPage extends StatefulWidget {
     required this.deviceName,
     required this.clock24HourFormat,
     required this.onClock24HourFormatChanged,
+    required this.onLocaleChanged,
     required this.onSelectPlayer,
     required this.onSignOut,
   });
@@ -28,6 +30,7 @@ class PlayerSettingsPage extends StatefulWidget {
   final String? deviceName;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
+  final ValueChanged<Locale> onLocaleChanged;
   final ValueChanged<String> onSelectPlayer;
   final VoidCallback onSignOut;
 
@@ -47,9 +50,12 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    child: LayoutBuilder(
-      builder: (context, constraints) => Center(
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context);
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) => Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: SizedBox(
@@ -60,8 +66,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Settings',
+                  Text(
+                    l10n.settingsTitle,
                     style: TextStyle(
                       color: Color(0xFFF1F4EA),
                       fontSize: GlassTokens.fontSize28,
@@ -69,7 +75,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const GlassSectionLabel('SIGNED IN AS'),
+                  GlassSectionLabel(l10n.settingsSignedInAsLabel),
                   const SizedBox(height: 8),
                   GlassInfoRow(
                     icon: CupertinoIcons.person,
@@ -91,7 +97,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                         : widget.user.username,
                   ),
                   const SizedBox(height: 18),
-                  const GlassSectionLabel('PLAYER ON SCREEN'),
+                  GlassSectionLabel(l10n.settingsPlayerOnScreenLabel),
                   const SizedBox(height: 8),
                   GlassDropdown<String>(
                     value: widget.players.any(
@@ -99,7 +105,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     )
                         ? _selectedPlayerId
                         : null,
-                    hint: 'Select a player',
+                    hint: l10n.settingsPlayerSelectHint,
                     items: widget.players
                         .map(
                           (player) => DropdownMenuItem<String>(
@@ -120,17 +126,37 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   ),
                   if (widget.players.isEmpty) ...[
                     const SizedBox(height: 8),
-                    const Text(
-                      'No players found on this server.',
+                    Text(
+                      l10n.settingsPlayersNoneFoundMessage,
                       style: TextStyle(color: Color(0xFFAAB7B4)),
                     ),
                   ],
                   const SizedBox(height: 20),
-                  const GlassSectionLabel('CLOCK FORMAT'),
+                  GlassSectionLabel(l10n.settingsLanguageLabel),
                   const SizedBox(height: 8),
-                  _clockFormatSelector(),
+                  GlassDropdown<String>(
+                    value: locale.languageCode,
+                    hint: l10n.settingsLanguageLabel,
+                    items: [
+                      DropdownMenuItem(
+                        value: 'en',
+                        child: Text(l10n.settingsLanguageEnglishOption),
+                      ),
+                      DropdownMenuItem(
+                        value: 'nl',
+                        child: Text(l10n.settingsLanguageDutchOption),
+                      ),
+                    ],
+                    onChanged: (code) {
+                      if (code != null) widget.onLocaleChanged(Locale(code));
+                    },
+                  ),
                   const SizedBox(height: 20),
-                  const GlassSectionLabel('CONNECTED TO'),
+                  GlassSectionLabel(l10n.settingsClockFormatLabel),
+                  const SizedBox(height: 8),
+                  _clockFormatSelector(l10n),
+                  const SizedBox(height: 20),
+                  GlassSectionLabel(l10n.settingsConnectedToLabel),
                   const SizedBox(height: 8),
                   GlassInfoRow(
                     icon: CupertinoIcons.desktopcomputer,
@@ -139,16 +165,17 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   const SizedBox(height: 8),
                   GlassInfoRow(
                     icon: CupertinoIcons.hifispeaker,
-                    value: widget.deviceName ?? 'No player selected',
+                    value:
+                        widget.deviceName ?? l10n.settingsNoPlayerSelectedValue,
                   ),
                   if (widget.serverInfo case final info?) ...[
                     const SizedBox(height: 20),
-                    const GlassSectionLabel('MUSIC ASSISTANT SERVER'),
+                    GlassSectionLabel(l10n.settingsServerSectionLabel),
                     const SizedBox(height: 8),
                     for (final entry in [
-                      ('Name', info.name),
-                      ('Version', info.serverVersion),
-                      ('Status', info.status),
+                      (l10n.settingsServerNameLabel, info.name),
+                      (l10n.settingsServerVersionLabel, info.serverVersion),
+                      (l10n.settingsServerStatusLabel, info.status),
                     ])
                       if (entry.$2 is String && (entry.$2 as String).isNotEmpty) ...[
                         GlassInfoRow(
@@ -161,7 +188,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   const SizedBox(height: 24),
                   GlassOutlineButton(
                     icon: CupertinoIcons.power,
-                    label: 'SIGN OUT',
+                    label: l10n.settingsSignOutAction,
                     onPressed: widget.onSignOut,
                   ),
                 ],
@@ -170,17 +197,22 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
           ),
         ),
       ),
-    ),
-  );
+      ),
+    );
+  }
 
-  Widget _clockFormatSelector() {
+  Widget _clockFormatSelector(AppLocalizations l10n) {
     final selected = switch (widget.clock24HourFormat) {
       true => 2,
       false => 1,
       null => 0,
     };
     return GlassSegmentedControl(
-      options: const ['System', '12 hour', '24 hour'],
+      options: [
+        l10n.settingsClockFormatSystemOption,
+        l10n.settingsClockFormat12HourOption,
+        l10n.settingsClockFormat24HourOption,
+      ],
       selectedIndex: selected,
       onSelected: (index) => widget.onClock24HourFormatChanged(switch (index) {
         1 => false,

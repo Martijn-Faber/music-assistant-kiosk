@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:app/design_system/glass_tokens.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
+import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_pill.dart';
 
 /// A low-motion clock shown while the selected player is idle.
@@ -118,7 +118,8 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                     SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        widget.nowPlayingLabel ?? 'Start listening',
+                        widget.nowPlayingLabel ??
+                            AppLocalizations.of(context).playerStartListening,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

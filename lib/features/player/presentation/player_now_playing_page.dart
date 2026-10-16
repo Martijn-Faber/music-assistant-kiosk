@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
@@ -319,8 +320,9 @@ class _NowPlayingPageState extends State<NowPlayingPage>
             const SizedBox(width: 8),
             Text(
               player.available == false
-                  ? 'UNAVAILABLE'
-                  : qualityLabel ?? 'QUALITY UNKNOWN',
+                  ? AppLocalizations.of(context).playerUnavailable
+                  : qualityLabel ??
+                      AppLocalizations.of(context).playerQualityUnknown,
               style: const TextStyle(color: Colors.white, fontSize: GlassTokens.fontSize12),
             ),
 
@@ -399,7 +401,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           : CrossAxisAlignment.start,
       children: [
         _animatedTrackLabel(
-          value: currentPlayer.currentMedia?.title ?? 'Nothing is playing',
+          value: currentPlayer.currentMedia?.title ??
+              AppLocalizations.of(context).playerNothingPlaying,
           textAlign: centered ? TextAlign.center : TextAlign.start,
           maxLines: 2,
           centered: centered,
@@ -460,7 +463,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         ),
                         const SizedBox(width: 7),
                         Text(
-                          'Starting on ${player.name.trim().isEmpty ? 'player' : player.name.trim()}…',
+                          AppLocalizations.of(context).playbackStartingOn(
+                            player.name.trim().isEmpty
+                                ? AppLocalizations.of(context)
+                                    .commonPlayerFallback
+                                : player.name.trim(),
+                          ),
                           style: TextStyle(
                             color: const Color(0xBBD8E0DB),
                             fontSize: compact ? 11 : 12,
@@ -768,9 +776,9 @@ class _PlaybackQualityDialog extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Playback details',
+                      AppLocalizations.of(context).playbackDetailsTitle,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: GlassTokens.fontSize20,
@@ -815,18 +823,22 @@ class _PlaybackQualityDialog extends StatelessWidget {
                     );
                   }
                   if (snapshot.hasError) {
-                    return const Text(
-                      'Could not load playback details.',
+                    return Text(
+                      AppLocalizations.of(context).playbackDetailsLoadFailed,
                       style: TextStyle(color: Colors.white70),
                     );
                   }
                   final info = snapshot.data;
                   if (info == null) {
                     return _detailRows([
-                      MapEntry('Quality', fallbackQualityLabel ?? 'Unknown'),
-                      const MapEntry(
-                        'Source',
-                        'Playback details are unavailable',
+                      MapEntry(
+                        AppLocalizations.of(context).playbackQualityLabel,
+                        fallbackQualityLabel ??
+                            AppLocalizations.of(context).playbackUnknownValue,
+                      ),
+                      MapEntry(
+                        AppLocalizations.of(context).playbackSourceLabel,
+                        AppLocalizations.of(context).playbackDetailsUnavailable,
                       ),
                     ]);
                   }
@@ -837,24 +849,24 @@ class _PlaybackQualityDialog extends StatelessWidget {
                     }
                   }
 
-                  add('Stream', _prettify(info.streamType));
-                  add('Quality', info.qualityLabel ?? fallbackQualityLabel);
-                  add('Codec', info.codec?.toUpperCase());
-                  add('Container', info.container?.toUpperCase());
+                  add(AppLocalizations.of(context).playbackStreamLabel, _prettify(info.streamType));
+                  add(AppLocalizations.of(context).playbackQualityLabel, info.qualityLabel ?? fallbackQualityLabel);
+                  add(AppLocalizations.of(context).playbackCodecLabel, info.codec?.toUpperCase());
+                  add(AppLocalizations.of(context).playbackContainerLabel, info.container?.toUpperCase());
                   if (info.sampleRateHz != null && info.sampleRateHz! > 0) {
                     add(
-                      'Sample rate',
+                      AppLocalizations.of(context).playbackSampleRateLabel,
                       '${(info.sampleRateHz! / 1000).toStringAsFixed(info.sampleRateHz! % 1000 == 0 ? 0 : 1)} kHz',
                     );
                   }
                   if (info.bitDepth != null && info.bitDepth! > 0) {
-                    add('Bit depth', '${info.bitDepth} bit');
+                    add(AppLocalizations.of(context).playbackBitDepthLabel, '${info.bitDepth} bit');
                   }
                   if (info.channels != null && info.channels! > 0) {
-                    add('Channels', '${info.channels}');
+                    add(AppLocalizations.of(context).playbackChannelsLabel, '${info.channels}');
                   }
                   if (info.bitRate != null && info.bitRate! > 0) {
-                    add('Bitrate', '${(info.bitRate! / 1000).round()} kbps');
+                    add(AppLocalizations.of(context).playbackBitrateLabel, '${(info.bitRate! / 1000).round()} kbps');
                   }
                   final provider = info.source;
                   return Column(
@@ -922,14 +934,14 @@ class NothingPlayingPage extends StatelessWidget {
   const NothingPlayingPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(CupertinoIcons.waveform, size: GlassTokens.iconSizeXl, color: Color(0xDDE9F0EB)),
         SizedBox(height: 12),
         Text(
-          'Nothing is playing',
+          AppLocalizations.of(context).playerNothingPlaying,
           style: TextStyle(
             color: Color(0xFFF1F4EA),
             fontSize: GlassTokens.fontSize20,
@@ -938,7 +950,7 @@ class NothingPlayingPage extends StatelessWidget {
         ),
         SizedBox(height: 6),
         Text(
-          'Swipe to choose something to play',
+          AppLocalizations.of(context).playerSwipeToChoose,
           style: TextStyle(color: Color(0xFFD8E0DB), fontSize: GlassTokens.fontSize12),
         ),
       ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../../../design_system/glass_design_system.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class PlayerSetupPage extends StatefulWidget {
   const PlayerSetupPage({
@@ -45,7 +46,9 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
     backgroundColor: GlassTokens.background,
     body: SafeArea(
       child: Center(
@@ -56,14 +59,13 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const GlassPageHeading(
-                  title: 'Choose your player',
-                  subtitle:
-                      'Select the speaker or group this device should control.',
+                GlassPageHeading(
+                  title: l10n.playerSetupTitle,
+                  subtitle: l10n.playerSetupSubtitle,
                 ),
                 const SizedBox(height: 20),
                 if (widget.players.isEmpty)
-                  Expanded(child: _emptyState())
+                  Expanded(child: _emptyState(l10n))
                 else
                   Expanded(
                     child: ListView.separated(
@@ -118,7 +120,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                                       Padding(
                                         padding: const EdgeInsets.only(top: 3),
                                         child: Text(
-                                          '${player.groupMembers!.length} speakers',
+                                          '${player.groupMembers!.length} ${player.groupMembers!.length == 1 ? l10n.playerGroupSpeaker : l10n.playerGroupSpeakers}',
                                           style: const TextStyle(
                                             color: GlassTokens.textSecondary,
                                             fontSize: GlassTokens.fontSize12,
@@ -153,7 +155,9 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
                 ],
                 const SizedBox(height: 14),
                 GlassActionButton(
-                  label: _isSaving ? 'Saving' : 'Continue',
+                  label: _isSaving
+                      ? l10n.playerSetupSaving
+                      : l10n.commonContinueAction,
                   icon: CupertinoIcons.arrow_right,
                   isLoading: _isSaving,
                   onPressed: _selectedPlayerId == null || _isSaving
@@ -167,8 +171,9 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
       ),
     ),
   );
+  }
 
-  Widget _emptyState() => Center(
+  Widget _emptyState(AppLocalizations l10n) => Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -178,8 +183,8 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
           size: GlassTokens.iconSizeL,
         ),
         const SizedBox(height: 12),
-        const Text(
-          'No players found on this server.',
+        Text(
+          l10n.playerSetupNoPlayers,
           textAlign: TextAlign.center,
           style: TextStyle(color: GlassTokens.textPrimary, fontSize: GlassTokens.fontSize14),
         ),
@@ -187,7 +192,7 @@ class _PlayerSetupPageState extends State<PlayerSetupPage> {
         GlassInlineButton(
           onPressed: widget.isRefreshing ? null : widget.onRefresh,
           icon: CupertinoIcons.refresh,
-          label: 'Refresh players',
+          label: l10n.playerSetupRefreshAction,
           isLoading: widget.isRefreshing,
         ),
       ],

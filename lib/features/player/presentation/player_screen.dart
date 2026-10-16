@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:app/design_system/glass_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:app/design_system/glass_tokens.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../../screensaver/presentation/clock_screensaver_page.dart';
@@ -12,7 +12,6 @@ import '../../settings/presentation/player_settings_page.dart';
 import 'album_backdrop.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
-import 'player_queue_controller.dart';
 import 'player_queue_sheet.dart';
 import 'player_volume_controller.dart';
 import 'player_volume_feedback_popup.dart';
@@ -38,6 +37,7 @@ class PlayerScreen extends StatefulWidget {
     required this.volumeController,
     required this.clock24HourFormat,
     required this.onClock24HourFormatChanged,
+    required this.onLocaleChanged,
     required this.onSelectPlayer,
     required this.onQueueCleared,
     required this.onDisconnect,
@@ -53,6 +53,7 @@ class PlayerScreen extends StatefulWidget {
   final PlayerVolumeController volumeController;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
+  final ValueChanged<Locale> onLocaleChanged;
   final ValueChanged<String> onSelectPlayer;
   final ValueChanged<String> onQueueCleared;
   final VoidCallback onDisconnect;
@@ -73,6 +74,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool? get clock24HourFormat => widget.clock24HourFormat;
   ValueChanged<bool?> get onClock24HourFormatChanged =>
       widget.onClock24HourFormatChanged;
+  ValueChanged<Locale> get onLocaleChanged => widget.onLocaleChanged;
   ValueChanged<String> get onSelectPlayer => widget.onSelectPlayer;
   ValueChanged<String> get onQueueCleared => widget.onQueueCleared;
   VoidCallback get onDisconnect => widget.onDisconnect;
@@ -134,6 +136,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _playerContent(BuildContext context, MusicAssistantPlayer? player) {
+    final l10n = AppLocalizations.of(context);
     final settingsPage = PlayerSettingsPage(
       user: repository.user,
       serverInfo: serverInfo,
@@ -144,13 +147,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
       deviceName: player?.name,
       clock24HourFormat: clock24HourFormat,
       onClock24HourFormatChanged: onClock24HourFormatChanged,
+      onLocaleChanged: onLocaleChanged,
       onSelectPlayer: onSelectPlayer,
       onSignOut: onDisconnect,
     );
     if (player == null) {
       return _PlayerPages(
         isIdle: true,
-        playerName: 'No player selected',
+        playerName: l10n.settingsNoPlayerSelectedValue,
         groupMemberCount: null,
         repository: repository,
         player: null,
@@ -181,7 +185,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               currentMedia.artist!.trim(),
           ].join(' · ')
         : isPlaying
-        ? 'Music is playing'
+        ? l10n.playerMusicIsPlaying
         : null;
     final playerView = isIdle
         ? const NothingPlayingPage()
@@ -256,7 +260,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final title = player.currentMedia?.title ?? 'Nothing is playing';
+            final title = player.currentMedia?.title ??
+                AppLocalizations.of(context).playerNothingPlaying;
             final fontSize = _fitTitleFontSize(
               context,
               title,
@@ -345,8 +350,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
               const SizedBox(width: 8),
               Text(
                 player.available == false
-                    ? 'UNAVAILABLE'
-                    : qualityLabel ?? 'QUALITY UNKNOWN',
+                    ? AppLocalizations.of(context).playerUnavailable
+                    : qualityLabel ??
+                        AppLocalizations.of(context).playerQualityUnknown,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: GlassTokens.fontSize12,
@@ -513,7 +519,7 @@ class _NothingPlayingView extends StatelessWidget {
         ),
         SizedBox(height: 12),
         Text(
-          'Nothing is playing',
+          AppLocalizations.of(context).playerNothingPlaying,
           style: TextStyle(
             color: Color(0xFFF1F4EA),
             fontSize: GlassTokens.fontSize20,
@@ -522,7 +528,7 @@ class _NothingPlayingView extends StatelessWidget {
         ),
         SizedBox(height: 6),
         Text(
-          'Swipe to choose something to play',
+          AppLocalizations.of(context).playerSwipeToChoose,
           style: TextStyle(
             color: Color(0xFFD8E0DB),
             fontSize: GlassTokens.fontSize12,

@@ -13,6 +13,7 @@ class QrAuthSession {
     this._authorizationUrl,
     this._server,
     this._sessionId,
+    this._messages,
     Completer<String> tokenCompleter,
     Completer<void> openedCompleter,
   ) : _tokenCompleter = tokenCompleter,
@@ -35,6 +36,7 @@ class QrAuthSession {
   final String _authorizationUrl;
   final HttpServer _server;
   final String _sessionId;
+  final QrAuthMessages _messages;
   final Completer<String> _tokenCompleter;
   final Future<String> token;
   final Completer<void> _openedCompleter;
@@ -43,7 +45,10 @@ class QrAuthSession {
   late final Timer _expiry;
   bool _closed = false;
 
-  static Future<QrAuthSession> start(String serverUrl) async {
+  static Future<QrAuthSession> start(
+    String serverUrl, {
+    required QrAuthMessages messages,
+  }) async {
     HttpServer? callbackServer;
     try {
       callbackServer = await HttpServer.bind(InternetAddress.anyIPv4, 0);
@@ -97,6 +102,7 @@ class QrAuthSession {
         authorizationUrl,
         callbackServer,
         sessionId,
+        messages,
         Completer<String>(),
         Completer<void>(),
       );
@@ -156,7 +162,7 @@ class QrAuthSession {
         uri.queryParameters['session'] != _sessionId) {
       request.response
         ..statusCode = HttpStatus.notFound
-        ..write('This sign-in link is no longer valid. Return to the clock and scan again.');
+        ..write(_messages.linkExpired);
       unawaited(request.response.close());
       return;
     }
@@ -171,21 +177,21 @@ class QrAuthSession {
     if (error != null) {
       response
         ..statusCode = HttpStatus.badRequest
-        ..write(_callbackPage('Sign-in was cancelled. You can close this page.'));
+        ..write(_callbackPage(_messages.signInCancelled, _messages.closePage));
       if (!_tokenCompleter.isCompleted) {
         _tokenCompleter.completeError(QrAuthException('Home Assistant sign-in was cancelled.'));
       }
     } else if (returnedToken == null || returnedToken.isEmpty) {
       response
         ..statusCode = HttpStatus.badRequest
-        ..write(_callbackPage('Music Assistant did not return a sign-in token.'));
+        ..write(_callbackPage(_messages.tokenMissing, _messages.closePage));
       if (!_tokenCompleter.isCompleted) {
         _tokenCompleter.completeError(
           const QrAuthException('Music Assistant did not return a sign-in token.'),
         );
       }
     } else {
-      response.write(_callbackPage('Connected. You can return to the clock.'));
+      response.write(_callbackPage(_messages.connected, _messages.closePage));
       if (!_tokenCompleter.isCompleted) _tokenCompleter.complete(returnedToken);
     }
     unawaited(response.close().whenComplete(() {
@@ -193,11 +199,11 @@ class QrAuthSession {
     }));
   }
 
-  static String _callbackPage(String message) => '''<!doctype html>
+  static String _callbackPage(String message, String closePageMessage) => '''<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><title>Music Assistant</title></head>
 <body style="font:16px system-ui;background:#090d12;color:#fff;display:grid;place-items:center;min-height:90vh;text-align:center">
-<main><h2>$message</h2><p>This page can now be closed.</p></main>
+<main><h2>$message</h2><p>$closePageMessage</p></main>
 <script>history.replaceState(null, '', location.pathname);</script></body></html>''';
 
   Future<void> close() async {
@@ -209,6 +215,22 @@ class QrAuthSession {
     }
     await _server.close(force: true);
   }
+}
+
+class QrAuthMessages {
+  const QrAuthMessages({
+    required this.signInCancelled,
+    required this.tokenMissing,
+    required this.connected,
+    required this.linkExpired,
+    required this.closePage,
+  });
+
+  final String signInCancelled;
+  final String tokenMissing;
+  final String connected;
+  final String linkExpired;
+  final String closePage;
 }
 
 class QrAuthException implements Exception {

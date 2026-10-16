@@ -1,0 +1,493 @@
+{
+  "@@locale": "en",
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title at the top of the app settings page."
+  },
+  "settingsLanguageLabel": "Language",
+  "@settingsLanguageLabel": {
+    "description": "Label above the app language selector on the settings page."
+  },
+  "settingsLanguageEnglishOption": "English",
+  "@settingsLanguageEnglishOption": {
+    "description": "English language name shown as an option in the language selector. Keep the language's own name."
+  },
+  "settingsLanguageDutchOption": "Dutch",
+  "@settingsLanguageDutchOption": {
+    "description": "Dutch language name shown as an option in the language selector. Keep the language's own name."
+  },
+  "settingsSignedInAsLabel": "Signed in as",
+  "@settingsSignedInAsLabel": {
+    "description": "Section label above the current Music Assistant user's name and username."
+  },
+  "settingsPlayerOnScreenLabel": "Player on screen",
+  "@settingsPlayerOnScreenLabel": {
+    "description": "Section label above the selector for the Music Assistant speaker controlled by this device."
+  },
+  "settingsPlayerSelectHint": "Select a player",
+  "@settingsPlayerSelectHint": {
+    "description": "Hint shown in the player selector before a speaker or group is selected."
+  },
+  "settingsPlayersNoneFoundMessage": "No players found on this server.",
+  "@settingsPlayersNoneFoundMessage": {
+    "description": "Message shown below the player selector when the connected server has no available players."
+  },
+  "settingsClockFormatLabel": "Clock format",
+  "@settingsClockFormatLabel": {
+    "description": "Section label above the clock time format options."
+  },
+  "settingsClockFormatSystemOption": "System",
+  "@settingsClockFormatSystemOption": {
+    "description": "Clock format option that follows the device's system time preference."
+  },
+  "settingsClockFormat12HourOption": "12 hour",
+  "@settingsClockFormat12HourOption": {
+    "description": "Clock format option to display time with AM/PM, for example 3:45 PM."
+  },
+  "settingsClockFormat24HourOption": "24 hour",
+  "@settingsClockFormat24HourOption": {
+    "description": "Clock format option to display time from 00:00 to 23:59, for example 15:45."
+  },
+  "settingsConnectedToLabel": "Connected to",
+  "@settingsConnectedToLabel": {
+    "description": "Section label above the Music Assistant server address and selected player."
+  },
+  "settingsNoPlayerSelectedValue": "No player selected",
+  "@settingsNoPlayerSelectedValue": {
+    "description": "Value shown for the selected player when no speaker or group has been chosen."
+  },
+  "settingsServerSectionLabel": "Music Assistant server",
+  "@settingsServerSectionLabel": {
+    "description": "Section label for the connected Music Assistant server's details."
+  },
+  "settingsServerNameLabel": "Name",
+  "@settingsServerNameLabel": {
+    "description": "Field label for the connected Music Assistant server name."
+  },
+  "settingsServerVersionLabel": "Version",
+  "@settingsServerVersionLabel": {
+    "description": "Field label for the connected Music Assistant server version."
+  },
+  "settingsServerStatusLabel": "Status",
+  "@settingsServerStatusLabel": {
+    "description": "Field label for the connected Music Assistant server status."
+  },
+  "settingsSignOutAction": "Sign out",
+  "@settingsSignOutAction": {
+    "description": "Button that signs the user out of the connected Music Assistant server."
+  },
+  "commonTryAgainAction": "Try again",
+  "commonContinueAction": "Continue",
+  "commonBackTooltip": "Back",
+  "commonSelectOptionHint": "Select an option",
+  "commonPlayerFallback": "player",
+  "commonConnectionFailed": "Could not connect to the server. Check the address and try again.",
+  "commonPlayerSelectionFailed": "Could not select this player. Try again.",
+  "onboardingFindServerTitle": "Find your server",
+  "onboardingFindServerSubtitle": "Looking for Music Assistant on your home network.",
+  "onboardingNetworkSearchFailed": "Could not search the network. You can enter the server manually.",
+  "onboardingNoServersFound": "No servers found. You can add one manually.",
+  "onboardingDiscoveryWait": "This usually takes a few seconds.",
+  "onboardingSearchAgainAction": "Search again",
+  "onboardingManualEntryAction": "Can’t find it? Enter server manually",
+  "onboardingServerAddressTitle": "Server address",
+  "onboardingServerAddressSubtitle": "Enter the hostname or IP address and port.",
+  "onboardingHostnameLabel": "Hostname or IP",
+  "onboardingPortLabel": "Port",
+  "onboardingServerAddressInvalid": "Enter a valid server address.",
+  "onboardingPortInvalid": "Enter a valid port (1–65535).",
+  "onboardingMusicAssistantUnresponsive": "Music Assistant is not responding",
+  "onboardingScanToSignInTitle": "Scan to sign in",
+  "onboardingScanToSignInInstructions": "Use your phone to scan this code and sign in to Home Assistant. Keep your phone and clock on the same Wi-Fi network.",
+  "onboardingWaitingForPhone": "Waiting for your phone",
+  "onboardingCompleteSignInOnPhone": "Complete sign-in on your phone",
+  "onboardingConnecting": "Connecting to Music Assistant…",
+  "onboardingPreparingSignIn": "Preparing sign-in…",
+  "onboardingSignInFailed": "Could not prepare sign-in. Try again.",
+  "onboardingBrowserSignInCancelled": "Sign-in was cancelled. You can close this page.",
+  "onboardingBrowserTokenMissing": "Music Assistant did not return a sign-in token.",
+  "onboardingBrowserConnected": "Connected. You can return to the clock.",
+  "onboardingBrowserLinkExpired": "This sign-in link is no longer valid. Return to the clock and scan again.",
+  "onboardingBrowserClosePage": "You can now close this page.",
+  "playerSetupTitle": "Choose your player",
+  "playerSetupSubtitle": "Select the speaker or group this device should control.",
+  "playerSetupSaving": "Saving",
+  "playerSetupRefreshAction": "Refresh players",
+  "playerSetupNoPlayers": "No players found on this server.",
+  "playerGroupSpeakers": "speakers",
+  "playerGroupSpeaker": "speaker",
+  "providerUnknownName": "Unknown provider",
+  "playerNothingPlaying": "Nothing is playing",
+  "playerMusicIsPlaying": "Music is playing",
+  "playerStartListening": "Start listening",
+  "playerSwipeToChoose": "Swipe to choose something to play",
+  "playerUnavailable": "Unavailable",
+  "playerQualityUnknown": "Quality unknown",
+  "playerActionFailed": "Player action failed.",
+  "idleStartRadioSection": "Start with radio",
+  "idleRadioFavoritesEmpty": "No favorite radio stations set up",
+  "idlePlaylistsSection": "Your playlists",
+  "idlePlaylistsEmpty": "No playlists found",
+  "idlePlayStartFailed": "Could not start playback.",
+  "idleRadioDetailsTooltip": "Radio station details",
+  "idleRadioStationTitle": "Radio station",
+  "queueTitle": "Queue",
+  "queueClearConfirmationTitle": "Clear queue?",
+  "queueClearConfirmationBody": "This will remove all items from the queue.",
+  "queueCancelAction": "Cancel",
+  "queueClearAction": "Clear queue",
+  "queueClearFailed": "Could not clear the queue.",
+  "queueStartItemFailed": "Could not start this queue item.",
+  "queueRemoveItemFailed": "Could not remove this queue item.",
+  "queueItemAlreadyBuffered": "This item is already buffered for playback.",
+  "queueTrackAlreadyBuffered": "This track is already buffered by the player to play next.",
+  "queueLoadFailed": "Could not load the queue.",
+  "queueEmpty": "The queue is empty.",
+  "queueShuffleChangeFailed": "Could not change shuffle.",
+  "queueShuffleUnavailable": "Shuffle is unavailable for dynamic queues",
+  "queueDisableShuffleTooltip": "Disable shuffle",
+  "queueEnableShuffleTooltip": "Enable shuffle",
+  "queueAutoplayChangeFailed": "Could not change autoplay.",
+  "queueDisableAutoplayTooltip": "Disable autoplay",
+  "queueEnableAutoplayTooltip": "Enable autoplay",
+  "queueClearTooltip": "Clear queue",
+  "queueCloseTooltip": "Close queue",
+  "playerFavoriteChangeFailed": "Could not update favorite.",
+  "playerRemoveFavoriteTooltip": "Remove from favorites",
+  "playerAddFavoriteTooltip": "Add to favorites",
+  "playerShowQueueTooltip": "Show queue",
+  "playbackDetailsTitle": "Playback details",
+  "playbackDetailsLoadFailed": "Could not load playback details.",
+  "playbackDetailsUnavailable": "Playback details are unavailable",
+  "playbackQualityLabel": "Quality",
+  "playbackUnknownValue": "Unknown",
+  "playbackSourceLabel": "Source",
+  "playbackStreamLabel": "Stream",
+  "playbackCodecLabel": "Codec",
+  "playbackContainerLabel": "Container",
+  "playbackSampleRateLabel": "Sample rate",
+  "playbackBitDepthLabel": "Bit depth",
+  "playbackChannelsLabel": "Channels",
+  "playbackBitrateLabel": "Bitrate",
+  "playerVolumeDialogTitle": "Speakers & volume",
+  "playerVolumeLoadFailed": "Could not load the speakers for this player.",
+  "playerVolumeUnsupported": "Unsupported",
+  "playerVolumeChangeFailed": "Could not change this speaker volume.",
+  "playbackStartingOn": "Starting on {player}…",
+  "settingsSecureStorageUnavailable": "Secure storage is unavailable. Fully stop and relaunch the app from Flutter.",
+  "settingsSignInAgainToReconnect": "Sign in again to reconnect.",
+  "settingsConnectBeforeSelectingPlayer": "Connect to Music Assistant before selecting a player.",
+  "settingsCouldNotLoadPlayers": "Could not load players. Try again.",
+  "@commonTryAgainAction": {
+    "description": "Button label in shared app controls and messages for the action to try again."
+  },
+  "@commonContinueAction": {
+    "description": "Button label in shared app controls and messages for the action to continue."
+  },
+  "@commonBackTooltip": {
+    "description": "Tooltip for the control in shared app controls and messages: “Back”."
+  },
+  "@commonSelectOptionHint": {
+    "description": "Text shown in shared app controls and messages. It communicates: “Select an option”."
+  },
+  "@commonPlayerFallback": {
+    "description": "Fallback value used in a playback status when the selected player has no display name."
+  },
+  "@commonConnectionFailed": {
+    "description": "Error or status message in shared app controls and messages: “Could not connect to the server. Check the address and try again”."
+  },
+  "@commonPlayerSelectionFailed": {
+    "description": "Error or status message in shared app controls and messages: “Could not select this player. Try again”."
+  },
+  "@onboardingFindServerTitle": {
+    "description": "Title shown in the server setup and sign-in flow: “Find your server”."
+  },
+  "@onboardingFindServerSubtitle": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Looking for Music Assistant on your home network”."
+  },
+  "@onboardingNetworkSearchFailed": {
+    "description": "Error or status message in the server setup and sign-in flow: “Could not search the network. You can enter the server manually”."
+  },
+  "@onboardingNoServersFound": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “No servers found. You can add one manually”."
+  },
+  "@onboardingDiscoveryWait": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “This usually takes a few seconds”."
+  },
+  "@onboardingSearchAgainAction": {
+    "description": "Button label in the server setup and sign-in flow for the action to search again."
+  },
+  "@onboardingManualEntryAction": {
+    "description": "Button label in the server setup and sign-in flow for the action to can’t find it? enter server manually."
+  },
+  "@onboardingServerAddressTitle": {
+    "description": "Title shown in the server setup and sign-in flow: “Server address”."
+  },
+  "@onboardingServerAddressSubtitle": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Enter the hostname or IP address and port”."
+  },
+  "@onboardingHostnameLabel": {
+    "description": "Label in the server setup and sign-in flow identifying hostname or ip."
+  },
+  "@onboardingPortLabel": {
+    "description": "Label in the server setup and sign-in flow identifying port."
+  },
+  "@onboardingServerAddressInvalid": {
+    "description": "Error or status message in the server setup and sign-in flow: “Enter a valid server address”."
+  },
+  "@onboardingPortInvalid": {
+    "description": "Error or status message in the server setup and sign-in flow: “Enter a valid port (1–65535)”."
+  },
+  "@onboardingMusicAssistantUnresponsive": {
+    "description": "Error or status message in the server setup and sign-in flow: “Music Assistant is not responding”."
+  },
+  "@onboardingScanToSignInTitle": {
+    "description": "Title shown in the server setup and sign-in flow: “Scan to sign in”."
+  },
+  "@onboardingScanToSignInInstructions": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Use your phone to scan this code and sign in to Home Assistant. Keep your phone and clock on the same Wi-Fi network”."
+  },
+  "@onboardingWaitingForPhone": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Waiting for your phone”."
+  },
+  "@onboardingCompleteSignInOnPhone": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Complete sign-in on your phone”."
+  },
+  "@onboardingConnecting": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Connecting to Music Assistant…”."
+  },
+  "@onboardingPreparingSignIn": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Preparing sign-in…”."
+  },
+  "@onboardingSignInFailed": {
+    "description": "Error or status message in the server setup and sign-in flow: “Could not prepare sign-in. Try again”."
+  },
+  "@onboardingBrowserSignInCancelled": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Sign-in was cancelled. You can close this page”."
+  },
+  "@onboardingBrowserTokenMissing": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Music Assistant did not return a sign-in token”."
+  },
+  "@onboardingBrowserConnected": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Connected. You can return to the clock”."
+  },
+  "@onboardingBrowserLinkExpired": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “This sign-in link is no longer valid. Return to the clock and scan again”."
+  },
+  "@onboardingBrowserClosePage": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “You can now close this page”."
+  },
+  "@playerSetupTitle": {
+    "description": "Title shown in the player selection screen: “Choose your player”."
+  },
+  "@playerSetupSubtitle": {
+    "description": "Explanatory or instructional text shown in the player selection screen: “Select the speaker or group this device should control”."
+  },
+  "@playerSetupSaving": {
+    "description": "Text shown in the player selection screen. It communicates: “Saving”."
+  },
+  "@playerSetupRefreshAction": {
+    "description": "Button label in the player selection screen for the action to refresh players."
+  },
+  "@playerSetupNoPlayers": {
+    "description": "Text shown in the player selection screen. It communicates: “No players found on this server”."
+  },
+  "@playerGroupSpeakers": {
+    "description": "Plural unit displayed after a number when a selected player is a group of speakers."
+  },
+  "@playerGroupSpeaker": {
+    "description": "Singular unit displayed after the number one when a selected player group contains one speaker."
+  },
+  "@providerUnknownName": {
+    "description": "Fallback provider name displayed when the app cannot identify the music service."
+  },
+  "@playerNothingPlaying": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Nothing is playing”."
+  },
+  "@playerMusicIsPlaying": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Music is playing”."
+  },
+  "@playerStartListening": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Start listening”."
+  },
+  "@playerSwipeToChoose": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Swipe to choose something to play”."
+  },
+  "@playerUnavailable": {
+    "description": "Error or status message in the player and now-playing interface: “Unavailable”."
+  },
+  "@playerQualityUnknown": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Quality unknown”."
+  },
+  "@playerActionFailed": {
+    "description": "Error or status message in the player and now-playing interface: “Player action failed”."
+  },
+  "@idleStartRadioSection": {
+    "description": "Heading for a section in the idle screen: “Start with radio”."
+  },
+  "@idleRadioFavoritesEmpty": {
+    "description": "Empty-state message shown in the idle screen: “No favorite radio stations set up”."
+  },
+  "@idlePlaylistsSection": {
+    "description": "Heading for a section in the idle screen: “Your playlists”."
+  },
+  "@idlePlaylistsEmpty": {
+    "description": "Empty-state message shown in the idle screen: “No playlists found”."
+  },
+  "@idlePlayStartFailed": {
+    "description": "Error or status message in the idle screen: “Could not start playback”."
+  },
+  "@idleRadioDetailsTooltip": {
+    "description": "Tooltip for the control in the idle screen: “Radio station details”."
+  },
+  "@idleRadioStationTitle": {
+    "description": "Title shown in the idle screen: “Radio station”."
+  },
+  "@queueTitle": {
+    "description": "Title shown in the playback queue interface: “Queue”."
+  },
+  "@queueClearConfirmationTitle": {
+    "description": "Title shown in the playback queue interface: “Clear queue?”."
+  },
+  "@queueClearConfirmationBody": {
+    "description": "Text shown in the playback queue interface. It communicates: “This will remove all items from the queue”."
+  },
+  "@queueCancelAction": {
+    "description": "Button label in the playback queue interface for the action to cancel."
+  },
+  "@queueClearAction": {
+    "description": "Button label in the playback queue interface for the action to clear queue."
+  },
+  "@queueClearFailed": {
+    "description": "Error or status message in the playback queue interface: “Could not clear the queue”."
+  },
+  "@queueStartItemFailed": {
+    "description": "Error or status message in the playback queue interface: “Could not start this queue item”."
+  },
+  "@queueRemoveItemFailed": {
+    "description": "Error or status message in the playback queue interface: “Could not remove this queue item”."
+  },
+  "@queueItemAlreadyBuffered": {
+    "description": "Text shown in the playback queue interface. It communicates: “This item is already buffered for playback”."
+  },
+  "@queueTrackAlreadyBuffered": {
+    "description": "Text shown in the playback queue interface. It communicates: “This track is already buffered by the player to play next”."
+  },
+  "@queueLoadFailed": {
+    "description": "Error or status message in the playback queue interface: “Could not load the queue”."
+  },
+  "@queueEmpty": {
+    "description": "Empty-state message shown in the playback queue interface: “The queue is empty”."
+  },
+  "@queueShuffleChangeFailed": {
+    "description": "Error or status message in the playback queue interface: “Could not change shuffle”."
+  },
+  "@queueShuffleUnavailable": {
+    "description": "Error or status message in the playback queue interface: “Shuffle is unavailable for dynamic queues”."
+  },
+  "@queueDisableShuffleTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Disable shuffle”."
+  },
+  "@queueEnableShuffleTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Enable shuffle”."
+  },
+  "@queueAutoplayChangeFailed": {
+    "description": "Error or status message in the playback queue interface: “Could not change autoplay”."
+  },
+  "@queueDisableAutoplayTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Disable autoplay”."
+  },
+  "@queueEnableAutoplayTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Enable autoplay”."
+  },
+  "@queueClearTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Clear queue”."
+  },
+  "@queueCloseTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Close queue”."
+  },
+  "@playerFavoriteChangeFailed": {
+    "description": "Error or status message in the player and now-playing interface: “Could not update favorite”."
+  },
+  "@playerRemoveFavoriteTooltip": {
+    "description": "Tooltip for the control in the player and now-playing interface: “Remove from favorites”."
+  },
+  "@playerAddFavoriteTooltip": {
+    "description": "Tooltip for the control in the player and now-playing interface: “Add to favorites”."
+  },
+  "@playerShowQueueTooltip": {
+    "description": "Tooltip for the control in the player and now-playing interface: “Show queue”."
+  },
+  "@playbackDetailsTitle": {
+    "description": "Title shown in the playback details interface: “Playback details”."
+  },
+  "@playbackDetailsLoadFailed": {
+    "description": "Error or status message in the playback details interface: “Could not load playback details”."
+  },
+  "@playbackDetailsUnavailable": {
+    "description": "Error or status message in the playback details interface: “Playback details are unavailable”."
+  },
+  "@playbackQualityLabel": {
+    "description": "Label in the playback details interface identifying quality."
+  },
+  "@playbackUnknownValue": {
+    "description": "Text shown in the playback details interface. It communicates: “Unknown”."
+  },
+  "@playbackSourceLabel": {
+    "description": "Label in the playback details interface identifying source."
+  },
+  "@playbackStreamLabel": {
+    "description": "Label in the playback details interface identifying stream."
+  },
+  "@playbackCodecLabel": {
+    "description": "Label in the playback details interface identifying codec."
+  },
+  "@playbackContainerLabel": {
+    "description": "Label in the playback details interface identifying container."
+  },
+  "@playbackSampleRateLabel": {
+    "description": "Label in the playback details interface identifying sample rate."
+  },
+  "@playbackBitDepthLabel": {
+    "description": "Label in the playback details interface identifying bit depth."
+  },
+  "@playbackChannelsLabel": {
+    "description": "Label in the playback details interface identifying channels."
+  },
+  "@playbackBitrateLabel": {
+    "description": "Label in the playback details interface identifying bitrate."
+  },
+  "@playerVolumeDialogTitle": {
+    "description": "Title of the dialog that displays available speakers and lets the user adjust their volume."
+  },
+  "@playerVolumeLoadFailed": {
+    "description": "Error shown in the volume dialog when the speakers associated with the selected player cannot be loaded."
+  },
+  "@playerVolumeUnsupported": {
+    "description": "Status shown beside a speaker when that speaker does not support volume control."
+  },
+  "@playerVolumeChangeFailed": {
+    "description": "Error shown when the app cannot set the selected speaker’s volume."
+  },
+  "@playbackStartingOn": {
+    "description": "Status message shown while playback starts on the selected speaker. The {player} placeholder is the speaker name.",
+    "placeholders": {
+      "player": {
+        "type": "String",
+        "example": "Living room"
+      }
+    }
+  },
+  "@settingsSecureStorageUnavailable": {
+    "description": "Error or status message in app settings and connection status: “Secure storage is unavailable. Fully stop and relaunch the app from Flutter”."
+  },
+  "@settingsSignInAgainToReconnect": {
+    "description": "Text shown in app settings and connection status. It communicates: “Sign in again to reconnect”."
+  },
+  "@settingsConnectBeforeSelectingPlayer": {
+    "description": "Text shown in app settings and connection status. It communicates: “Connect to Music Assistant before selecting a player”."
+  },
+  "@settingsCouldNotLoadPlayers": {
+    "description": "Text shown in app settings and connection status. It communicates: “Could not load players. Try again”."
+  }
+}

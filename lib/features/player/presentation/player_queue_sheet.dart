@@ -18,6 +18,7 @@ import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
 import '../../../design_system/global_snackbar.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerQueueSheet extends StatefulWidget {
@@ -261,7 +262,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   void _showBufferedInfoMessage() {
     GlobalSnackbarHost.show(
       context,
-      message: 'This track is already buffered by the player to play next.',
+      message: AppLocalizations.of(context).queueTrackAlreadyBuffered,
       kind: GlobalSnackbarKind.info,
     );
   }
@@ -269,8 +270,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   void _showBufferedDeleteWarning() {
     GlobalSnackbarHost.show(
       context,
-      message:
-          'You can’t delete this track because it’s already buffered to play next.',
+      message: AppLocalizations.of(context).queueTrackAlreadyBuffered,
       kind: GlobalSnackbarKind.warning,
     );
   }
@@ -346,8 +346,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    'Clear queue?',
+                  Text(
+                    AppLocalizations.of(context).queueClearConfirmationTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -357,8 +357,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'This will remove all items from the queue.',
+                  Text(
+                    AppLocalizations.of(context).queueClearConfirmationBody,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: GlassTokens.textSecondary,
@@ -384,7 +384,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                 ),
                               ),
                             ),
-                            child: const Text('CANCEL'),
+                            child: Text(
+                              AppLocalizations.of(context).queueCancelAction,
+                            ),
                           ),
                         ),
                       ),
@@ -404,7 +406,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                 ),
                               ),
                             ),
-                            child: const Text('CLEAR QUEUE'),
+                            child: Text(
+                              AppLocalizations.of(context).queueClearAction,
+                            ),
                           ),
                         ),
                       ),
@@ -432,7 +436,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not clear the queue.')),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).queueClearFailed),
+          ),
         );
       }
     } finally {
@@ -465,7 +471,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not start this queue item.')),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).queueStartItemFailed),
+          ),
         );
       }
     } finally {
@@ -500,8 +508,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
               error is StateError &&
                       error.message ==
                           'This queue item is already buffered for playback.'
-                  ? 'This item is already buffered for playback.'
-                  : 'Could not remove this queue item.',
+                  ? AppLocalizations.of(context).queueItemAlreadyBuffered
+                  : AppLocalizations.of(context).queueRemoveItemFailed,
             ),
           ),
         );
@@ -581,8 +589,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'Queue',
+                          Text(
+                            AppLocalizations.of(context).queueTitle,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: GlassTokens.fontSize22,
@@ -654,8 +662,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             child: Center(
                               child: Text(
                                 kDebugMode
-                                    ? 'Could not load the queue.\n${snapshot.error}'
-                                    : 'Could not load the queue.',
+                                    ? '${AppLocalizations.of(context).queueLoadFailed}\n${snapshot.error}'
+                                    : AppLocalizations.of(context).queueLoadFailed,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white70,
@@ -671,11 +679,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       if (queueItems.isEmpty) {
                         return SingleChildScrollView(
                           controller: scrollController,
-                          child: const SizedBox(
+                          child: SizedBox(
                             height: 240,
                             child: Center(
                               child: Text(
-                                'The queue is empty.',
+                                AppLocalizations.of(context).queueEmpty,
                                 style: TextStyle(color: Colors.white70),
                               ),
                             ),

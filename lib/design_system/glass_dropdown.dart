@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'glass_surface.dart';
 import 'glass_tokens.dart';
+import '../l10n/generated/app_localizations.dart';
 
 class GlassDropdown<T> extends StatelessWidget {
   const GlassDropdown({
@@ -10,13 +11,13 @@ class GlassDropdown<T> extends StatelessWidget {
     required this.value,
     required this.items,
     required this.onChanged,
-    this.hint = 'Select an option',
+    this.hint,
   });
 
   final T? value;
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?> onChanged;
-  final String hint;
+  final String? hint;
 
   @override
   Widget build(BuildContext context) => GlassSurface(
@@ -36,7 +37,7 @@ class GlassDropdown<T> extends StatelessWidget {
           items: items,
           onChanged: onChanged,
           hint: Text(
-            hint,
+            hint ?? AppLocalizations.of(context).commonSelectOptionHint,
             style: const TextStyle(color: GlassTokens.textMuted),
           ),
           isExpanded: true,

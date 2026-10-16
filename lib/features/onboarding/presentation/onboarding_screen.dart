@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
 import '../data/qr_auth_service.dart';
 import '../../player/data/music_assistant_repository.dart';
 import '../../../design_system/glass_design_system.dart';
@@ -85,7 +86,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (mounted) {
         setState(
           () => _discoveryError =
-              'Could not search the network. You can enter the server manually.',
+              AppLocalizations.of(context).onboardingNetworkSearchFailed,
         );
       }
     } finally {
@@ -144,7 +145,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final portText = _portController.text.trim();
 
     if (host.isEmpty) {
-      setState(() => _serverInputError = 'Enter a valid server address.');
+      setState(
+        () => _serverInputError =
+            AppLocalizations.of(context).onboardingServerAddressInvalid,
+      );
       return;
     }
 
@@ -152,7 +156,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (portText.isNotEmpty) {
       final port = int.tryParse(portText);
       if (port == null || port < 1 || port > 65535) {
-        setState(() => _serverInputError = 'Enter a valid port (1–65535).');
+        setState(
+          () => _serverInputError =
+              AppLocalizations.of(context).onboardingPortInvalid,
+        );
         return;
       }
     }
@@ -160,7 +167,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     try {
       _serverUrl;
     } on FormatException {
-      setState(() => _serverInputError = 'Enter a valid server address.');
+      setState(
+        () => _serverInputError =
+            AppLocalizations.of(context).onboardingServerAddressInvalid,
+      );
       return;
     }
 
@@ -207,7 +217,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       _authError = null;
     });
     try {
-      final session = await QrAuthSession.start(serverUrl);
+      final l10n = AppLocalizations.of(context);
+      final session = await QrAuthSession.start(
+        serverUrl,
+        messages: QrAuthMessages(
+          signInCancelled: l10n.onboardingBrowserSignInCancelled,
+          tokenMissing: l10n.onboardingBrowserTokenMissing,
+          connected: l10n.onboardingBrowserConnected,
+          linkExpired: l10n.onboardingBrowserLinkExpired,
+          closePage: l10n.onboardingBrowserClosePage,
+        ),
+      );
       if (!mounted || generation != _authGeneration || _step != 2) {
         await session.close();
         return;
@@ -224,7 +244,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (!mounted || generation != _authGeneration) return;
       setState(() {
         _isPreparingAuth = false;
-        _authError = error.toString();
+        _authError = AppLocalizations.of(context).onboardingSignInFailed;
       });
     }
   }
@@ -256,7 +276,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       } else {
         setState(() {
           _authSession = null;
-          _authError = widget.error ?? error.toString();
+          _authError =
+              widget.error ??
+              AppLocalizations.of(context).onboardingSignInFailed;
         });
       }
     } finally {
@@ -407,8 +429,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _pageHeading(
-        title: 'Find your server',
-        subtitle: 'Looking for Music Assistant on your home network.',
+        title: AppLocalizations.of(context).onboardingFindServerTitle,
+        subtitle: AppLocalizations.of(context).onboardingFindServerSubtitle,
       ),
       const SizedBox(height: 22),
       if (_servers.isNotEmpty)
@@ -432,14 +454,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ? CupertinoIcons.search
               : CupertinoIcons.exclamationmark_circle,
           message:
-              _discoveryError ?? 'No servers found. You can add one manually.',
+              _discoveryError ??
+                  AppLocalizations.of(context).onboardingNoServersFound,
         ),
         const SizedBox(height: 18),
       ],
       if (_isDiscovering) ...[
-        const OnboardingStatusMessage(
+        OnboardingStatusMessage(
           icon: CupertinoIcons.ellipsis,
-          message: 'This usually takes a few seconds.',
+          message: AppLocalizations.of(context).onboardingDiscoveryWait,
         ),
         const SizedBox(height: 18),
       ],
@@ -448,7 +471,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: GlassInlineButton(
             onPressed: _findServers,
             icon: CupertinoIcons.refresh,
-            label: 'Search again',
+            label: AppLocalizations.of(context).onboardingSearchAgainAction,
             isLoading: _isDiscovering,
           ),
         ),
@@ -461,7 +484,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: GlassInlineButton(
         onPressed: _openManualEntry,
         icon: CupertinoIcons.keyboard,
-        label: 'Can’t find it? Enter server manually',
+        label: AppLocalizations.of(context).onboardingManualEntryAction,
       ),
     ),
   );
@@ -473,20 +496,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     children: [
       GlassIconButton(
         icon: CupertinoIcons.back,
-        tooltip: 'Back',
+        tooltip: AppLocalizations.of(context).commonBackTooltip,
         onPressed: () => _goToStep(0),
         size: _compactLayout ? 40 : 48,
       ),
       SizedBox(height: _compactLayout ? 2 : 10),
       _pageHeading(
-        title: 'Server address',
-        subtitle: 'Enter the hostname or IP address and port.',
+        title: AppLocalizations.of(context).onboardingServerAddressTitle,
+        subtitle: AppLocalizations.of(context).onboardingServerAddressSubtitle,
         compact: _compactLayout,
       ),
       SizedBox(height: _compactLayout ? 8 : 28),
       GlassTextField(
         controller: _hostController,
-        label: 'Hostname or IP',
+        label: AppLocalizations.of(context).onboardingHostnameLabel,
         hintText: 'music-assistant.local',
         icon: CupertinoIcons.globe,
         keyboardType: TextInputType.url,
@@ -495,7 +518,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       SizedBox(height: _compactLayout ? 6 : 14),
       GlassTextField(
         controller: _portController,
-        label: 'Port',
+        label: AppLocalizations.of(context).onboardingPortLabel,
         icon: CupertinoIcons.wifi,
         keyboardType: TextInputType.number,
         compact: _compactLayout,
@@ -506,7 +529,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ],
       SizedBox(height: _compactLayout ? 14 : 24),
       GlassActionButton(
-        label: 'Continue',
+        label: AppLocalizations.of(context).commonContinueAction,
         icon: CupertinoIcons.forward,
         onPressed: _continueToLogin,
         compact: _compactLayout,
@@ -552,7 +575,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  'Music Assistant is not responding',
+                  AppLocalizations.of(
+                    context,
+                  ).onboardingMusicAssistantUnresponsive,
                   style: const TextStyle(color: GlassTokens.error, fontSize: GlassTokens.fontSize12),
                 ),
               ],
@@ -571,7 +596,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Scan to sign in',
+                    AppLocalizations.of(context).onboardingScanToSignInTitle,
                     style: TextStyle(
                       color: GlassTokens.textPrimary,
                       fontSize: _compactLayout ? 23 : 26,
@@ -582,7 +607,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Use your phone to scan this code and sign in to Home Assistant. Keep your phone and clock on the same Wi-Fi network.',
+                    AppLocalizations.of(
+                      context,
+                    ).onboardingScanToSignInInstructions,
                     style: TextStyle(
                       color: GlassTokens.textSecondary,
                       fontSize: GlassTokens.fontSize13,
@@ -616,7 +643,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         Center(
           child: Text(
-            widget.isLoading ? 'Connecting to Music Assistant…' : 'Preparing sign-in…',
+            widget.isLoading
+                ? AppLocalizations.of(context).onboardingConnecting
+                : AppLocalizations.of(context).onboardingPreparingSignIn,
             textAlign: TextAlign.center,
             style: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize13),
           ),
@@ -625,7 +654,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         OnboardingErrorMessage(message: _authError ?? widget.error!, compact: _compactLayout),
         const SizedBox(height: 14),
         GlassActionButton(
-          label: 'Try again',
+          label: AppLocalizations.of(context).commonTryAgainAction,
           icon: CupertinoIcons.refresh,
           onPressed: _startQrAuth,
           compact: _compactLayout,

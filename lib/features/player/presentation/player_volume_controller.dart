@@ -13,7 +13,7 @@ class PlayerVolumeController extends ChangeNotifier {
     required MusicAssistantRepository? Function() repository,
     required List<MusicAssistantPlayer> Function() players,
     required void Function(MusicAssistantPlayer player) onPlayerUpdated,
-    required void Function(String message) onActionError,
+    required VoidCallback onActionError,
   }) : _isMounted = isMounted,
        _selectedPlayerId = selectedPlayerId,
        _repository = repository,
@@ -26,7 +26,7 @@ class PlayerVolumeController extends ChangeNotifier {
   final MusicAssistantRepository? Function() _repository;
   final List<MusicAssistantPlayer> Function() _players;
   final void Function(MusicAssistantPlayer player) _onPlayerUpdated;
-  final void Function(String message) _onActionError;
+  final VoidCallback _onActionError;
 
   final Set<String> _hardwareVolumePending = {};
   Timer? _feedbackTimer;
@@ -175,7 +175,7 @@ class PlayerVolumeController extends ChangeNotifier {
     } catch (_) {
       if (request == _refreshRequest) {
         _hardwareVolumePending.remove(playerId);
-        if (_isMounted()) _onActionError('Player action failed.');
+        if (_isMounted()) _onActionError();
       }
     } finally {
       _commandsInFlight--;

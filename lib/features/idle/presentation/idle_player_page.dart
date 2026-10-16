@@ -7,6 +7,7 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../../../design_system/glass_card.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../player/presentation/artwork_image.dart';
 import '../../player/presentation/provider_identity.dart';
 
@@ -118,11 +119,16 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Kon afspelen niet starten.')));
+    ).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).idlePlayStartFailed),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final playerAvailable = widget.player.available != false;
     final isBusy = _startingStationId != null || _startingPlaylistUri != null;
 
@@ -153,7 +159,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader(
-                          title: 'START MET RADIO',
+                          title: l10n.idleStartRadioSection,
                           icon: CupertinoIcons.antenna_radiowaves_left_right,
                         ),
                         const SizedBox(height: 8),
@@ -167,8 +173,8 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                                       ? _playStation
                                       : null,
                                 )
-                              : const _EmptyPlaceholder(
-                                  message: 'Geen favoriete radio ingesteld',
+                              : _EmptyPlaceholder(
+                                  message: l10n.idleRadioFavoritesEmpty,
                                 ),
                         ),
                       ],
@@ -183,7 +189,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader(
-                          title: 'JOUW PLAYLISTS',
+                          title: l10n.idlePlaylistsSection,
                           icon: CupertinoIcons.music_note_list,
                         ),
                         const SizedBox(height: 8),
@@ -212,8 +218,8 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
                                     },
                                   ),
                                 )
-                              : const _EmptyPlaceholder(
-                                  message: 'Geen afspeellijsten gevonden',
+                              : _EmptyPlaceholder(
+                                  message: l10n.idlePlaylistsEmpty,
                                 ),
                         ),
                       ],
@@ -440,7 +446,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
               top: 2,
               right: 2,
               child: IconButton(
-                tooltip: 'Radio station details',
+                tooltip: AppLocalizations.of(context).idleRadioDetailsTooltip,
                 constraints: const BoxConstraints.tightFor(
                   width: 48,
                   height: 48,
@@ -489,9 +495,9 @@ class _RadioProviderDetailsDialog extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Radio station',
+                  AppLocalizations.of(context).idleRadioStationTitle,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: GlassTokens.fontSize20,

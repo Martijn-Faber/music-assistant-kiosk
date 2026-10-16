@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../core/platform/volume_button_bridge.dart';
 import '../core/storage/session_storage.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/player/data/music_assistant_repository.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
@@ -13,7 +14,9 @@ import '../features/player/presentation/player_setup_page.dart';
 import '../features/player/presentation/player_volume_controller.dart';
 
 class SessionGate extends StatefulWidget {
-  const SessionGate({super.key});
+  const SessionGate({super.key, required this.onLocaleChanged});
+
+  final ValueChanged<Locale> onLocaleChanged;
 
   @override
   State<SessionGate> createState() => _SessionGateState();
@@ -28,8 +31,13 @@ class _SessionGateState extends State<SessionGate> {
     repository: () => _repository,
     players: () => _players,
     onPlayerUpdated: _replacePlayer,
-    onActionError: (message) {
-      if (mounted) setState(() => _playerActionError = message);
+    onActionError: () {
+      if (mounted) {
+        setState(
+          () => _playerActionError =
+              AppLocalizations.of(context).playerActionFailed,
+        );
+      }
     },
   );
 
@@ -120,7 +128,10 @@ class _SessionGateState extends State<SessionGate> {
     } catch (_) {
       await repository?.disconnect();
       if (mounted) {
-        setState(() => _connectionError = 'Sign in again to reconnect.');
+        setState(
+          () => _connectionError =
+              AppLocalizations.of(context).settingsSignInAgainToReconnect,
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -188,13 +199,20 @@ class _SessionGateState extends State<SessionGate> {
       if (mounted) {
         setState(
           () => _connectionError =
-              'Secure storage is not loaded. Fully stop and relaunch the app from Flutter.',
+              AppLocalizations.of(
+                context,
+              ).settingsSecureStorageUnavailable,
         );
       }
       rethrow;
     } catch (error) {
       await repository?.disconnect();
-      if (mounted) setState(() => _connectionError = error.toString());
+      if (mounted) {
+        setState(
+          () => _connectionError =
+              AppLocalizations.of(context).commonConnectionFailed,
+        );
+      }
       rethrow;
     } finally {
       if (mounted) {
@@ -236,7 +254,9 @@ class _SessionGateState extends State<SessionGate> {
       final repository = _repository;
       if (repository == null) {
         throw StateError(
-          'Connect to Music Assistant before selecting a player.',
+          AppLocalizations.of(
+            context,
+          ).settingsConnectBeforeSelectingPlayer,
         );
       }
       final player = await repository.fetchPlayer(playerId);
@@ -260,8 +280,10 @@ class _SessionGateState extends State<SessionGate> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _playerError = error.toString();
-          _playerSetupError = error.toString();
+          _playerError =
+              AppLocalizations.of(context).commonPlayerSelectionFailed;
+          _playerSetupError =
+              AppLocalizations.of(context).commonPlayerSelectionFailed;
         });
       }
     }
@@ -282,7 +304,8 @@ class _SessionGateState extends State<SessionGate> {
     } catch (_) {
       if (mounted) {
         setState(
-          () => _playerSetupError = 'Could not load players. Try again.',
+          () => _playerSetupError =
+              AppLocalizations.of(context).settingsCouldNotLoadPlayers,
         );
       }
     } finally {
@@ -381,7 +404,10 @@ class _SessionGateState extends State<SessionGate> {
         _selectedPlayerId != playerId) {
       return;
     }
-    setState(() => _qualityLabel = qualityLabel ?? 'QUALITY UNKNOWN');
+    setState(
+      () => _qualityLabel =
+          qualityLabel ?? AppLocalizations.of(context).playerQualityUnknown,
+    );
   }
 
   Future<void> _handleHardwareButton(String action) async {
@@ -418,7 +444,12 @@ class _SessionGateState extends State<SessionGate> {
       }
       if (mounted) setState(() => _playerActionError = null);
     } catch (_) {
-      if (mounted) setState(() => _playerActionError = 'Player action failed.');
+      if (mounted) {
+        setState(
+          () => _playerActionError =
+              AppLocalizations.of(context).playerActionFailed,
+        );
+      }
     }
   }
 
@@ -500,6 +531,7 @@ class _SessionGateState extends State<SessionGate> {
       volumeController: _volumeController,
       clock24HourFormat: _clock24HourFormat,
       onClock24HourFormatChanged: _setClockFormat,
+      onLocaleChanged: widget.onLocaleChanged,
       onSelectPlayer: _selectPlayer,
       onQueueCleared: _markPlayerIdle,
       onDisconnect: _disconnect,

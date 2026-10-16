@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/glass_design_system.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../data/music_assistant_server_discovery.dart';
 
 class OnboardingWaitingPill extends StatelessWidget {
@@ -40,7 +41,9 @@ class OnboardingWaitingPill extends StatelessWidget {
               const Icon(CupertinoIcons.checkmark_circle_fill, size: GlassTokens.iconSizeXs, color: Colors.white),
             const SizedBox(width: 9),
             Text(
-              opened ? 'Complete sign-in on your phone' : 'Waiting for your phone',
+              opened
+                  ? AppLocalizations.of(context).onboardingCompleteSignInOnPhone
+                  : AppLocalizations.of(context).onboardingWaitingForPhone,
               style: const TextStyle(color: GlassTokens.textSecondary, fontSize: GlassTokens.fontSize12),
             ),
           ],

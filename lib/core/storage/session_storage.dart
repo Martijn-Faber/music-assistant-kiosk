@@ -18,6 +18,12 @@ class SessionStorage {
   static const _tokenKey = 'music_assistant_token';
   static const _playerKey = 'music_assistant_player';
   static const _clock24HourKey = 'clock_24_hour_format';
+  static const _localeKey = 'app_locale';
+
+  Future<String?> readLocale() => _storage.read(key: _localeKey);
+
+  Future<void> saveLocale(String languageCode) =>
+      _storage.write(key: _localeKey, value: languageCode);
 
   Future<bool?> readClock24HourFormat() async {
     final value = await _storage.read(key: _clock24HourKey);

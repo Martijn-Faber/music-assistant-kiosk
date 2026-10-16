@@ -6,6 +6,7 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../../../design_system/glass_design_system.dart'
     show GlassSlider, GlassTokens;
 import 'player_glass_widgets.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 class PlayerVolumeDialog extends StatefulWidget {
   const PlayerVolumeDialog({
@@ -94,11 +95,13 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
       _ignoreVolumeEventsUntil[playerId] = DateTime.now().add(
         const Duration(seconds: 2),
       );
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not change this speaker volume: $error'),
+            content: Text(
+              AppLocalizations.of(context).playerVolumeChangeFailed,
+            ),
           ),
         );
       }
@@ -130,9 +133,9 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Speakers & volume',
+                    AppLocalizations.of(context).playerVolumeDialogTitle,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: GlassTokens.fontSize20,
@@ -159,10 +162,10 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     );
                   }
                   if (snapshot.hasError || snapshot.data?.isEmpty != false) {
-                    return const Padding(
+                    return Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Text(
-                        'Could not load the speakers for this player.',
+                        AppLocalizations.of(context).playerVolumeLoadFailed,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white70),
                       ),
@@ -217,7 +220,10 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                 const SizedBox(width: 9),
                               ],
                               Text(
-                                canSetVolume ? '${volume}%' : 'Unsupported',
+                                canSetVolume
+                                    ? '${volume}%'
+                                    : AppLocalizations.of(context)
+                                        .playerVolumeUnsupported,
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: GlassTokens.fontSize13,

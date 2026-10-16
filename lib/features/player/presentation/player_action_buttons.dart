@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/glass_icon_button.dart';
 import '../../../design_system/glass_icon_toggle_button.dart';
 import '../../../design_system/global_snackbar.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../data/music_assistant_repository.dart';
 
 class PlayerFavoriteButton extends StatefulWidget {
@@ -106,7 +107,7 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
       if (mounted) {
         GlobalSnackbarHost.show(
           context,
-          message: 'Could not update favorite.',
+          message: AppLocalizations.of(context).playerFavoriteChangeFailed,
           kind: GlobalSnackbarKind.error,
         );
       }
@@ -120,7 +121,9 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
         icon: CupertinoIcons.heart,
         selectedIcon: CupertinoIcons.heart_fill,
         type: GlassIconButtonType.primary,
-        tooltip: _favorite == true ? 'Remove from favorites' : 'Add to favorites',
+        tooltip: _favorite == true
+            ? AppLocalizations.of(context).playerRemoveFavoriteTooltip
+            : AppLocalizations.of(context).playerAddFavoriteTooltip,
         disabled: _favorite == null,
         isSelected: _favorite == true,
         isLoading: _busy,
@@ -137,7 +140,7 @@ class PlayerQueueButton extends StatelessWidget {
   Widget build(BuildContext context) => GlassIconButton(
         icon: CupertinoIcons.music_note_list,
         type: GlassIconButtonType.primary,
-        tooltip: 'Show queue',
+        tooltip: AppLocalizations.of(context).playerShowQueueTooltip,
         onPressed: onPressed,
       );
 }

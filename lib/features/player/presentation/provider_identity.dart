@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../design_system/glass_tokens.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../data/music_assistant_repository.dart';
 
 /// Shows a Music Assistant provider's icon and friendly name consistently.
@@ -47,7 +48,10 @@ class ProviderIdentity extends StatelessWidget {
           SizedBox(width: spacing),
           Flexible(
             child: Text(
-              _friendlyName(id),
+              _friendlyName(
+                id,
+                AppLocalizations.of(context).providerUnknownName,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -99,8 +103,8 @@ class ProviderIdentity extends StatelessWidget {
     color: iconColor,
   );
 
-  String _friendlyName(String? id) {
-    if (id == null || id.isEmpty) return 'Unknown provider';
+  String _friendlyName(String? id, String unknownProvider) {
+    if (id == null || id.isEmpty) return unknownProvider;
     final domain = id
         .replaceFirst(RegExp(r'--[A-Za-z0-9_-]+$'), '')
         .replaceFirst(RegExp(r'\s+[A-Za-z]*\d[A-Za-z0-9_-]*$'), '')

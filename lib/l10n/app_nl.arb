@@ -1,0 +1,493 @@
+{
+  "@@locale": "nl",
+  "settingsTitle": "Instellingen",
+  "@settingsTitle": {
+    "description": "Titel bovenaan de instellingenpagina van de app."
+  },
+  "settingsLanguageLabel": "Taal",
+  "@settingsLanguageLabel": {
+    "description": "Label boven de taalselector op de instellingenpagina."
+  },
+  "settingsLanguageEnglishOption": "Engels",
+  "@settingsLanguageEnglishOption": {
+    "description": "Nederlandse naam van de Engelse taal in de taalselector."
+  },
+  "settingsLanguageDutchOption": "Nederlands",
+  "@settingsLanguageDutchOption": {
+    "description": "Nederlandse naam van de Nederlandse taal in de taalselector."
+  },
+  "settingsSignedInAsLabel": "Aangemeld als",
+  "@settingsSignedInAsLabel": {
+    "description": "Sectielabel boven de naam en gebruikersnaam van de Music Assistant-gebruiker."
+  },
+  "settingsPlayerOnScreenLabel": "Speler op scherm",
+  "@settingsPlayerOnScreenLabel": {
+    "description": "Sectielabel boven de keuze voor de Music Assistant-speaker die dit apparaat bedient."
+  },
+  "settingsPlayerSelectHint": "Selecteer een speler",
+  "@settingsPlayerSelectHint": {
+    "description": "Hint in de spelerselector voordat een speaker of groep is geselecteerd."
+  },
+  "settingsPlayersNoneFoundMessage": "Geen spelers gevonden op deze server.",
+  "@settingsPlayersNoneFoundMessage": {
+    "description": "Bericht onder de spelerselector als de verbonden server geen spelers beschikbaar heeft."
+  },
+  "settingsClockFormatLabel": "Kloknotatie",
+  "@settingsClockFormatLabel": {
+    "description": "Sectielabel boven de opties voor de tijdnotatie van de klok."
+  },
+  "settingsClockFormatSystemOption": "Systeem",
+  "@settingsClockFormatSystemOption": {
+    "description": "Klokoptie die de tijdnotatievoorkeur van het apparaat volgt."
+  },
+  "settingsClockFormat12HourOption": "12-uursnotatie",
+  "@settingsClockFormat12HourOption": {
+    "description": "Klokoptie voor tijd met AM/PM, bijvoorbeeld 3:45 PM."
+  },
+  "settingsClockFormat24HourOption": "24-uursnotatie",
+  "@settingsClockFormat24HourOption": {
+    "description": "Klokoptie voor tijd van 00:00 tot 23:59, bijvoorbeeld 15:45."
+  },
+  "settingsConnectedToLabel": "Verbonden met",
+  "@settingsConnectedToLabel": {
+    "description": "Sectielabel boven het adres van de Music Assistant-server en de geselecteerde speler."
+  },
+  "settingsNoPlayerSelectedValue": "Geen speler geselecteerd",
+  "@settingsNoPlayerSelectedValue": {
+    "description": "Waarde voor de geselecteerde speler als er geen speaker of groep is gekozen."
+  },
+  "settingsServerSectionLabel": "Music Assistant-server",
+  "@settingsServerSectionLabel": {
+    "description": "Sectielabel voor de gegevens van de verbonden Music Assistant-server."
+  },
+  "settingsServerNameLabel": "Naam",
+  "@settingsServerNameLabel": {
+    "description": "Veldlabel voor de naam van de verbonden Music Assistant-server."
+  },
+  "settingsServerVersionLabel": "Versie",
+  "@settingsServerVersionLabel": {
+    "description": "Veldlabel voor de versie van de verbonden Music Assistant-server."
+  },
+  "settingsServerStatusLabel": "Status",
+  "@settingsServerStatusLabel": {
+    "description": "Veldlabel voor de status van de verbonden Music Assistant-server."
+  },
+  "settingsSignOutAction": "Afmelden",
+  "@settingsSignOutAction": {
+    "description": "Knop waarmee de gebruiker zich afmeldt bij de verbonden Music Assistant-server."
+  },
+  "commonTryAgainAction": "Opnieuw proberen",
+  "commonContinueAction": "Doorgaan",
+  "commonBackTooltip": "Terug",
+  "commonSelectOptionHint": "Selecteer een optie",
+  "commonPlayerFallback": "speler",
+  "commonConnectionFailed": "Verbinden met de server is mislukt. Controleer het adres en probeer het opnieuw.",
+  "commonPlayerSelectionFailed": "Deze speler selecteren is mislukt. Probeer het opnieuw.",
+  "onboardingFindServerTitle": "Server zoeken",
+  "onboardingFindServerSubtitle": "Zoeken naar Music Assistant op je thuisnetwerk.",
+  "onboardingNetworkSearchFailed": "Netwerk zoeken is mislukt. Je kunt het serveradres handmatig invoeren.",
+  "onboardingNoServersFound": "Geen servers gevonden. Je kunt er handmatig een toevoegen.",
+  "onboardingDiscoveryWait": "Dit duurt meestal maar een paar seconden.",
+  "onboardingSearchAgainAction": "Opnieuw zoeken",
+  "onboardingManualEntryAction": "Kun je de server niet vinden? Voer het adres handmatig in",
+  "onboardingServerAddressTitle": "Serveradres",
+  "onboardingServerAddressSubtitle": "Voer de hostnaam of het IP-adres en de poort in.",
+  "onboardingHostnameLabel": "Hostnaam of IP-adres",
+  "onboardingPortLabel": "Poort",
+  "onboardingServerAddressInvalid": "Voer een geldig serveradres in.",
+  "onboardingPortInvalid": "Voer een geldige poort in (1–65535).",
+  "onboardingMusicAssistantUnresponsive": "Music Assistant reageert niet",
+  "onboardingScanToSignInTitle": "Scan om aan te melden",
+  "onboardingScanToSignInInstructions": "Scan deze code met je telefoon om je aan te melden bij Home Assistant. Verbind je telefoon en klok met hetzelfde wifi-netwerk.",
+  "onboardingWaitingForPhone": "Wachten op je telefoon",
+  "onboardingCompleteSignInOnPhone": "Voltooi het aanmelden op je telefoon",
+  "onboardingConnecting": "Verbinden met Music Assistant…",
+  "onboardingPreparingSignIn": "Aanmelding voorbereiden…",
+  "onboardingSignInFailed": "Aanmelding voorbereiden is mislukt. Probeer het opnieuw.",
+  "onboardingBrowserSignInCancelled": "Aanmelden is geannuleerd. Je kunt deze pagina sluiten.",
+  "onboardingBrowserTokenMissing": "Music Assistant heeft geen aanmeldtoken teruggestuurd.",
+  "onboardingBrowserConnected": "Verbonden. Je kunt teruggaan naar de klok.",
+  "onboardingBrowserLinkExpired": "Deze aanmeldlink is niet meer geldig. Ga terug naar de klok en scan opnieuw.",
+  "onboardingBrowserClosePage": "Je kunt deze pagina nu sluiten.",
+  "playerSetupTitle": "Kies je speler",
+  "playerSetupSubtitle": "Selecteer de speaker of groep die dit apparaat moet bedienen.",
+  "playerSetupSaving": "Opslaan",
+  "playerSetupRefreshAction": "Spelers vernieuwen",
+  "playerSetupNoPlayers": "Geen spelers gevonden op deze server.",
+  "playerGroupSpeakers": "speakers",
+  "playerGroupSpeaker": "speaker",
+  "providerUnknownName": "Onbekende provider",
+  "playerNothingPlaying": "Er wordt niets afgespeeld",
+  "playerMusicIsPlaying": "Muziek wordt afgespeeld",
+  "playerStartListening": "Begin met luisteren",
+  "playerSwipeToChoose": "Veeg om iets te kiezen om af te spelen",
+  "playerUnavailable": "Niet beschikbaar",
+  "playerQualityUnknown": "Kwaliteit onbekend",
+  "playerActionFailed": "Actie voor de speler is mislukt.",
+  "idleStartRadioSection": "Start met radio",
+  "idleRadioFavoritesEmpty": "Geen favoriete radiozenders ingesteld",
+  "idlePlaylistsSection": "Jouw afspeellijsten",
+  "idlePlaylistsEmpty": "Geen afspeellijsten gevonden",
+  "idlePlayStartFailed": "Afspelen starten is mislukt.",
+  "idleRadioDetailsTooltip": "Details van radiozender",
+  "idleRadioStationTitle": "Radiozender",
+  "queueTitle": "Wachtrij",
+  "queueClearConfirmationTitle": "Wachtrij wissen?",
+  "queueClearConfirmationBody": "Alle items worden uit de wachtrij verwijderd.",
+  "queueCancelAction": "Annuleren",
+  "queueClearAction": "Wachtrij wissen",
+  "queueClearFailed": "Wachtrij wissen is mislukt.",
+  "queueStartItemFailed": "Dit item uit de wachtrij starten is mislukt.",
+  "queueRemoveItemFailed": "Dit item uit de wachtrij verwijderen is mislukt.",
+  "queueItemAlreadyBuffered": "Dit item staat al klaar om af te spelen.",
+  "queueTrackAlreadyBuffered": "Dit nummer staat al klaar om hierna af te spelen.",
+  "queueLoadFailed": "Wachtrij laden is mislukt.",
+  "queueEmpty": "De wachtrij is leeg.",
+  "queueShuffleChangeFailed": "Willekeurig afspelen wijzigen is mislukt.",
+  "queueShuffleUnavailable": "Willekeurig afspelen is niet beschikbaar voor dynamische wachtrijen",
+  "queueDisableShuffleTooltip": "Willekeurig afspelen uitschakelen",
+  "queueEnableShuffleTooltip": "Willekeurig afspelen inschakelen",
+  "queueAutoplayChangeFailed": "Automatisch afspelen wijzigen is mislukt.",
+  "queueDisableAutoplayTooltip": "Automatisch afspelen uitschakelen",
+  "queueEnableAutoplayTooltip": "Automatisch afspelen inschakelen",
+  "queueClearTooltip": "Wachtrij wissen",
+  "queueCloseTooltip": "Wachtrij sluiten",
+  "playerFavoriteChangeFailed": "Favoriet wijzigen is mislukt.",
+  "playerRemoveFavoriteTooltip": "Uit favorieten verwijderen",
+  "playerAddFavoriteTooltip": "Aan favorieten toevoegen",
+  "playerShowQueueTooltip": "Wachtrij tonen",
+  "playbackDetailsTitle": "Afspeeldetails",
+  "playbackDetailsLoadFailed": "Afspeeldetails laden is mislukt.",
+  "playbackDetailsUnavailable": "Afspeeldetails zijn niet beschikbaar",
+  "playbackQualityLabel": "Kwaliteit",
+  "playbackUnknownValue": "Onbekend",
+  "playbackSourceLabel": "Bron",
+  "playbackStreamLabel": "Stream",
+  "playbackCodecLabel": "Codec",
+  "playbackContainerLabel": "Container",
+  "playbackSampleRateLabel": "Samplefrequentie",
+  "playbackBitDepthLabel": "Bitdiepte",
+  "playbackChannelsLabel": "Kanalen",
+  "playbackBitrateLabel": "Bitsnelheid",
+  "playerVolumeDialogTitle": "Speakers en volume",
+  "playerVolumeLoadFailed": "Speakers voor deze speler laden is mislukt.",
+  "playerVolumeUnsupported": "Niet ondersteund",
+  "playerVolumeChangeFailed": "Het volume van deze speaker wijzigen is mislukt.",
+  "playbackStartingOn": "Starten op {player}…",
+  "settingsSecureStorageUnavailable": "Beveiligde opslag is niet beschikbaar. Stop de app volledig en start deze opnieuw vanuit Flutter.",
+  "settingsSignInAgainToReconnect": "Meld je opnieuw aan om weer verbinding te maken.",
+  "settingsConnectBeforeSelectingPlayer": "Maak verbinding met Music Assistant voordat je een speler selecteert.",
+  "settingsCouldNotLoadPlayers": "Spelers laden is mislukt. Probeer het opnieuw.",
+  "@commonTryAgainAction": {
+    "description": "Button label in shared app controls and messages for the action to opnieuw proberen."
+  },
+  "@commonContinueAction": {
+    "description": "Button label in shared app controls and messages for the action to doorgaan."
+  },
+  "@commonBackTooltip": {
+    "description": "Tooltip for the control in shared app controls and messages: “Terug”."
+  },
+  "@commonSelectOptionHint": {
+    "description": "Text shown in shared app controls and messages. It communicates: “Selecteer een optie”."
+  },
+  "@commonPlayerFallback": {
+    "description": "Fallback value used in a playback status when the selected player has no display name."
+  },
+  "@commonConnectionFailed": {
+    "description": "Error or status message in shared app controls and messages: “Verbinden met de server is mislukt. Controleer het adres en probeer het opnieuw”."
+  },
+  "@commonPlayerSelectionFailed": {
+    "description": "Error or status message in shared app controls and messages: “Deze speler selecteren is mislukt. Probeer het opnieuw”."
+  },
+  "@onboardingFindServerTitle": {
+    "description": "Title shown in the server setup and sign-in flow: “Server zoeken”."
+  },
+  "@onboardingFindServerSubtitle": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Zoeken naar Music Assistant op je thuisnetwerk”."
+  },
+  "@onboardingNetworkSearchFailed": {
+    "description": "Error or status message in the server setup and sign-in flow: “Netwerk zoeken is mislukt. Je kunt het serveradres handmatig invoeren”."
+  },
+  "@onboardingNoServersFound": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Geen servers gevonden. Je kunt er handmatig een toevoegen”."
+  },
+  "@onboardingDiscoveryWait": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Dit duurt meestal maar een paar seconden”."
+  },
+  "@onboardingSearchAgainAction": {
+    "description": "Button label in the server setup and sign-in flow for the action to opnieuw zoeken."
+  },
+  "@onboardingManualEntryAction": {
+    "description": "Button label in the server setup and sign-in flow for the action to kun je de server niet vinden? voer het adres handmatig in."
+  },
+  "@onboardingServerAddressTitle": {
+    "description": "Title shown in the server setup and sign-in flow: “Serveradres”."
+  },
+  "@onboardingServerAddressSubtitle": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Voer de hostnaam of het IP-adres en de poort in”."
+  },
+  "@onboardingHostnameLabel": {
+    "description": "Label in the server setup and sign-in flow identifying hostnaam of ip-adres."
+  },
+  "@onboardingPortLabel": {
+    "description": "Label in the server setup and sign-in flow identifying poort."
+  },
+  "@onboardingServerAddressInvalid": {
+    "description": "Error or status message in the server setup and sign-in flow: “Voer een geldig serveradres in”."
+  },
+  "@onboardingPortInvalid": {
+    "description": "Error or status message in the server setup and sign-in flow: “Voer een geldige poort in (1–65535)”."
+  },
+  "@onboardingMusicAssistantUnresponsive": {
+    "description": "Error or status message in the server setup and sign-in flow: “Music Assistant reageert niet”."
+  },
+  "@onboardingScanToSignInTitle": {
+    "description": "Title shown in the server setup and sign-in flow: “Scan om aan te melden”."
+  },
+  "@onboardingScanToSignInInstructions": {
+    "description": "Explanatory or instructional text shown in the server setup and sign-in flow: “Scan deze code met je telefoon om je aan te melden bij Home Assistant. Verbind je telefoon en klok met hetzelfde wifi-netwerk”."
+  },
+  "@onboardingWaitingForPhone": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Wachten op je telefoon”."
+  },
+  "@onboardingCompleteSignInOnPhone": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Voltooi het aanmelden op je telefoon”."
+  },
+  "@onboardingConnecting": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Verbinden met Music Assistant…”."
+  },
+  "@onboardingPreparingSignIn": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Aanmelding voorbereiden…”."
+  },
+  "@onboardingSignInFailed": {
+    "description": "Error or status message in the server setup and sign-in flow: “Aanmelding voorbereiden is mislukt. Probeer het opnieuw”."
+  },
+  "@onboardingBrowserSignInCancelled": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Aanmelden is geannuleerd. Je kunt deze pagina sluiten”."
+  },
+  "@onboardingBrowserTokenMissing": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Music Assistant heeft geen aanmeldtoken teruggestuurd”."
+  },
+  "@onboardingBrowserConnected": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Verbonden. Je kunt teruggaan naar de klok”."
+  },
+  "@onboardingBrowserLinkExpired": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Deze aanmeldlink is niet meer geldig. Ga terug naar de klok en scan opnieuw”."
+  },
+  "@onboardingBrowserClosePage": {
+    "description": "Text shown in the server setup and sign-in flow. It communicates: “Je kunt deze pagina nu sluiten”."
+  },
+  "@playerSetupTitle": {
+    "description": "Title shown in the player selection screen: “Kies je speler”."
+  },
+  "@playerSetupSubtitle": {
+    "description": "Explanatory or instructional text shown in the player selection screen: “Selecteer de speaker of groep die dit apparaat moet bedienen”."
+  },
+  "@playerSetupSaving": {
+    "description": "Text shown in the player selection screen. It communicates: “Opslaan”."
+  },
+  "@playerSetupRefreshAction": {
+    "description": "Button label in the player selection screen for the action to spelers vernieuwen."
+  },
+  "@playerSetupNoPlayers": {
+    "description": "Text shown in the player selection screen. It communicates: “Geen spelers gevonden op deze server”."
+  },
+  "@playerGroupSpeakers": {
+    "description": "Plural unit displayed after a number when a selected player is a group of speakers."
+  },
+  "@playerGroupSpeaker": {
+    "description": "Singular unit displayed after the number one when a selected player group contains one speaker."
+  },
+  "@providerUnknownName": {
+    "description": "Fallback provider name displayed when the app cannot identify the music service."
+  },
+  "@playerNothingPlaying": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Er wordt niets afgespeeld”."
+  },
+  "@playerMusicIsPlaying": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Muziek wordt afgespeeld”."
+  },
+  "@playerStartListening": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Begin met luisteren”."
+  },
+  "@playerSwipeToChoose": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Veeg om iets te kiezen om af te spelen”."
+  },
+  "@playerUnavailable": {
+    "description": "Error or status message in the player and now-playing interface: “Niet beschikbaar”."
+  },
+  "@playerQualityUnknown": {
+    "description": "Text shown in the player and now-playing interface. It communicates: “Kwaliteit onbekend”."
+  },
+  "@playerActionFailed": {
+    "description": "Error or status message in the player and now-playing interface: “Actie voor de speler is mislukt”."
+  },
+  "@idleStartRadioSection": {
+    "description": "Heading for a section in the idle screen: “Start met radio”."
+  },
+  "@idleRadioFavoritesEmpty": {
+    "description": "Empty-state message shown in the idle screen: “Geen favoriete radiozenders ingesteld”."
+  },
+  "@idlePlaylistsSection": {
+    "description": "Heading for a section in the idle screen: “Jouw afspeellijsten”."
+  },
+  "@idlePlaylistsEmpty": {
+    "description": "Empty-state message shown in the idle screen: “Geen afspeellijsten gevonden”."
+  },
+  "@idlePlayStartFailed": {
+    "description": "Error or status message in the idle screen: “Afspelen starten is mislukt”."
+  },
+  "@idleRadioDetailsTooltip": {
+    "description": "Tooltip for the control in the idle screen: “Details van radiozender”."
+  },
+  "@idleRadioStationTitle": {
+    "description": "Title shown in the idle screen: “Radiozender”."
+  },
+  "@queueTitle": {
+    "description": "Title shown in the playback queue interface: “Wachtrij”."
+  },
+  "@queueClearConfirmationTitle": {
+    "description": "Title shown in the playback queue interface: “Wachtrij wissen?”."
+  },
+  "@queueClearConfirmationBody": {
+    "description": "Text shown in the playback queue interface. It communicates: “Alle items worden uit de wachtrij verwijderd”."
+  },
+  "@queueCancelAction": {
+    "description": "Button label in the playback queue interface for the action to annuleren."
+  },
+  "@queueClearAction": {
+    "description": "Button label in the playback queue interface for the action to wachtrij wissen."
+  },
+  "@queueClearFailed": {
+    "description": "Error or status message in the playback queue interface: “Wachtrij wissen is mislukt”."
+  },
+  "@queueStartItemFailed": {
+    "description": "Error or status message in the playback queue interface: “Dit item uit de wachtrij starten is mislukt”."
+  },
+  "@queueRemoveItemFailed": {
+    "description": "Error or status message in the playback queue interface: “Dit item uit de wachtrij verwijderen is mislukt”."
+  },
+  "@queueItemAlreadyBuffered": {
+    "description": "Text shown in the playback queue interface. It communicates: “Dit item staat al klaar om af te spelen”."
+  },
+  "@queueTrackAlreadyBuffered": {
+    "description": "Text shown in the playback queue interface. It communicates: “Dit nummer staat al klaar om hierna af te spelen”."
+  },
+  "@queueLoadFailed": {
+    "description": "Error or status message in the playback queue interface: “Wachtrij laden is mislukt”."
+  },
+  "@queueEmpty": {
+    "description": "Empty-state message shown in the playback queue interface: “De wachtrij is leeg”."
+  },
+  "@queueShuffleChangeFailed": {
+    "description": "Error or status message in the playback queue interface: “Willekeurig afspelen wijzigen is mislukt”."
+  },
+  "@queueShuffleUnavailable": {
+    "description": "Error or status message in the playback queue interface: “Willekeurig afspelen is niet beschikbaar voor dynamische wachtrijen”."
+  },
+  "@queueDisableShuffleTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Willekeurig afspelen uitschakelen”."
+  },
+  "@queueEnableShuffleTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Willekeurig afspelen inschakelen”."
+  },
+  "@queueAutoplayChangeFailed": {
+    "description": "Error or status message in the playback queue interface: “Automatisch afspelen wijzigen is mislukt”."
+  },
+  "@queueDisableAutoplayTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Automatisch afspelen uitschakelen”."
+  },
+  "@queueEnableAutoplayTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Automatisch afspelen inschakelen”."
+  },
+  "@queueClearTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Wachtrij wissen”."
+  },
+  "@queueCloseTooltip": {
+    "description": "Tooltip for the control in the playback queue interface: “Wachtrij sluiten”."
+  },
+  "@playerFavoriteChangeFailed": {
+    "description": "Error or status message in the player and now-playing interface: “Favoriet wijzigen is mislukt”."
+  },
+  "@playerRemoveFavoriteTooltip": {
+    "description": "Tooltip for the control in the player and now-playing interface: “Uit favorieten verwijderen”."
+  },
+  "@playerAddFavoriteTooltip": {
+    "description": "Tooltip for the control in the player and now-playing interface: “Aan favorieten toevoegen”."
+  },
+  "@playerShowQueueTooltip": {
+    "description": "Tooltip for the control in the player and now-playing interface: “Wachtrij tonen”."
+  },
+  "@playbackDetailsTitle": {
+    "description": "Title shown in the playback details interface: “Afspeeldetails”."
+  },
+  "@playbackDetailsLoadFailed": {
+    "description": "Error or status message in the playback details interface: “Afspeeldetails laden is mislukt”."
+  },
+  "@playbackDetailsUnavailable": {
+    "description": "Error or status message in the playback details interface: “Afspeeldetails zijn niet beschikbaar”."
+  },
+  "@playbackQualityLabel": {
+    "description": "Label in the playback details interface identifying kwaliteit."
+  },
+  "@playbackUnknownValue": {
+    "description": "Text shown in the playback details interface. It communicates: “Onbekend”."
+  },
+  "@playbackSourceLabel": {
+    "description": "Label in the playback details interface identifying bron."
+  },
+  "@playbackStreamLabel": {
+    "description": "Label in the playback details interface identifying stream."
+  },
+  "@playbackCodecLabel": {
+    "description": "Label in the playback details interface identifying codec."
+  },
+  "@playbackContainerLabel": {
+    "description": "Label in the playback details interface identifying container."
+  },
+  "@playbackSampleRateLabel": {
+    "description": "Label in the playback details interface identifying samplefrequentie."
+  },
+  "@playbackBitDepthLabel": {
+    "description": "Label in the playback details interface identifying bitdiepte."
+  },
+  "@playbackChannelsLabel": {
+    "description": "Label in the playback details interface identifying kanalen."
+  },
+  "@playbackBitrateLabel": {
+    "description": "Label in the playback details interface identifying bitsnelheid."
+  },
+  "@playerVolumeDialogTitle": {
+    "description": "Title of the dialog that displays available speakers and lets the user adjust their volume."
+  },
+  "@playerVolumeLoadFailed": {
+    "description": "Error shown in the volume dialog when the speakers associated with the selected player cannot be loaded."
+  },
+  "@playerVolumeUnsupported": {
+    "description": "Status shown beside a speaker when that speaker does not support volume control."
+  },
+  "@playerVolumeChangeFailed": {
+    "description": "Error shown when the app cannot set the selected speaker’s volume."
+  },
+  "@playbackStartingOn": {
+    "description": "Status message shown while playback starts on the selected speaker. The {player} placeholder is the speaker name.",
+    "placeholders": {
+      "player": {
+        "type": "String",
+        "example": "Living room"
+      }
+    }
+  },
+  "@settingsSecureStorageUnavailable": {
+    "description": "Error or status message in app settings and connection status: “Beveiligde opslag is niet beschikbaar. Stop de app volledig en start deze opnieuw vanuit Flutter”."
+  },
+  "@settingsSignInAgainToReconnect": {
+    "description": "Text shown in app settings and connection status. It communicates: “Meld je opnieuw aan om weer verbinding te maken”."
+  },
+  "@settingsConnectBeforeSelectingPlayer": {
+    "description": "Text shown in app settings and connection status. It communicates: “Maak verbinding met Music Assistant voordat je een speler selecteert”."
+  },
+  "@settingsCouldNotLoadPlayers": {
+    "description": "Text shown in app settings and connection status. It communicates: “Spelers laden is mislukt. Probeer het opnieuw”."
+  }
+}
