@@ -678,9 +678,10 @@ class _EmptyPlaceholder extends StatelessWidget {
       child: Text(
         message,
         style: const TextStyle(
-          color: Color(0xFFAAB7B4),
+          color: GlassTokens.textPrimary,
           fontSize: GlassTokens.fontSize11,
         ),
+        textAlign: TextAlign.center,
       ),
     ),
   );
