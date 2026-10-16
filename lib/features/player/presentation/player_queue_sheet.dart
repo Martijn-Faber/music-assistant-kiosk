@@ -13,7 +13,7 @@ import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
 import 'player_playback_controller.dart';
 import 'player_queue_controller.dart';
-import 'player_queue_shuffle_button.dart';
+import 'player_queue_header_buttons.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
@@ -57,8 +57,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   final ValueNotifier<double> _dismissProgress = ValueNotifier(0);
   double _handleDragDistance = 0;
   bool _isClearingQueue = false;
-  bool? _autoplayEnabled;
-  bool _isTogglingAutoplay = false;
   bool _isRemovingQueueItem = false;
   String? _removingQueueItemKey;
   List<MusicAssistantQueueItem>? _queueItemsOverride;
@@ -122,7 +120,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       _queueRefreshPending = true;
       return;
     }
-    final queue = widget.queueController.queue!;
     final queueItems = widget.queueController.items;
     final previousItems = _lastQueueItems;
     _movedQueueItemKeys = _queueItemsOverride == null && previousItems != null
@@ -137,9 +134,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     }
     _lastQueueItems = queueItems;
     _queue = Future<void>.value();
-    if (_autoplayEnabled != queue.autoplayEnabled) {
-      _autoplayEnabled = queue.autoplayEnabled;
-    }
     setState(() {});
   }
 
@@ -204,9 +198,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       );
     }
     _lastQueueItems = queueItems;
-    if (mounted && _autoplayEnabled != queue.autoplayEnabled) {
-      setState(() => _autoplayEnabled = queue.autoplayEnabled);
-    }
   }
 
   Set<String> _findMovedQueueItems(
@@ -266,30 +257,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   String? _stableQueueItemId(MusicAssistantQueueItem item) =>
       item.queueItemId.isNotEmpty ? item.queueItemId : null;
-
-  Future<void> _toggleAutoplay() async {
-    final current = _autoplayEnabled;
-    if (current == null || _isTogglingAutoplay) return;
-    final next = !current;
-    setState(() {
-      _autoplayEnabled = next;
-      _isTogglingAutoplay = true;
-    });
-    try {
-      await widget.repository.setQueueAutoplay(widget.playerId, next);
-    } catch (error) {
-      debugPrint('Could not update queue autoplay: $error');
-      if (!mounted) return;
-      setState(() => _autoplayEnabled = current);
-      GlobalSnackbarHost.show(
-        context,
-        message: 'Could not change autoplay.',
-        kind: GlobalSnackbarKind.error,
-      );
-    } finally {
-      if (mounted) setState(() => _isTogglingAutoplay = false);
-    }
-  }
 
   void _showBufferedInfoMessage() {
     GlobalSnackbarHost.show(
@@ -643,68 +610,18 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       disabled: widget.queueController
                           .isDynamic,
                     ),
-                    IconButton(
-                      tooltip: _autoplayEnabled == true
-                          ? 'Disable autoplay'
-                          : 'Enable autoplay',
-                      onPressed: _autoplayEnabled == null || _isTogglingAutoplay
-                          ? null
-                          : _toggleAutoplay,
-                      isSelected: _autoplayEnabled == true,
-                      selectedIcon: _isTogglingAutoplay
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white70,
-                              ),
-                            )
-                          : const Icon(
-                              CupertinoIcons.repeat,
-                              color: Colors.white,
-                            ),
-                      icon: _isTogglingAutoplay
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white70,
-                              ),
-                            )
-                          : const Icon(
-                              CupertinoIcons.repeat,
-                              color: Colors.white70,
-                            ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: _autoplayEnabled == true
-                            ? const Color(0x33FFFFFF)
-                            : Colors.transparent,
-                      ),
+                    PlayerQueueAutoplayButton(
+                      repository: widget.repository,
+                      queueController: widget.queueController,
+                      playerId: widget.playerId,
                     ),
-                    IconButton(
-                      tooltip: 'Clear queue',
-                      onPressed: _isClearingQueue || _isRemovingQueueItem
-                          ? null
-                          : _confirmClearQueue,
-                      icon: _isClearingQueue
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white70,
-                              ),
-                            )
-                          : const Icon(
-                              CupertinoIcons.trash,
-                              color: Colors.white70,
-                            ),
+                    PlayerQueueClearButton(
+                      isClearing: _isClearingQueue,
+                      isRemovingQueueItem: _isRemovingQueueItem,
+                      onPressed: _confirmClearQueue,
                     ),
-                    IconButton(
+                    PlayerQueueCloseButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
-                        CupertinoIcons.xmark,
-                        color: Colors.white70,
-                      ),
                     ),
                   ],
                 ),
