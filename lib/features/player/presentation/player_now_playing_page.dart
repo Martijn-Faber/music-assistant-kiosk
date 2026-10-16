@@ -7,6 +7,7 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
 import '../domain/playback_quality_info.dart';
+import 'player_action_buttons.dart';
 import 'player_glass_widgets.dart';
 import 'player_playback_controller.dart';
 import 'player_queue_controller.dart';
@@ -284,27 +285,13 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   Widget _headerActions() => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      _FavoriteButton(
+      PlayerFavoriteButton(
         repository: repository,
         uri: player.currentMedia?.uri,
       ),
       const SizedBox(width: 8),
-      Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: () => onShowQueue(_queueController, _playbackController),
-          borderRadius: BorderRadius.circular(999),
-          child: const GlassPill(
-            padding: EdgeInsets.all(12),
-            tint: Color(0x22202730),
-            child: Icon(
-              CupertinoIcons.music_note_list,
-              color: Colors.white,
-              size: GlassTokens.iconSizeM,
-            ),
-          ),
-        ),
+      PlayerQueueButton(
+        onPressed: () => onShowQueue(_queueController, _playbackController),
       ),
     ],
   );
@@ -747,103 +734,6 @@ class _TrackProgressBarState extends State<_TrackProgressBar> {
     final remainder = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
   }
-}
-
-class _FavoriteButton extends StatefulWidget {
-  const _FavoriteButton({required this.repository, required this.uri});
-
-  final MusicAssistantRepository repository;
-  final String? uri;
-
-  @override
-  State<_FavoriteButton> createState() => _FavoriteButtonState();
-}
-
-class _FavoriteButtonState extends State<_FavoriteButton> {
-  static final Map<String, bool> _favoriteCache = {};
-  bool? _favorite;
-  bool _busy = false;
-  int _loadRevision = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final uri = widget.uri;
-    if (uri == null || uri.isEmpty) return;
-    final revision = ++_loadRevision;
-    final cached = _favoriteCache[uri];
-    if (cached != null && mounted) setState(() => _favorite = cached);
-    try {
-      final item = await widget.repository.fetchMediaItem(uri);
-      final isFavorite = item['favorite'] == true;
-      _favoriteCache[uri] = isFavorite;
-      if (mounted && revision == _loadRevision && widget.uri == uri) {
-        setState(() => _favorite = isFavorite);
-      }
-    } catch (_) {}
-  }
-
-  @override
-  void didUpdateWidget(covariant _FavoriteButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.uri != widget.uri) {
-      _favorite = null;
-      _load();
-    }
-  }
-
-  Future<void> _toggle() async {
-    final uri = widget.uri;
-    final current = _favorite;
-    if (uri == null || current == null || _busy) return;
-    setState(() => _busy = true);
-    try {
-      await widget.repository.setFavorite(uri, !current);
-      _favoriteCache[uri] = !current;
-      if (mounted) setState(() => _favorite = !current);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update favorite.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    borderRadius: BorderRadius.circular(999),
-    child: InkWell(
-      onTap: _favorite == null || _busy ? null : _toggle,
-      borderRadius: BorderRadius.circular(999),
-      child: GlassPill(
-        padding: const EdgeInsets.all(12),
-        tint: const Color(0x22202730),
-        child: _busy
-            ? const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Icon(
-                _favorite == true
-                    ? CupertinoIcons.heart_fill
-                    : CupertinoIcons.heart,
-                color: Colors.white,
-                size: GlassTokens.iconSizeM,
-              ),
-      ),
-    ),
-  );
 }
 
 class _PlaybackQualityDialog extends StatelessWidget {

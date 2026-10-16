@@ -31,68 +31,71 @@ class GlassIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (type == GlassIconButtonType.secondary) {
-      final iconContent =
-          child ??
-          Icon(
-            icon,
-            color: disabled
-                ? GlassTokens.iconButtonSecondaryIconDisabled
-                : isSelected
-                    ? GlassTokens.iconButtonSecondaryIconSelected
-                    : GlassTokens.iconButtonSecondaryIconEnabled,
-          );
-      return IconButton(
-        tooltip: tooltip,
-        onPressed: disabled ? null : onPressed,
-        isSelected: isSelected,
-        selectedIcon: iconContent,
-        icon: iconContent,
-        color: GlassTokens.iconButtonSecondaryIconEnabled,
-        disabledColor: GlassTokens.iconButtonSecondaryIconDisabled,
-        style: IconButton.styleFrom(
-          backgroundColor: disabled
-              ? GlassTokens.iconButtonSecondaryContainerDisabled
+    final isDisabled = disabled || onPressed == null;
+    final isPrimary = type == GlassIconButtonType.primary;
+    final iconColor = isPrimary
+        ? isDisabled
+              ? GlassTokens.iconButtonPrimaryIconDisabled
               : isSelected
-                  ? GlassTokens.iconButtonSecondaryContainerSelected
-                  : GlassTokens.iconButtonSecondaryContainerEnabled,
-          overlayColor: GlassTokens.iconButtonSecondaryInteractionOverlay,
-          minimumSize: Size.square(GlassTokens.iconButtonSecondarySize),
-        ),
-      );
-    }
+                  ? GlassTokens.iconButtonPrimaryIconSelected
+                  : GlassTokens.iconButtonPrimaryIconEnabled
+        : isDisabled
+            ? GlassTokens.iconButtonSecondaryIconDisabled
+            : isSelected
+                ? GlassTokens.iconButtonSecondaryIconSelected
+                : GlassTokens.iconButtonSecondaryIconEnabled;
+    final backgroundColor = isPrimary
+        ? isDisabled
+              ? GlassTokens.iconButtonPrimaryContainerDisabled
+              : isSelected
+                  ? GlassTokens.iconButtonPrimaryContainerSelected
+                  : GlassTokens.iconButtonPrimaryContainerEnabled
+        : isDisabled
+            ? GlassTokens.iconButtonSecondaryContainerDisabled
+            : isSelected
+                ? GlassTokens.iconButtonSecondaryContainerSelected
+                : GlassTokens.iconButtonSecondaryContainerEnabled;
+    final buttonSize = isPrimary ? size : GlassTokens.iconButtonSecondarySize;
+    final iconContent = child ?? Icon(icon, size: iconSize, color: iconColor);
 
-    final iconContent = SizedBox.square(
-      dimension: size,
-      child: Center(
-        child: child ??
-            Icon(
-              icon,
-              size: iconSize,
-              color: disabled
-                  ? GlassTokens.iconButtonPrimaryIconDisabled
-                  : isSelected
-                      ? GlassTokens.iconButtonPrimaryIconSelected
-                      : GlassTokens.iconButtonPrimaryIconEnabled,
-            ),
+    final button = IconButton(
+      tooltip: tooltip,
+      onPressed: isDisabled ? null : onPressed,
+      isSelected: isSelected,
+      selectedIcon: iconContent,
+      icon: iconContent,
+      style: IconButton.styleFrom(
+        foregroundColor: iconColor,
+        disabledForegroundColor: iconColor,
+        backgroundColor: isPrimary ? Colors.transparent : backgroundColor,
+        disabledBackgroundColor:
+            isPrimary ? Colors.transparent : backgroundColor,
+        overlayColor: isPrimary
+            ? GlassTokens.iconButtonPrimaryInteractionOverlay
+            : GlassTokens.iconButtonSecondaryInteractionOverlay,
+        minimumSize: Size.square(buttonSize),
+        fixedSize: Size.square(buttonSize),
+        padding: EdgeInsets.zero,
+        shape: const CircleBorder(),
       ),
     );
-    return GlassInteractiveSurface(
-      borderRadius: GlassTokens.radiusMedium,
-      padding: EdgeInsets.zero,
-      tint: isSelected && !disabled
-          ? GlassTokens.iconButtonPrimaryContainerSelected
-          : disabled
-              ? GlassTokens.iconButtonPrimaryContainerDisabled
-              : GlassTokens.iconButtonPrimaryContainerEnabled,
-      onTap: disabled ? null : onPressed,
-      disabledOpacity: disabled
-          ? GlassTokens.iconButtonPrimaryOpacityDisabled
-          : GlassTokens.iconButtonPrimaryOpacityInactive,
-      semanticsLabel: tooltip,
-      child: tooltip == null
-          ? iconContent
-          : Tooltip(message: tooltip!, child: iconContent),
+
+    if (!isPrimary) return button;
+
+    return Opacity(
+      opacity: disabled
+          ? GlassTokens.disabledOpacity
+          : GlassTokens.inactiveOpacity,
+      child: GlassSurface(
+        borderRadius: buttonSize / 2,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints.tightFor(
+          width: buttonSize,
+          height: buttonSize,
+        ),
+        tint: backgroundColor,
+        child: button,
+      ),
     );
   }
 }

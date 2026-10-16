@@ -28,9 +28,8 @@ abstract final class GlassTokens {
   static const iconButtonPrimaryContainerEnabled = surfaceTint;
   static const iconButtonPrimaryContainerSelected = selected;
   static const iconButtonPrimaryContainerDisabled = surfaceTintDisabled;
-  static const iconButtonPrimaryOpacityDisabled = disabledOpacity;
-  static const iconButtonPrimaryOpacityInactive = inactiveOpacity;
-  static const iconButtonPrimarySize = 46.0;
+  static const iconButtonPrimarySize = iconButtonSecondarySize;
+  static const iconButtonPrimaryInteractionOverlay = interactionOverlay;
   static const iconButtonProgressIndicatorSize = 18.0;
   static const iconButtonProgressIndicatorStrokeWidth = 2.0;
 
