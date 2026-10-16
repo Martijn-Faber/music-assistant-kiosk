@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
+import '../../../design_system/glass_tokens.dart';
 import '../data/music_assistant_repository.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
@@ -766,6 +767,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                   top: size * .21,
                   scale: .86 + (.14 * swipeProgress),
                   translateY: -size * .21 * swipeProgress,
+                  glassBorderOpacity: 1 - swipeProgress,
                 ),
               );
             }
@@ -798,7 +800,14 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                   top: size * (index - currentPage),
                   width: size,
                   height: size,
-                  child: _artworkCard(artworkAt(index), size),
+                  child: _artworkCard(
+                    artworkAt(index),
+                    size,
+                    glassBorderOpacity: (index - currentPage)
+                        .abs()
+                        .clamp(0.0, 1.0)
+                        .toDouble(),
+                  ),
                 ),
               );
             }
@@ -837,6 +846,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                 top: size * .21,
                 scale: .86 + (.14 * dragProgress),
                 translateY: -size * .21 * dragProgress,
+                glassBorderOpacity: 1 - dragProgress,
               ),
             );
           }
@@ -861,6 +871,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                 size: size,
                 top: size * .21 * (1 - progress),
                 scale: .86 + (.14 * progress),
+                glassBorderOpacity: 1 - progress,
               ),
             );
             children.add(
@@ -936,6 +947,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     required double top,
     required double scale,
     double translateY = 0,
+    double glassBorderOpacity = 1,
   }) => Positioned(
     left: 0,
     top: top,
@@ -943,7 +955,12 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     height: size,
     child: Transform.translate(
       offset: Offset(0, translateY),
-      child: _nextArtworkCard(imageUrl, size, scale: scale),
+      child: _nextArtworkCard(
+        imageUrl,
+        size,
+        scale: scale,
+        glassBorderOpacity: glassBorderOpacity,
+      ),
     ),
   );
 
@@ -951,10 +968,15 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     String? imageUrl,
     double size, {
     required double scale,
+    double glassBorderOpacity = 1,
   }) => Transform.scale(
     scale: scale,
     alignment: Alignment.topCenter,
-    child: _artworkCard(imageUrl, size),
+    child: _artworkCard(
+      imageUrl,
+      size,
+      glassBorderOpacity: glassBorderOpacity,
+    ),
   );
 
   Widget _positionedArtwork({
@@ -963,6 +985,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     required double top,
     required double scale,
     Offset translateOffset = Offset.zero,
+    double glassBorderOpacity = 0,
   }) => Positioned(
     left: 0,
     top: top,
@@ -973,12 +996,20 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       child: Transform.scale(
         scale: scale,
         alignment: Alignment.topCenter,
-        child: _artworkCard(imageUrl, size),
+        child: _artworkCard(
+          imageUrl,
+          size,
+          glassBorderOpacity: glassBorderOpacity,
+        ),
       ),
     ),
   );
 
-  Widget _artworkCard(String? imageUrl, double size) => RepaintBoundary(
+  Widget _artworkCard(
+    String? imageUrl,
+    double size, {
+    double glassBorderOpacity = 0,
+  }) => RepaintBoundary(
     child: Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
@@ -990,12 +1021,26 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           ),
         ],
       ),
-      child: ArtworkImage(
-        imageUrl: imageUrl,
-        serverUrl: repository.serverUrl,
-        token: repository.token,
-        size: size,
-        showShadow: false,
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Color.lerp(
+              Colors.transparent,
+              GlassTokens.border,
+              glassBorderOpacity,
+            )!,
+            width: 0.8,
+          ),
+        ),
+        child: ArtworkImage(
+          imageUrl: imageUrl,
+          serverUrl: repository.serverUrl,
+          token: repository.token,
+          size: size,
+          showShadow: false,
+        ),
       ),
     ),
   );
