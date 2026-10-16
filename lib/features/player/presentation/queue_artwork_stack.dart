@@ -83,7 +83,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   bool _isDraggingArtwork = false;
   bool _transitionFromSwipe = false;
   bool _isSkippingFromArtwork = false;
-  bool _ignoreArtworkDrag = false;
+  bool _preventArtworkSkip = false;
 
   @override
   void initState() {
@@ -149,6 +149,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     _artworkDragOffset = Offset.zero;
     _isDraggingArtwork = false;
     _isSkippingFromArtwork = false;
+    _preventArtworkSkip = false;
     _motionStartProgress = 0;
     _motionEndProgress = 0;
     _motionStartOffset = Offset.zero;
@@ -450,12 +451,11 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       GestureDetector(
         behavior: HitTestBehavior.opaque,
         onVerticalDragStart: (_) {
-          // Latch this at gesture start. If a request begins mid-gesture, ignore
-          // the whole gesture so its end event cannot accidentally skip again.
-          _ignoreArtworkDrag =
+          // A blocked gesture still tracks the card so it can spring back,
+          // but it must not skip even if the request or queue changes mid-drag.
+          _preventArtworkSkip =
               _playbackController.isPlaybackRequestInProgress ||
               !_canSwipeToNextQueueItem;
-          if (_ignoreArtworkDrag) return;
           // If another swipe starts before the artwork spring completes,
           // promote its target before dragging the next card.
           if (_isSkippingFromArtwork) {
@@ -474,7 +474,6 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           setState(() => _isDraggingArtwork = true);
         },
         onVerticalDragUpdate: (details) {
-          if (_ignoreArtworkDrag) return;
           _rawArtworkDragY = (_rawArtworkDragY + details.delta.dy).clamp(
             -size * 1.5,
             size,
@@ -500,20 +499,20 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                   .toDouble();
         },
         onVerticalDragEnd: (details) {
-          if (_ignoreArtworkDrag) {
-            _ignoreArtworkDrag = false;
-            return;
-          }
           final upwardVelocity = details.velocity.pixelsPerSecond.dy;
-          final shouldSkip = !_playbackController.isPlaybackRequestInProgress &&
+          final shouldSkip = !_preventArtworkSkip &&
+              !_playbackController.isPlaybackRequestInProgress &&
               _canSwipeToNextQueueItem &&
               (_artworkDragOffset.dy < -size * .3 ||
                   upwardVelocity < -1100);
+          _preventArtworkSkip = false;
           final releaseOffset = _artworkDragOffset;
           setState(() {
             _isDraggingArtwork = false;
             _isSkippingFromArtwork = shouldSkip;
           });
+          // If skipping is blocked (or the swipe was too short), this same
+          // spring returns the card to center from either drag direction.
           _settleArtworkDrag(
             upwardVelocity.abs(),
             size,
@@ -526,10 +525,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           if (shouldSkip) _skipToNextTrack();
         },
         onVerticalDragCancel: () {
-          if (_ignoreArtworkDrag) {
-            _ignoreArtworkDrag = false;
-            return;
-          }
+          _preventArtworkSkip = false;
           final releaseOffset = _artworkDragOffset;
           setState(() => _isDraggingArtwork = false);
           _settleArtworkDrag(
