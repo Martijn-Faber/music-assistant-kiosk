@@ -14,6 +14,8 @@ import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
 import 'player_queue_controller.dart';
 import 'player_queue_sheet.dart';
+import 'player_volume_controller.dart';
+import 'player_volume_feedback_popup.dart';
 import 'player_volume_dialog.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
@@ -33,7 +35,7 @@ class PlayerScreen extends StatefulWidget {
     required this.qualityLabel,
     required this.playerActionError,
     required this.error,
-    required this.showVolumeFeedback,
+    required this.volumeController,
     required this.clock24HourFormat,
     required this.onClock24HourFormatChanged,
     required this.onSelectPlayer,
@@ -48,7 +50,7 @@ class PlayerScreen extends StatefulWidget {
   final String? qualityLabel;
   final String? playerActionError;
   final String? error;
-  final bool showVolumeFeedback;
+  final PlayerVolumeController volumeController;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
   final ValueChanged<String> onSelectPlayer;
@@ -67,7 +69,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   String? get qualityLabel => widget.qualityLabel;
   String? get playerActionError => widget.playerActionError;
   String? get error => widget.error;
-  bool get showVolumeFeedback => widget.showVolumeFeedback;
+  PlayerVolumeController get volumeController => widget.volumeController;
   bool? get clock24HourFormat => widget.clock24HourFormat;
   ValueChanged<bool?> get onClock24HourFormatChanged =>
       widget.onClock24HourFormatChanged;
@@ -121,95 +123,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
           children: [
             SafeArea(child: Center(child: _playerContent(context, player))),
             if (player != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 12,
-                child: SafeArea(
-                  bottom: false,
-                  child: IgnorePointer(
-                    child: Center(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.12),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        ),
-                        child: showVolumeFeedback
-                            ? _volumeFeedbackBar(player)
-                            : const SizedBox.shrink(
-                                key: ValueKey('volume-feedback-hidden'),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
+              PlayerVolumeFeedbackPopup(
+                player: player,
+                controller: volumeController,
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _volumeFeedbackBar(MusicAssistantPlayer player) {
-    final volume = player.effectiveVolumeLevel?.clamp(0, 100);
-    return GlassPill(
-      key: const ValueKey('volume-feedback-visible'),
-      constraints: const BoxConstraints(maxWidth: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            volume == 0
-                ? CupertinoIcons.speaker_slash
-                : CupertinoIcons.speaker_2,
-            color: Colors.white,
-            size: GlassTokens.iconSizeS,
-          ),
-          const SizedBox(width: 12),
-          if (volume == null)
-            Container(
-              width: 144,
-              height: 5,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-              ),
-            )
-          else
-            SizedBox(
-              width: 144,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: volume / 100, end: volume / 100),
-                duration: const Duration(milliseconds: 320),
-                curve: Curves.easeOutCubic,
-                builder: (context, animatedVolume, _) => ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: animatedVolume,
-                    minHeight: 5,
-                    backgroundColor: Colors.transparent,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(width: 10),
-          Text(
-            volume == null ? '—' : '$volume%',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: GlassTokens.fontSize12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }

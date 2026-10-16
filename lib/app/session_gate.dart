@@ -10,6 +10,7 @@ import '../features/player/data/music_assistant_repository.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../features/player/presentation/player_screen.dart';
 import '../features/player/presentation/player_setup_page.dart';
+import '../features/player/presentation/player_volume_controller.dart';
 
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key});
@@ -21,6 +22,16 @@ class SessionGate extends StatefulWidget {
 class _SessionGateState extends State<SessionGate> {
   final _sessionStorage = SessionStorage();
   final _volumeButtons = VolumeButtonBridge();
+  late final _volumeController = PlayerVolumeController(
+    isMounted: () => mounted,
+    selectedPlayerId: () => _selectedPlayerId,
+    repository: () => _repository,
+    players: () => _players,
+    onPlayerUpdated: _replacePlayer,
+    onActionError: (message) {
+      if (mounted) setState(() => _playerActionError = message);
+    },
+  );
 
   MusicAssistantRepository? _repository;
   List<MusicAssistantPlayer> _players = [];
@@ -37,9 +48,6 @@ class _SessionGateState extends State<SessionGate> {
   String? _playerActionError;
   String? _qualityLabel;
   int _qualityRequest = 0;
-  int _volumeRefreshRequest = 0;
-  Timer? _volumeFeedbackTimer;
-  bool _showVolumeFeedback = false;
   bool? _clock24HourFormat;
   int _clockFormatRevision = 0;
 
@@ -53,7 +61,7 @@ class _SessionGateState extends State<SessionGate> {
 
   @override
   void dispose() {
-    _volumeFeedbackTimer?.cancel();
+    _volumeController.dispose();
     unawaited(_volumeButtons.setEnabled(false));
     _volumeButtons.dispose();
     _unsubscribeFromPlayers?.call();
@@ -290,6 +298,8 @@ class _SessionGateState extends State<SessionGate> {
         final previousPlayer = _players
             .where((item) => item.playerId == player.playerId)
             .firstOrNull;
+        final holdHardwareVolume =
+            _volumeController.isHardwareVolumePending(player.playerId);
         final playerWithVolume = player.copyWith(
           volumeLevel: player.volumeLevel ?? previousPlayer?.volumeLevel,
           groupVolume: player.groupVolume ?? previousPlayer?.groupVolume,
@@ -328,10 +338,11 @@ class _SessionGateState extends State<SessionGate> {
           unawaited(_refreshQuality(player.playerId));
         }
         if (_selectedPlayerId == player.playerId && volumeChanged) {
-          // An event is newer than any in-flight volume fetch. Do not let an
-          // older fetch response move the bar back to a stale value.
-          _volumeRefreshRequest++;
-          _showVolumeChangeFeedback();
+          _volumeController.onPlayerVolumeChanged(
+            repository,
+            player.playerId,
+            hardwarePending: holdHardwareVolume,
+          );
         }
       },
       onRemoved: (playerId) {
@@ -389,27 +400,17 @@ class _SessionGateState extends State<SessionGate> {
     try {
       switch (action) {
         case 'volumeUp':
-          _showVolumeChangeFeedback();
-          final volumeIncreased = await _adjustVolume(
+          _volumeController.handleHardwareButton(
             repository,
             playerId,
             increase: true,
           );
-          if (volumeIncreased) {
-            await SystemSound.play(SystemSoundType.click);
-          }
-          await _refreshPlayerAfterVolumeChange(repository, playerId);
         case 'volumeDown':
-          _showVolumeChangeFeedback();
-          final volumeDecreased = await _adjustVolume(
+          _volumeController.handleHardwareButton(
             repository,
             playerId,
             increase: false,
           );
-          if (volumeDecreased) {
-            await SystemSound.play(SystemSoundType.click);
-          }
-          await _refreshPlayerAfterVolumeChange(repository, playerId);
         case 'togglePlayback':
           await repository.togglePlayback(playerId);
         default:
@@ -427,95 +428,6 @@ class _SessionGateState extends State<SessionGate> {
       ) ==
       true;
 
-  void _showVolumeChangeFeedback() {
-    _volumeFeedbackTimer?.cancel();
-    setState(() => _showVolumeFeedback = true);
-    _volumeFeedbackTimer = Timer(const Duration(milliseconds: 1800), () {
-      if (mounted) setState(() => _showVolumeFeedback = false);
-    });
-  }
-
-  Future<bool> _adjustVolume(
-    MusicAssistantRepository repository,
-    String playerId, {
-    required bool increase,
-  }) async {
-    final player = _players
-        .where((item) => item.playerId == playerId)
-        .firstOrNull;
-    final currentVolume =
-        player?.effectiveVolumeLevel ??
-        (await repository.fetchPlayer(playerId)).effectiveVolumeLevel;
-    if (currentVolume == null) {
-      // The step commands still work when Music Assistant has not supplied a
-      // volume yet. The popup can show a percentage once player_updated
-      // includes that value.
-      await repository.adjustVolume(playerId, increase: increase);
-      return true;
-    }
-    final nextVolume = (currentVolume + (increase ? 5 : -5))
-        .clamp(0, 100)
-        .toInt();
-    if (nextVolume == currentVolume) return false;
-    // Show the expected level immediately; player events and the follow-up
-    // fetch will reconcile it with Music Assistant's authoritative value.
-    final index = _players.indexWhere((item) => item.playerId == playerId);
-    if (index != -1 && mounted) {
-      setState(() {
-        _players[index] = _players[index].copyWith(groupVolume: nextVolume);
-      });
-    }
-    await repository.setGroupVolume(playerId, nextVolume);
-    return true;
-  }
-
-  Future<void> _refreshPlayerAfterVolumeChange(
-    MusicAssistantRepository repository,
-    String playerId,
-  ) async {
-    final request = ++_volumeRefreshRequest;
-    try {
-      await Future<void>.delayed(const Duration(milliseconds: 250));
-      if (!mounted ||
-          request != _volumeRefreshRequest ||
-          !identical(_repository, repository) ||
-          _selectedPlayerId != playerId) {
-        return;
-      }
-
-      final refreshedPlayer = await repository.fetchPlayer(playerId);
-      if (!mounted ||
-          request != _volumeRefreshRequest ||
-          !identical(_repository, repository) ||
-          _selectedPlayerId != playerId) {
-        return;
-      }
-
-      final currentPlayer = _players
-          .where((player) => player.playerId == playerId)
-          .firstOrNull;
-      final playerWithVolume = refreshedPlayer.copyWith(
-        volumeLevel: refreshedPlayer.volumeLevel ?? currentPlayer?.volumeLevel,
-        groupVolume: refreshedPlayer.groupVolume ?? currentPlayer?.groupVolume,
-      );
-      final playerToStore = playerWithVolume;
-
-      setState(() {
-        final index = _players.indexWhere(
-          (player) => player.playerId == playerId,
-        );
-        if (index == -1) {
-          _players.add(playerToStore);
-        } else {
-          _players[index] = playerToStore;
-        }
-      });
-      _showVolumeChangeFeedback();
-    } catch (_) {
-      // Keep the last volume received through the player event subscription.
-    }
-  }
-
   void _markPlayerIdle(String playerId) {
     final index = _players.indexWhere((player) => player.playerId == playerId);
     if (index == -1) return;
@@ -528,6 +440,20 @@ class _SessionGateState extends State<SessionGate> {
         elapsedTimeLastUpdated: null,
       );
       if (_selectedPlayerId == playerId) _qualityLabel = null;
+    });
+  }
+
+  void _replacePlayer(MusicAssistantPlayer updatedPlayer) {
+    if (!mounted) return;
+    setState(() {
+      final index = _players.indexWhere(
+        (player) => player.playerId == updatedPlayer.playerId,
+      );
+      if (index == -1) {
+        _players.add(updatedPlayer);
+      } else {
+        _players[index] = updatedPlayer;
+      }
     });
   }
 
@@ -571,7 +497,7 @@ class _SessionGateState extends State<SessionGate> {
       qualityLabel: _qualityLabel,
       playerActionError: _playerActionError,
       error: _playerError,
-      showVolumeFeedback: _showVolumeFeedback,
+      volumeController: _volumeController,
       clock24HourFormat: _clock24HourFormat,
       onClock24HourFormatChanged: _setClockFormat,
       onSelectPlayer: _selectPlayer,
