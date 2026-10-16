@@ -567,6 +567,8 @@ class _PlayerPagesState extends State<_PlayerPages> {
   late final PageController _controller;
   late int _pageIndex;
   bool _showPager = false;
+  double? _dragStartPage;
+  Timer? _pagerHideTimer;
   Timer? _screensaverTimer;
 
   @override
@@ -595,6 +597,7 @@ class _PlayerPagesState extends State<_PlayerPages> {
 
   @override
   void dispose() {
+    _pagerHideTimer?.cancel();
     _screensaverTimer?.cancel();
     _controller.dispose();
     super.dispose();
@@ -602,11 +605,28 @@ class _PlayerPagesState extends State<_PlayerPages> {
 
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification &&
-        notification.dragDetails != null &&
-        !_showPager) {
-      setState(() => _showPager = true);
-    } else if (notification is ScrollEndNotification && _showPager) {
-      setState(() => _showPager = false);
+        notification.dragDetails != null) {
+      _pagerHideTimer?.cancel();
+      _dragStartPage = _controller.hasClients
+          ? (_controller.page ?? _pageIndex.toDouble())
+          : _pageIndex.toDouble();
+    } else if (notification is ScrollUpdateNotification &&
+        _dragStartPage != null) {
+      final currentPage = _controller.hasClients
+          ? (_controller.page ?? _pageIndex.toDouble())
+          : _pageIndex.toDouble();
+      final shouldShowPager = (currentPage - _dragStartPage!).abs() >= 0.15;
+      if (shouldShowPager != _showPager) {
+        setState(() => _showPager = shouldShowPager);
+      }
+    } else if (notification is ScrollEndNotification && _dragStartPage != null) {
+      _dragStartPage = null;
+      if (_showPager) {
+        _pagerHideTimer?.cancel();
+        _pagerHideTimer = Timer(const Duration(milliseconds: 900), () {
+          if (mounted) setState(() => _showPager = false);
+        });
+      }
     }
     return false;
   }
@@ -659,47 +679,26 @@ class _PlayerPagesState extends State<_PlayerPages> {
     return page;
   }
 
-  Widget _pageBottomControl(BuildContext context, int index) => Positioned(
-    left: 0,
-    right: 0,
-    bottom: 2,
-    child: Center(
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 140),
-        opacity: _showPager ? 0 : 1,
-        child: IgnorePointer(
-          ignoring: _showPager,
-          child: SizedBox(
-            height: 58,
-            child: Center(
-              child: index == 0 || index == 1 || index == 3
-                  ? const SizedBox.shrink()
-                  : index == 2
-                  ? PlayerNamePill(
-                      playerName: widget.playerName,
-                      groupMemberCount: widget.groupMemberCount,
-                      onTap: widget.player == null
-                          ? null
-                          : () => showDialog<void>(
-                              context: context,
-                              builder: (_) => PlayerVolumeDialog(
-                                repository: widget.repository,
-                                player: widget.player!,
-                              ),
-                            ),
-                    )
-                  : const SizedBox.shrink(),
+  Widget _playerSelector(BuildContext context) => PlayerNamePill(
+    playerName: widget.playerName,
+    groupMemberCount: widget.groupMemberCount,
+    onTap: widget.player == null
+        ? null
+        : () => showDialog<void>(
+            context: context,
+            builder: (_) => PlayerVolumeDialog(
+              repository: widget.repository,
+              player: widget.player!,
             ),
           ),
-        ),
-      ),
-    ),
   );
 
   @override
-  Widget build(BuildContext context) => Stack(
-    fit: StackFit.expand,
-    children: [
+  Widget build(BuildContext context) {
+    final showBottomControl = _showPager || _pageIndex == 2;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
       NotificationListener<ScrollNotification>(
         onNotification: _handleScrollNotification,
         child: PageView.builder(
@@ -760,28 +759,66 @@ class _PlayerPagesState extends State<_PlayerPages> {
                 fit: StackFit.expand,
                 children: [
                   _pageContent(index),
-                  _pageBottomControl(context, index),
                 ],
               ),
             ),
           ),
         ),
       ),
-      if (_showPager)
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 8,
-          child: IgnorePointer(
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: 2,
+        child: IgnorePointer(
+          ignoring: !showBottomControl || _pageIndex != 2,
+          child: SizedBox(
+            height: 58,
             child: Center(
-              child: PageIndicator(
-                count: widget.pages.length,
-                currentPage: _pageIndex,
-                glassPill: true,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 140),
+                curve: Curves.easeInOut,
+                offset: showBottomControl
+                    ? Offset.zero
+                    : const Offset(0, 0.18),
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeInOut,
+                  scale: _showPager && _pageIndex != 2 ? 1.08 : 1,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeInOut,
+                    opacity: showBottomControl ? 1 : 0,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: animation,
+                          child: child,
+                        ),
+                      ),
+                      child: _pageIndex == 2
+                          ? KeyedSubtree(
+                              key: const ValueKey('player-selector'),
+                              child: _playerSelector(context),
+                            )
+                          : PageIndicator(
+                              key: const ValueKey('page-indicator'),
+                              count: widget.pages.length,
+                              currentPage: _pageIndex,
+                              glassPill: true,
+                            ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
         ),
-    ],
-  );
+      ),
+      ],
+    );
+  }
 }

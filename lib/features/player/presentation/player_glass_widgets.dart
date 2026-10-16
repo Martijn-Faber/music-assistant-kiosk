@@ -46,6 +46,7 @@ class PageDot extends StatelessWidget {
 
 class PageIndicator extends StatelessWidget {
   const PageIndicator({
+    super.key,
     required this.count,
     required this.currentPage,
     this.vertical = false,
