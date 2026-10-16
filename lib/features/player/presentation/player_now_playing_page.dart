@@ -460,7 +460,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         ),
                         const SizedBox(width: 7),
                         Text(
-                          'Starting on player…',
+                          'Starting on ${player.name.trim().isEmpty ? 'player' : player.name.trim()}…',
                           style: TextStyle(
                             color: const Color(0xBBD8E0DB),
                             fontSize: compact ? 11 : 12,
