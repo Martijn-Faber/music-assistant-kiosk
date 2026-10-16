@@ -559,6 +559,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       builder: (context, scrollController) => SizedBox.expand(
         child: GlassSurface(
           borderRadius: 28,
+          squareBottomCorners: true,
           padding: EdgeInsets.zero,
           tint: const Color(0xBB141D20),
           showShadow: false,

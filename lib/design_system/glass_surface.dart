@@ -15,6 +15,7 @@ class GlassSurface extends StatelessWidget {
     this.border,
     this.blurSigma = 16,
     this.showShadow = true,
+    this.squareBottomCorners = false,
   });
 
   final Widget child;
@@ -25,14 +26,21 @@ class GlassSurface extends StatelessWidget {
   final Border? border;
   final double blurSigma;
   final bool showShadow;
+  final bool squareBottomCorners;
 
   @override
   Widget build(BuildContext context) {
+    final radius = squareBottomCorners
+        ? BorderRadius.only(
+            topLeft: Radius.circular(borderRadius),
+            topRight: Radius.circular(borderRadius),
+          )
+        : BorderRadius.circular(borderRadius);
     final glass = Container(
       padding: padding,
       decoration: BoxDecoration(
         color: tint,
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: radius,
         border: border ?? Border.all(color: GlassTokens.border, width: 0.8),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -45,7 +53,7 @@ class GlassSurface extends StatelessWidget {
     return Container(
       constraints: constraints,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: radius,
         boxShadow: showShadow
             ? const [
                 BoxShadow(
@@ -57,7 +65,7 @@ class GlassSurface extends StatelessWidget {
             : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: radius,
         child: blurSigma > 0
             ? BackdropFilter(
                 filter: ui.ImageFilter.blur(
