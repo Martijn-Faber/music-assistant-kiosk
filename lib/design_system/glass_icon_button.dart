@@ -10,8 +10,10 @@ class GlassIconButton extends StatelessWidget {
     super.key,
     required this.icon,
     required this.onPressed,
+    this.selectedIcon,
     this.tooltip,
     this.disabled = false,
+    this.isLoading = false,
     this.isSelected = false,
     this.child,
     this.type = GlassIconButtonType.primary,
@@ -20,9 +22,11 @@ class GlassIconButton extends StatelessWidget {
   });
 
   final IconData icon;
+  final IconData? selectedIcon;
   final VoidCallback? onPressed;
   final String? tooltip;
   final bool disabled;
+  final bool isLoading;
   final bool isSelected;
   final Widget? child;
   final GlassIconButtonType type;
@@ -55,8 +59,13 @@ class GlassIconButton extends StatelessWidget {
             : isSelected
                 ? GlassTokens.iconButtonSecondaryContainerSelected
                 : GlassTokens.iconButtonSecondaryContainerEnabled;
+    final effectiveBackgroundColor = isLoading
+        ? Colors.transparent
+        : backgroundColor;
     final buttonSize = isPrimary ? size : GlassTokens.iconButtonSecondarySize;
-    final iconContent = child ?? Icon(icon, size: iconSize, color: iconColor);
+    final activeIcon = isSelected ? selectedIcon ?? icon : icon;
+    final iconContent = child ??
+        Icon(activeIcon, size: iconSize, color: iconColor);
 
     final button = IconButton(
       tooltip: tooltip,
@@ -67,9 +76,11 @@ class GlassIconButton extends StatelessWidget {
       style: IconButton.styleFrom(
         foregroundColor: iconColor,
         disabledForegroundColor: iconColor,
-        backgroundColor: isPrimary ? Colors.transparent : backgroundColor,
+        backgroundColor: isPrimary
+            ? Colors.transparent
+            : effectiveBackgroundColor,
         disabledBackgroundColor:
-            isPrimary ? Colors.transparent : backgroundColor,
+            isPrimary ? Colors.transparent : effectiveBackgroundColor,
         overlayColor: isPrimary
             ? GlassTokens.iconButtonPrimaryInteractionOverlay
             : GlassTokens.iconButtonSecondaryInteractionOverlay,
@@ -93,7 +104,7 @@ class GlassIconButton extends StatelessWidget {
           width: buttonSize,
           height: buttonSize,
         ),
-        tint: backgroundColor,
+        tint: effectiveBackgroundColor,
         child: button,
       ),
     );

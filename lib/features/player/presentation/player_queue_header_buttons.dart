@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/glass_icon_button.dart';
+import '../../../design_system/glass_icon_toggle_button.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/global_snackbar.dart';
 import '../data/music_assistant_repository.dart';
@@ -88,7 +89,7 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
   Widget build(BuildContext context) {
     final enabled = _shuffleEnabled;
     final unavailable = widget.disabled;
-    return GlassIconButton(
+    return GlassIconToggleButton(
       icon: CupertinoIcons.shuffle,
       type: GlassIconButtonType.secondary,
       tooltip: unavailable
@@ -96,18 +97,10 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
           : enabled == true
               ? 'Disable shuffle'
               : 'Enable shuffle',
-      disabled: unavailable || enabled == null || _isToggling,
+      disabled: unavailable || enabled == null,
       isSelected: enabled == true,
+      isLoading: _isToggling,
       onPressed: _toggleShuffle,
-      child: _isToggling
-          ? const SizedBox.square(
-              dimension: GlassTokens.iconButtonProgressIndicatorSize,
-              child: CircularProgressIndicator(
-                strokeWidth: GlassTokens.iconButtonProgressIndicatorStrokeWidth,
-                color: GlassTokens.iconButtonSecondaryIconEnabled,
-              ),
-            )
-          : null,
     );
   }
 }
@@ -189,22 +182,14 @@ class _PlayerQueueAutoplayButtonState extends State<PlayerQueueAutoplayButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = _enabled;
-    return GlassIconButton(
+    return GlassIconToggleButton(
       icon: CupertinoIcons.repeat,
       type: GlassIconButtonType.secondary,
       tooltip: enabled == true ? 'Disable autoplay' : 'Enable autoplay',
-      disabled: enabled == null || _isToggling,
+      disabled: enabled == null,
       isSelected: enabled == true,
+      isLoading: _isToggling,
       onPressed: _toggle,
-      child: _isToggling
-          ? const SizedBox.square(
-              dimension: GlassTokens.iconButtonProgressIndicatorSize,
-              child: CircularProgressIndicator(
-                strokeWidth: GlassTokens.iconButtonProgressIndicatorStrokeWidth,
-                color: GlassTokens.iconButtonSecondaryIconEnabled,
-              ),
-            )
-          : null,
     );
   }
 }

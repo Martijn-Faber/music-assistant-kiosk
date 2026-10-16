@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/glass_icon_button.dart';
-import '../../../design_system/glass_tokens.dart';
+import '../../../design_system/glass_icon_toggle_button.dart';
 import '../../../design_system/global_snackbar.dart';
 import '../data/music_assistant_repository.dart';
 
@@ -82,22 +82,15 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
   }
 
   @override
-  Widget build(BuildContext context) => GlassIconButton(
-        icon: _favorite == true ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+  Widget build(BuildContext context) => GlassIconToggleButton(
+        icon: CupertinoIcons.heart,
+        selectedIcon: CupertinoIcons.heart_fill,
         type: GlassIconButtonType.primary,
         tooltip: _favorite == true ? 'Remove from favorites' : 'Add to favorites',
-        disabled: _favorite == null || _busy,
+        disabled: _favorite == null,
         isSelected: _favorite == true,
+        isLoading: _busy,
         onPressed: _toggle,
-        child: _busy
-            ? const SizedBox.square(
-                dimension: GlassTokens.iconButtonProgressIndicatorSize,
-                child: CircularProgressIndicator(
-                  strokeWidth: GlassTokens.iconButtonProgressIndicatorStrokeWidth,
-                  color: GlassTokens.iconButtonSecondaryIconEnabled,
-                ),
-              )
-            : null,
       );
 }
 
