@@ -11,6 +11,7 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../data/music_assistant_repository.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
+import 'player_playback_controller.dart';
 import 'player_queue_controller.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
@@ -23,6 +24,7 @@ class PlayerQueueSheet extends StatefulWidget {
     super.key,
     required this.repository,
     required this.queueController,
+    required this.playbackController,
     required this.playerId,
     required this.initialMediaUri,
     required this.onQueueCleared,
@@ -30,6 +32,7 @@ class PlayerQueueSheet extends StatefulWidget {
 
   final MusicAssistantRepository repository;
   final PlayerQueueController queueController;
+  final PlayerPlaybackController playbackController;
   final String playerId;
   final String? initialMediaUri;
   final ValueChanged<String> onQueueCleared;
@@ -479,7 +482,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     }
     setState(() => _startingQueueRowIndex = rowIndex);
     try {
-      await widget.queueController.playQueueItem(
+      await widget.playbackController.playQueueItem(
         index: queueIndex,
         queueItemId: queueItemId,
       );

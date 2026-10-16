@@ -8,9 +8,15 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../data/music_assistant_repository.dart';
 import '../domain/playback_quality_info.dart';
 import 'player_glass_widgets.dart';
+import 'player_playback_controller.dart';
 import 'player_queue_controller.dart';
 import 'queue_artwork_stack.dart';
 import 'provider_identity.dart';
+
+typedef ShowPlayerQueue = void Function(
+  PlayerQueueController queueController,
+  PlayerPlaybackController playbackController,
+);
 
 /// The full-screen page shown while the selected player has an active item.
 class NowPlayingPage extends StatefulWidget {
@@ -28,7 +34,7 @@ class NowPlayingPage extends StatefulWidget {
   final MusicAssistantPlayer player;
   final ValueChanged<MusicAssistantPlayerMedia?>? onDisplayedMediaChanged;
   final MusicAssistantRepository repository;
-  final ValueChanged<PlayerQueueController> onShowQueue;
+  final ShowPlayerQueue onShowQueue;
   final String? qualityLabel;
   final String? playerActionError;
   final String? error;
@@ -44,14 +50,14 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   // Use optimistic queue metadata for the UI while leaving the actual player
   // model untouched until the server confirms the selected queue item.
   MusicAssistantPlayer get displayedPlayer {
-    final localMedia = _queueController.localPlaybackMedia;
+    final localMedia = _playbackController.localDisplayedMedia;
     return localMedia == null
         ? player
         : player.copyWith(currentMedia: localMedia);
   }
 
   MusicAssistantRepository get repository => widget.repository;
-  ValueChanged<PlayerQueueController> get onShowQueue => widget.onShowQueue;
+  ShowPlayerQueue get onShowQueue => widget.onShowQueue;
   String? get qualityLabel => widget.qualityLabel;
   String? get playerActionError => widget.playerActionError;
   String? get error => widget.error;
@@ -60,6 +66,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   bool get wantKeepAlive => true;
 
   late PlayerQueueController _queueController;
+  late PlayerPlaybackController _playbackController;
 
   @override
   void initState() {
@@ -72,7 +79,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       repository: repository,
       playerId: player.playerId,
     );
+    _playbackController = PlayerPlaybackController(
+      repository: repository,
+      playerId: player.playerId,
+    );
     _queueController.addListener(_onQueueControllerChanged);
+    _playbackController.addListener(_onPlaybackControllerChanged);
     unawaited(
       _queueController.load().then<void>(
         (_) {},
@@ -83,7 +95,14 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
   void _onQueueControllerChanged() {
     if (!mounted) return;
-    widget.onDisplayedMediaChanged?.call(_queueController.localPlaybackMedia);
+    setState(() {});
+  }
+
+  void _onPlaybackControllerChanged() {
+    if (!mounted) return;
+    widget.onDisplayedMediaChanged?.call(
+      _playbackController.localDisplayedMedia,
+    );
     setState(() {});
   }
 
@@ -94,6 +113,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
         oldWidget.repository != widget.repository) {
       _queueController.removeListener(_onQueueControllerChanged);
       _queueController.dispose();
+      _playbackController.removeListener(_onPlaybackControllerChanged);
+      _playbackController.dispose();
       _createQueueController();
     }
   }
@@ -102,6 +123,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   void dispose() {
     _queueController.removeListener(_onQueueControllerChanged);
     _queueController.dispose();
+    _playbackController.removeListener(_onPlaybackControllerChanged);
+    _playbackController.dispose();
     super.dispose();
   }
 
@@ -122,6 +145,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
         player: player,
         repository: repository,
         queueController: _queueController,
+        playbackController: _playbackController,
         size: artworkSize,
       );
       final details = _details(
@@ -245,7 +269,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
         child: InkWell(
-          onTap: () => onShowQueue(_queueController),
+          onTap: () => onShowQueue(_queueController, _playbackController),
           borderRadius: BorderRadius.circular(999),
           child: const GlassPill(
             padding: EdgeInsets.all(12),
@@ -411,7 +435,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           alignment: centered ? Alignment.topCenter : Alignment.topLeft,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: _queueController.isQueueItemRequestInProgress
+            child: _playbackController.isPlaybackRequestInProgress
                 ? Padding(
                     key: const ValueKey('queue-item-request-in-progress'),
                     padding: const EdgeInsets.only(top: 8),

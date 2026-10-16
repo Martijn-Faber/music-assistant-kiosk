@@ -8,6 +8,7 @@ import '../data/music_assistant_repository.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
 import 'player_queue_controller.dart';
+import 'player_playback_controller.dart';
 
 /// Displays and animates the current and upcoming queue artwork.
 class QueueArtworkStack extends StatefulWidget {
@@ -16,12 +17,14 @@ class QueueArtworkStack extends StatefulWidget {
     required this.player,
     required this.repository,
     required this.queueController,
+    required this.playbackController,
     required this.size,
   });
 
   final MusicAssistantPlayer player;
   final MusicAssistantRepository repository;
   final PlayerQueueController queueController;
+  final PlayerPlaybackController playbackController;
   final double size;
 
   @override
@@ -42,6 +45,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   MusicAssistantPlayer get player => widget.player;
   MusicAssistantRepository get repository => widget.repository;
   PlayerQueueController get _queueController => widget.queueController;
+  PlayerPlaybackController get _playbackController =>
+      widget.playbackController;
 
   String? _queueItemArtwork(MusicAssistantQueueItem item) =>
       RecentMediaItem.imageUrlFromQueueItem(
@@ -126,7 +131,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     _skipCommandDebounceTimer?.cancel();
     _pendingSkipQueueIndex = null;
     _localArtworkQueueIndex = null;
-    _queueController.clearLocalPlaybackMedia();
+    _playbackController.clearLocalDisplayedMedia();
     _displayedArtworkUrl = null;
     _displayedArtworkTrackIdentity = null;
     _displayedQueueIndexHint = null;
@@ -249,7 +254,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final newTrackIdentity = _playerTrackIdentity(widget.player);
     if (oldWidget.player.playerId != widget.player.playerId ||
         oldWidget.repository != widget.repository ||
-        oldWidget.queueController != widget.queueController) {
+        oldWidget.queueController != widget.queueController ||
+        oldWidget.playbackController != widget.playbackController) {
       _resetArtworkState();
     } else if (oldTrackIdentity != newTrackIdentity) {
       final localDisplayIndex =
@@ -270,9 +276,9 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         _pendingSkipQueueIndex = null;
         _localArtworkQueueIndex = pendingSkipIndex;
         _skipCommandDebounceTimer?.cancel();
-        _queueController.clearLocalPlaybackMedia();
+        _playbackController.clearLocalDisplayedMedia();
       } else if (_pendingSkipQueueIndex == null) {
-        _queueController.clearLocalPlaybackMedia();
+        _playbackController.clearLocalDisplayedMedia();
       }
       final swipeHandoffProgress =
           _artworkDrag.value.clamp(0.0, 1.0).toDouble();
@@ -428,7 +434,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           // Latch this at gesture start. If a request begins mid-gesture, ignore
           // the whole gesture so its end event cannot accidentally skip again.
           _ignoreArtworkDrag =
-              _queueController.isQueueItemRequestInProgress;
+              _playbackController.isPlaybackRequestInProgress;
           if (_ignoreArtworkDrag) return;
           // If another swipe starts before the artwork spring completes,
           // promote its target before dragging the next card.
@@ -479,7 +485,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
             return;
           }
           final upwardVelocity = details.velocity.pixelsPerSecond.dy;
-          final shouldSkip = !_queueController.isQueueItemRequestInProgress &&
+          final shouldSkip = !_playbackController.isPlaybackRequestInProgress &&
               (_artworkDragOffset.dy < -size * .3 ||
                   upwardVelocity < -1100);
           final releaseOffset = _artworkDragOffset;
@@ -578,8 +584,11 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     // Update the displayed player immediately, then replace the pending target
     // on each swipe. Only the last target is sent after the user pauses.
     _pendingSkipQueueIndex = (baseIndex + 1) % queueItems.length;
-    _queueController.displayQueueItemLocally(
-      queueItems[_pendingSkipQueueIndex!],
+    final selectedItem = queueItems[_pendingSkipQueueIndex!];
+    _playbackController.displayQueueItemLocally(
+      selectedItem,
+      artist: _queueController.queueArtist(selectedItem),
+      imageUrl: _queueItemArtwork(selectedItem),
     );
     _skipCommandDebounceTimer?.cancel();
     _skipCommandDebounceTimer = Timer(_skipCommandDebounce, () {
@@ -595,32 +604,26 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     }
 
     final item = _queueController.items[queueIndex];
-    _queueController.beginQueueItemRequest();
     try {
       // Address the final queue item directly. A generic "next" command could
       // play intermediate tracks or use a stale server queue cursor.
-      await _queueController.playQueueItem(
+      await _playbackController.playQueueItem(
         index: queueIndex,
         queueItemId: item.queueItemId,
       );
     } catch (_) {
       _recoverSkipArtwork();
-    } finally {
-      _queueController.endQueueItemRequest();
     }
   }
 
   Future<void> _sendNextTrackCommand() async {
     final trackBeforeSkip = _playerTrackIdentity(player);
-    _queueController.beginQueueItemRequest();
     try {
-      await repository.nextTrack(player.playerId);
+      await _playbackController.skipToNextTrack();
       _scheduleSkipArtworkRecovery(trackBeforeSkip);
     } catch (_) {
       // Keep the gesture self-contained; playback state remains authoritative.
       _recoverSkipArtwork();
-    } finally {
-      _queueController.endQueueItemRequest();
     }
   }
 

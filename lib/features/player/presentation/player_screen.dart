@@ -76,22 +76,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
   VoidCallback get onDisconnect => widget.onDisconnect;
   GlobalKey<_PlayerPagesState> get _pagerKey => PlayerScreen._pagerKey;
 
-  MusicAssistantPlayerMedia? _localDisplayedMedia;
+  MusicAssistantPlayerMedia? _backdropMediaOverride;
 
   @override
   void didUpdateWidget(covariant PlayerScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedPlayerId != widget.selectedPlayerId ||
         oldWidget.repository != widget.repository) {
-      _localDisplayedMedia = null;
-    } else if (_localDisplayedMedia != null) {
+      _backdropMediaOverride = null;
+    } else if (_backdropMediaOverride != null) {
       final serverMedia = _selectedPlayer?.currentMedia;
       // Keep the local artwork and palette until the server reports the same
       // item, so the backdrop follows a swipe immediately.
       if (serverMedia == null ||
-          serverMedia.queueItemId == _localDisplayedMedia!.queueItemId ||
-          serverMedia.uri == _localDisplayedMedia!.uri) {
-        _localDisplayedMedia = null;
+          serverMedia.queueItemId == _backdropMediaOverride!.queueItemId ||
+          serverMedia.uri == _backdropMediaOverride!.uri) {
+        _backdropMediaOverride = null;
       }
     }
   }
@@ -103,7 +103,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final player = _selectedPlayer;
-    final displayedMedia = _localDisplayedMedia ?? player?.currentMedia;
+    final displayedMedia = _backdropMediaOverride ?? player?.currentMedia;
     final isIdle =
         player != null &&
         (player.currentMedia?.title?.trim().isNotEmpty != true) &&
@@ -269,9 +269,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
         : NowPlayingPage(
             player: player,
             onDisplayedMediaChanged: (media) =>
-                setState(() => _localDisplayedMedia = media),
+                setState(() => _backdropMediaOverride = media),
             repository: repository,
-            onShowQueue: (queueController) => showModalBottomSheet<void>(
+            onShowQueue: (queueController, playbackController) =>
+                showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
               sheetAnimationStyle: const AnimationStyle(
@@ -288,6 +289,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               builder: (context) => PlayerQueueSheet(
                 repository: repository,
                 queueController: queueController,
+                playbackController: playbackController,
                 playerId: player.playerId,
                 initialMediaUri: currentMedia?.uri,
                 onQueueCleared: onQueueCleared,
