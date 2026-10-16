@@ -9,7 +9,7 @@ class GlassSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    label,
+    label.toUpperCase(),
     style: const TextStyle(
       color: GlassTokens.textMuted,
       fontSize: GlassTokens.fontSize11,

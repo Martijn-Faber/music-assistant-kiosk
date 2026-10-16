@@ -249,7 +249,7 @@ class _IdlePlayerPageState extends State<IdlePlayerPage> {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            title,
+            title.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
