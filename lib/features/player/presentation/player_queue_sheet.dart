@@ -13,6 +13,7 @@ import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
 import 'player_playback_controller.dart';
 import 'player_queue_controller.dart';
+import 'player_queue_shuffle_button.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
 import '../../../design_system/glass_surface.dart';
@@ -280,8 +281,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
       debugPrint('Could not update queue autoplay: $error');
       if (!mounted) return;
       setState(() => _autoplayEnabled = current);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not change autoplay.')),
+      GlobalSnackbarHost.show(
+        context,
+        message: 'Could not change autoplay.',
+        kind: GlobalSnackbarKind.error,
       );
     } finally {
       if (mounted) setState(() => _isTogglingAutoplay = false);
@@ -632,6 +635,13 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             ),
                         ],
                       ),
+                    ),
+                    PlayerQueueShuffleButton(
+                      repository: widget.repository,
+                      queueController: widget.queueController,
+                      playerId: widget.playerId,
+                      disabled: widget.queueController
+                          .isDynamic,
                     ),
                     IconButton(
                       tooltip: _autoplayEnabled == true

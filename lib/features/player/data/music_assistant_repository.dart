@@ -250,6 +250,11 @@ class MusicAssistantRepository {
     );
   }
 
+  Future<void> setQueueShuffle(String playerId, bool enabled) async {
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    await _client.playerQueues.shuffle(queue?.queueId ?? playerId, enabled);
+  }
+
   Future<void> clearQueue(String playerId) async {
     final queue = await _client.playerQueues.getActiveQueue(playerId);
     final queueId = queue?.queueId ?? playerId;

@@ -18,6 +18,7 @@ class PlayerQueueController extends ChangeNotifier {
   final String playerId;
 
   MusicAssistantPlayerQueue? queue;
+  bool get isDynamic => queue?.isDynamic ?? false;
   List<MusicAssistantQueueItem> items = const [];
   MusicAssistantExtraAttributes queueExtraAttributes = const {};
   Map<String, MusicAssistantExtraAttributes> itemExtraAttributesByQueueItemId =

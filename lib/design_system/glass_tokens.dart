@@ -11,8 +11,37 @@ abstract final class GlassTokens {
   static const textMuted = Color(0xFFCBD4D0);
   static const surfaceTint = Color(0x22303840);
   static const surfaceTintSubtle = Color(0x1A303840);
+  static const surfaceTintDisabled = Color(0xCC303840);
   static const border = Color(0x66FFFFFF);
   static const selected = Color(0x33FFFFFF);
+  static const iconPrimary = Color(0xFFFFFFFF);
+  static const iconSecondary = Color(0xB3FFFFFF);
+  static const iconDisabled = Color(0xFF87918C);
+  static const interactionOverlay = Color(0x1AFFFFFF);
+  static const disabledOpacity = 0.38;
+  static const inactiveOpacity = 0.56;
+
+  // Icon button component tokens alias shared semantic tokens above.
+  static const iconButtonPrimaryIconEnabled = textPrimary;
+  static const iconButtonPrimaryIconSelected = iconPrimary;
+  static const iconButtonPrimaryIconDisabled = textSecondary;
+  static const iconButtonPrimaryContainerEnabled = surfaceTint;
+  static const iconButtonPrimaryContainerSelected = selected;
+  static const iconButtonPrimaryContainerDisabled = surfaceTintDisabled;
+  static const iconButtonPrimaryOpacityDisabled = disabledOpacity;
+  static const iconButtonPrimaryOpacityInactive = inactiveOpacity;
+  static const iconButtonPrimarySize = 46.0;
+  static const iconButtonProgressIndicatorSize = 18.0;
+  static const iconButtonProgressIndicatorStrokeWidth = 2.0;
+
+  static const iconButtonSecondaryIconEnabled = iconSecondary;
+  static const iconButtonSecondaryIconSelected = iconPrimary;
+  static const iconButtonSecondaryIconDisabled = iconDisabled;
+  static const iconButtonSecondaryContainerEnabled = Colors.transparent;
+  static const iconButtonSecondaryContainerSelected = selected;
+  static const iconButtonSecondaryContainerDisabled = surfaceTintDisabled;
+  static const iconButtonSecondaryInteractionOverlay = interactionOverlay;
+  static const iconButtonSecondarySize = 44.0;
 
   static const radiusSmall = 12.0;
   static const radiusMedium = 16.0;
