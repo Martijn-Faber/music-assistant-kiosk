@@ -67,6 +67,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
   late PlayerQueueController _queueController;
   late PlayerPlaybackController _playbackController;
+  Timer? _serverItemChangeTimer;
+  bool _serverItemChangeInProgress = false;
 
   @override
   void initState() {
@@ -106,9 +108,30 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     setState(() {});
   }
 
+  void _showServerItemChangeFeedback() {
+    _serverItemChangeTimer?.cancel();
+    setState(() => _serverItemChangeInProgress = true);
+    // Player events arrive after a remote client has requested the change.
+    // Keep the same feedback visible briefly so that update is apparent here.
+    _serverItemChangeTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _serverItemChangeInProgress = false);
+    });
+  }
+
   @override
   void didUpdateWidget(covariant NowPlayingPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldMedia = oldWidget.player.currentMedia;
+    final newMedia = widget.player.currentMedia;
+    final serverItemChanged =
+        oldWidget.player.playerId == widget.player.playerId &&
+        (oldMedia?.queueItemId != newMedia?.queueItemId ||
+            oldMedia?.uri != newMedia?.uri ||
+            oldMedia?.title != newMedia?.title);
+    if (serverItemChanged && !_playbackController.isPlaybackRequestInProgress) {
+      _showServerItemChangeFeedback();
+    }
     if (oldWidget.player.playerId != widget.player.playerId ||
         oldWidget.repository != widget.repository) {
       _queueController.removeListener(_onQueueControllerChanged);
@@ -121,6 +144,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
   @override
   void dispose() {
+    _serverItemChangeTimer?.cancel();
     _queueController.removeListener(_onQueueControllerChanged);
     _queueController.dispose();
     _playbackController.removeListener(_onPlaybackControllerChanged);
@@ -435,7 +459,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           alignment: centered ? Alignment.topCenter : Alignment.topLeft,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: _playbackController.isPlaybackRequestInProgress
+            child: (_playbackController.isPlaybackRequestInProgress ||
+                    _serverItemChangeInProgress)
                 ? Padding(
                     key: const ValueKey('queue-item-request-in-progress'),
                     padding: const EdgeInsets.only(top: 8),
