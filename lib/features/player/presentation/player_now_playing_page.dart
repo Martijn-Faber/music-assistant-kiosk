@@ -17,6 +17,7 @@ class NowPlayingPage extends StatefulWidget {
   const NowPlayingPage({
     super.key,
     required this.player,
+    this.onDisplayedMediaChanged,
     required this.repository,
     required this.onShowQueue,
     required this.qualityLabel,
@@ -25,6 +26,7 @@ class NowPlayingPage extends StatefulWidget {
   });
 
   final MusicAssistantPlayer player;
+  final ValueChanged<MusicAssistantPlayerMedia?>? onDisplayedMediaChanged;
   final MusicAssistantRepository repository;
   final ValueChanged<PlayerQueueController> onShowQueue;
   final String? qualityLabel;
@@ -38,6 +40,16 @@ class NowPlayingPage extends StatefulWidget {
 class _NowPlayingPageState extends State<NowPlayingPage>
     with AutomaticKeepAliveClientMixin<NowPlayingPage> {
   MusicAssistantPlayer get player => widget.player;
+
+  // Use optimistic queue metadata for the UI while leaving the actual player
+  // model untouched until the server confirms the selected queue item.
+  MusicAssistantPlayer get displayedPlayer {
+    final localMedia = _queueController.localPlaybackMedia;
+    return localMedia == null
+        ? player
+        : player.copyWith(currentMedia: localMedia);
+  }
+
   MusicAssistantRepository get repository => widget.repository;
   ValueChanged<PlayerQueueController> get onShowQueue => widget.onShowQueue;
   String? get qualityLabel => widget.qualityLabel;
@@ -60,6 +72,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       repository: repository,
       playerId: player.playerId,
     );
+    _queueController.addListener(_onQueueControllerChanged);
     unawaited(
       _queueController.load().then<void>(
         (_) {},
@@ -68,11 +81,18 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     );
   }
 
+  void _onQueueControllerChanged() {
+    if (!mounted) return;
+    widget.onDisplayedMediaChanged?.call(_queueController.localPlaybackMedia);
+    setState(() {});
+  }
+
   @override
   void didUpdateWidget(covariant NowPlayingPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.player.playerId != widget.player.playerId ||
         oldWidget.repository != widget.repository) {
+      _queueController.removeListener(_onQueueControllerChanged);
       _queueController.dispose();
       _createQueueController();
     }
@@ -80,6 +100,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
   @override
   void dispose() {
+    _queueController.removeListener(_onQueueControllerChanged);
     _queueController.dispose();
     super.dispose();
   }
@@ -282,33 +303,71 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       builder: (_) => _PlaybackQualityDialog(
         repository: repository,
         details: details,
-        trackTitle: player.currentMedia?.title,
-        artist: player.currentMedia?.artist,
+        trackTitle: displayedPlayer.currentMedia?.title,
+        artist: displayedPlayer.currentMedia?.artist,
         fallbackQualityLabel: qualityLabel,
       ),
     );
   }
 
+  Widget _animatedTrackLabel({
+    required String value,
+    required TextStyle style,
+    required TextAlign textAlign,
+    required int maxLines,
+    required bool centered,
+  }) =>
+      AnimatedSize(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeInOutCubic,
+        alignment: centered ? Alignment.topCenter : Alignment.topLeft,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            alignment: centered ? Alignment.topCenter : Alignment.topLeft,
+            children: [
+              ...previousChildren,
+              if (currentChild != null) currentChild,
+            ],
+          ),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+          child: Text(
+            value,
+            key: ValueKey(value),
+            textAlign: textAlign,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
+      );
+
   Widget _trackInfo(bool compact, bool desktop, {required bool centered}) {
-    final artist = player.currentMedia?.artist?.trim();
-    final album = player.currentMedia?.album?.trim();
+    final currentPlayer = displayedPlayer;
+    final artist = currentPlayer.currentMedia?.artist?.trim();
+    final album = currentPlayer.currentMedia?.album?.trim();
     final hasArtist = artist?.isNotEmpty == true;
     final hasAlbum = album?.isNotEmpty == true;
     final hasSeekBar =
-        player.currentMedia?.mediaType != MusicAssistantMediaType.radio &&
-        player.currentMedia?.duration != null &&
-        player.currentMedia!.duration! > 0;
+        currentPlayer.currentMedia?.mediaType != MusicAssistantMediaType.radio &&
+        currentPlayer.currentMedia?.duration != null &&
+        currentPlayer.currentMedia!.duration! > 0;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: centered
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       children: [
-        Text(
-          player.currentMedia?.title ?? 'Nothing is playing',
+        _animatedTrackLabel(
+          value: currentPlayer.currentMedia?.title ?? 'Nothing is playing',
           textAlign: centered ? TextAlign.center : TextAlign.start,
           maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+          centered: centered,
           style: TextStyle(
             color: const Color(0xFFF1F4EA),
             fontSize: desktop
@@ -319,23 +378,67 @@ class _NowPlayingPageState extends State<NowPlayingPage>
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (hasArtist || hasAlbum) ...[
-          SizedBox(height: compact ? 4 : 8),
-          Text(
-            [if (hasArtist) artist!, if (hasAlbum) album!].join(' — '),
-            textAlign: centered ? TextAlign.center : TextAlign.start,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: const Color(0xFFD8E0DB),
-              fontSize: desktop
-                  ? 20
-                  : compact
-                  ? 17
-                  : 19,
-            ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeInOutCubic,
+          alignment: centered ? Alignment.topCenter : Alignment.topLeft,
+          child: hasArtist || hasAlbum
+              ? Padding(
+                  padding: EdgeInsets.only(top: compact ? 4 : 8),
+                  child: _animatedTrackLabel(
+                    value: [
+                      if (hasArtist) artist!,
+                      if (hasAlbum) album!,
+                    ].join(' — '),
+                    textAlign: centered ? TextAlign.center : TextAlign.start,
+                    maxLines: 1,
+                    centered: centered,
+                    style: TextStyle(
+                      color: const Color(0xFFD8E0DB),
+                      fontSize: desktop
+                          ? 20
+                          : compact
+                          ? 17
+                          : 19,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOutCubic,
+          alignment: centered ? Alignment.topCenter : Alignment.topLeft,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: _queueController.isQueueItemRequestInProgress
+                ? Padding(
+                    key: const ValueKey('queue-item-request-in-progress'),
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CupertinoActivityIndicator(
+                          radius: 6,
+                          color: Color(0xFFD8E0DB),
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          'Starting on player…',
+                          style: TextStyle(
+                            color: const Color(0xBBD8E0DB),
+                            fontSize: compact ? 11 : 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(
+                    key: ValueKey('queue-item-request-idle'),
+                  ),
           ),
-        ],
+        ),
         AnimatedSize(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeInOut,
@@ -354,7 +457,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                     key: const ValueKey('seek-bar-visible'),
                     padding: EdgeInsets.only(top: compact ? 12 : 18),
                     child: _TrackProgressBar(
-                      player: player,
+                      player: currentPlayer,
                       centered: centered,
                     ),
                   )

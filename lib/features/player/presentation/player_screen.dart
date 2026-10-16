@@ -17,7 +17,7 @@ import 'player_queue_sheet.dart';
 import 'player_volume_dialog.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
-class PlayerScreen extends StatelessWidget {
+class PlayerScreen extends StatefulWidget {
   // Keep the pager alive while SessionGate rebuilds PlayerScreen for player
   // updates. Recreating this key on every build reset the selected page to
   // the player page whenever metadata or volume changed.
@@ -55,6 +55,47 @@ class PlayerScreen extends StatelessWidget {
   final ValueChanged<String> onQueueCleared;
   final VoidCallback onDisconnect;
 
+  @override
+  State<PlayerScreen> createState() => _PlayerScreenState();
+}
+
+class _PlayerScreenState extends State<PlayerScreen> {
+  MusicAssistantRepository get repository => widget.repository;
+  MusicAssistantServerInfoMessage? get serverInfo => widget.serverInfo;
+  List<MusicAssistantPlayer> get players => widget.players;
+  String? get selectedPlayerId => widget.selectedPlayerId;
+  String? get qualityLabel => widget.qualityLabel;
+  String? get playerActionError => widget.playerActionError;
+  String? get error => widget.error;
+  bool get showVolumeFeedback => widget.showVolumeFeedback;
+  bool? get clock24HourFormat => widget.clock24HourFormat;
+  ValueChanged<bool?> get onClock24HourFormatChanged =>
+      widget.onClock24HourFormatChanged;
+  ValueChanged<String> get onSelectPlayer => widget.onSelectPlayer;
+  ValueChanged<String> get onQueueCleared => widget.onQueueCleared;
+  VoidCallback get onDisconnect => widget.onDisconnect;
+  GlobalKey<_PlayerPagesState> get _pagerKey => PlayerScreen._pagerKey;
+
+  MusicAssistantPlayerMedia? _localDisplayedMedia;
+
+  @override
+  void didUpdateWidget(covariant PlayerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedPlayerId != widget.selectedPlayerId ||
+        oldWidget.repository != widget.repository) {
+      _localDisplayedMedia = null;
+    } else if (_localDisplayedMedia != null) {
+      final serverMedia = _selectedPlayer?.currentMedia;
+      // Keep the local artwork and palette until the server reports the same
+      // item, so the backdrop follows a swipe immediately.
+      if (serverMedia == null ||
+          serverMedia.queueItemId == _localDisplayedMedia!.queueItemId ||
+          serverMedia.uri == _localDisplayedMedia!.uri) {
+        _localDisplayedMedia = null;
+      }
+    }
+  }
+
   MusicAssistantPlayer? get _selectedPlayer => players
       .where((player) => player.playerId == selectedPlayerId)
       .firstOrNull;
@@ -62,6 +103,7 @@ class PlayerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final player = _selectedPlayer;
+    final displayedMedia = _localDisplayedMedia ?? player?.currentMedia;
     final isIdle =
         player != null &&
         (player.currentMedia?.title?.trim().isNotEmpty != true) &&
@@ -70,8 +112,8 @@ class PlayerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF101819),
       body: AlbumBackdrop(
-        imageUrl: isIdle ? null : player?.currentMedia?.imageUrl,
-        palette: player?.currentMedia?.palette,
+        imageUrl: isIdle ? null : displayedMedia?.imageUrl,
+        palette: displayedMedia?.palette,
         serverUrl: repository.serverUrl,
         token: repository.token,
         child: Stack(
@@ -226,6 +268,8 @@ class PlayerScreen extends StatelessWidget {
         ? const NothingPlayingPage()
         : NowPlayingPage(
             player: player,
+            onDisplayedMediaChanged: (media) =>
+                setState(() => _localDisplayedMedia = media),
             repository: repository,
             onShowQueue: (queueController) => showModalBottomSheet<void>(
               context: context,

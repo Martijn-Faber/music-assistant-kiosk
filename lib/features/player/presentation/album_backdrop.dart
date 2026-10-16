@@ -66,7 +66,9 @@ class AlbumBackdrop extends StatelessWidget {
             ),
           ),
         Positioned.fill(
-          child: DecoratedBox(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 650),
+            curve: Curves.easeInOutCubic,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,

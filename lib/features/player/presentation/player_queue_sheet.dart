@@ -257,7 +257,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     final id = _stableQueueItemId(item);
     if (id != null) return 'id:$id';
     return 'media:${_queueItemUri(item) ?? ''}|${item.name}|'
-        '${_queueArtist(item) ?? ''}';
+        '${widget.queueController.queueArtist(item) ?? ''}';
   }
 
   String? _stableQueueItemId(MusicAssistantQueueItem item) =>
@@ -479,8 +479,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     }
     setState(() => _startingQueueRowIndex = rowIndex);
     try {
-      await widget.repository.playQueueItem(
-        widget.playerId,
+      await widget.queueController.playQueueItem(
         index: queueIndex,
         queueItemId: queueItemId,
       );
@@ -789,7 +788,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                           final targetViewport =
                               position.viewportDimension + expansionPixels;
                           final currentRowHeight =
-                              _queueArtist(queueItems[currentQueueRowIndex]) ==
+                              widget.queueController.queueArtist(
+                                    queueItems[currentQueueRowIndex],
+                                  ) ==
                                   null
                               ? 63.0
                               : 79.0;
@@ -893,7 +894,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   isBuffered &&
                                   currentQueueRowIndex >= 0 &&
                                   index > currentQueueRowIndex;
-                              final artist = _queueArtist(item);
+                              final artist = widget.queueController
+                                  .queueArtist(item);
                               final isLoading = _startingQueueRowIndex == index;
                               final tile = ListTile(
                                 onTap:
@@ -944,7 +946,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   ],
                                 ),
                                 title: Text(
-                                  _queueTrackTitle(item),
+                                  widget.queueController.queueTrackTitle(item),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -1184,29 +1186,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     );
   }
 
-  String? _queueArtist(MusicAssistantQueueItem item) {
-    final artists = item.mediaItem?.artists
-        ?.map((artist) => switch (artist) {
-          MusicAssistantArtistOrItemMappingUnionArtist(:final value) =>
-            value.name,
-          MusicAssistantArtistOrItemMappingUnionItemMapping(:final value) =>
-            value.name,
-          MusicAssistantArtistOrItemMappingUnionFallback(:final value) =>
-            value['name'] as String?,
-        })
-        .whereType<String>()
-        .where((name) => name.isNotEmpty)
-        .toList();
-    return artists == null || artists.isEmpty ? null : artists.join(', ');
-  }
-
-  String _queueTrackTitle(MusicAssistantQueueItem item) {
-    final trackTitle = item.mediaItem?.name;
-    return trackTitle != null && trackTitle.isNotEmpty
-        ? trackTitle
-        : item.name;
-  }
-
   double _estimatedQueueOffset(
     List<MusicAssistantQueueItem> items,
     int rowIndex,
@@ -1215,7 +1194,9 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     for (var index = 0; index < rowIndex; index++) {
       // A subtitle makes ListTile taller; include the outer vertical padding
       // and the separator between rows in the estimate.
-      offset += _queueArtist(items[index]) == null ? 63 : 79;
+      offset += widget.queueController.queueArtist(items[index]) == null
+          ? 63
+          : 79;
     }
     return offset;
   }
