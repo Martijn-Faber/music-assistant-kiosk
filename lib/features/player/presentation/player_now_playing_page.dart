@@ -287,7 +287,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     children: [
       PlayerFavoriteButton(
         repository: repository,
-        uri: player.currentMedia?.uri,
+        uri: displayedPlayer.currentMedia?.uri,
       ),
       const SizedBox(width: 8),
       PlayerQueueButton(

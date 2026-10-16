@@ -98,6 +98,18 @@ class MusicAssistantClient {
     return () => subscription.cancel();
   }
 
+  /// Listens for favorite-state changes for the media item identified by [uri].
+  void Function() subscribeToMediaItemUpdates({
+    required String uri,
+    required void Function(MusicAssistantMediaItemUpdate update) onUpdated,
+  }) => subscribe(
+    (event) {
+      final update = MusicAssistantMediaItemUpdate.fromEvent(event);
+      if (update != null && update.uri == uri) onUpdated(update);
+    },
+    eventTypes: const {MusicAssistantEventType.mediaItemUpdated},
+  );
+
   /// Listens for player additions, updates, and removals using SDK models.
   void Function() _subscribeToPlayerChanges({
     required void Function(MusicAssistantPlayer player) onChanged,

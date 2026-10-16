@@ -25,11 +25,33 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
   bool? _favorite;
   bool _busy = false;
   int _loadRevision = 0;
+  int _favoriteEventRevision = 0;
+  void Function()? _unsubscribeFromMediaItemUpdates;
 
   @override
   void initState() {
     super.initState();
+    _listenForFavoriteUpdates();
     _load();
+  }
+
+  void _listenForFavoriteUpdates() {
+    _unsubscribeFromMediaItemUpdates?.call();
+    final uri = widget.uri;
+    if (uri == null || uri.isEmpty) return;
+    _unsubscribeFromMediaItemUpdates = widget.repository
+        .listenToMediaItemUpdates(
+          uri: uri,
+          onFavoriteUpdated: (favorite) {
+            _favoriteEventRevision++;
+            // Invalidate an initial fetch that started before this newer event.
+            _loadRevision++;
+            _favoriteCache[uri] = favorite;
+            if (mounted && widget.uri == uri) {
+              setState(() => _favorite = favorite);
+            }
+          },
+        );
   }
 
   Future<void> _load() async {
@@ -54,19 +76,31 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
     if (oldWidget.uri != widget.uri ||
         oldWidget.repository != widget.repository) {
       _favorite = null;
+      _listenForFavoriteUpdates();
       _load();
     }
+  }
+
+  @override
+  void dispose() {
+    _unsubscribeFromMediaItemUpdates?.call();
+    super.dispose();
   }
 
   Future<void> _toggle() async {
     final uri = widget.uri;
     final current = _favorite;
     if (uri == null || current == null || _busy) return;
+    final eventRevision = _favoriteEventRevision;
     setState(() => _busy = true);
     try {
       await widget.repository.setFavorite(uri, !current);
-      _favoriteCache[uri] = !current;
-      if (mounted) setState(() => _favorite = !current);
+      // A media_item_updated event may have reported a newer value while the
+      // request was pending. Only apply this optimistic value if none arrived.
+      if (_favoriteEventRevision == eventRevision) {
+        _favoriteCache[uri] = !current;
+        if (mounted && widget.uri == uri) setState(() => _favorite = !current);
+      }
     } catch (error) {
       debugPrint('Could not update favorite: $error');
       if (mounted) {

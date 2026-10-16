@@ -443,6 +443,15 @@ class MusicAssistantRepository {
     onRemoved: onRemoved,
   );
 
+  /// Listen for favorite changes carried by updates for one media item.
+  void Function() listenToMediaItemUpdates({
+    required String uri,
+    required void Function(bool favorite) onFavoriteUpdated,
+  }) => _playerApiClient.subscribeToMediaItemUpdates(
+    uri: uri,
+    onUpdated: (update) => onFavoriteUpdated(update.favorite),
+  );
+
   Future<void> adjustVolume(String playerId, {required bool increase}) async {
     if (increase) {
       await _playerApiClient.players.groupVolumeUp(playerId);

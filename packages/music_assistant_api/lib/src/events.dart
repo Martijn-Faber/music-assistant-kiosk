@@ -30,6 +30,40 @@ class MusicAssistantEvent {
   final Object? data;
 }
 
+/// Favorite-state update for a media item emitted by `media_item_updated`.
+class MusicAssistantMediaItemUpdate {
+  const MusicAssistantMediaItemUpdate({
+    required this.uri,
+    required this.favorite,
+  });
+
+  final String uri;
+  final bool favorite;
+
+  static MusicAssistantMediaItemUpdate? fromEvent(
+    MusicAssistantEvent event,
+  ) {
+    if (event.type != MusicAssistantEventType.mediaItemUpdated ||
+        event.data is! Map) {
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(event.data as Map);
+    final nestedItem = data['media_item'] ?? data['item'];
+    final item = nestedItem is Map
+        ? Map<String, dynamic>.from(nestedItem)
+        : data;
+    final uri = item['uri'] ??
+        item['item_id'] ??
+        data['uri'] ??
+        data['item_id'] ??
+        event.objectId;
+    final favorite = item['favorite'] ?? data['favorite'];
+    if (uri is! String || favorite is! bool) return null;
+    return MusicAssistantMediaItemUpdate(uri: uri, favorite: favorite);
+  }
+}
+
 /// Event types currently recognized by the SDK.
 enum MusicAssistantEventType {
   playerAdded('player_added'),
