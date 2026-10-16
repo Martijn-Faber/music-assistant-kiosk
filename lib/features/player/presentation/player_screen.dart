@@ -774,22 +774,10 @@ class _PlayerPagesState extends State<_PlayerPages> {
           bottom: 8,
           child: IgnorePointer(
             child: Center(
-              child: GlassPill(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                tint: const Color(0x33202730),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (
-                      var index = 0;
-                      index < widget.pages.length;
-                      index++
-                    ) ...[
-                      if (index > 0) const SizedBox(width: 7),
-                      PageDot(active: _pageIndex == index),
-                    ],
-                  ],
-                ),
+              child: PageIndicator(
+                count: widget.pages.length,
+                currentPage: _pageIndex,
+                glassPill: true,
               ),
             ),
           ),

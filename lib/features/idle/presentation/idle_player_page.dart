@@ -10,6 +10,7 @@ import '../../../design_system/glass_surface.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../player/presentation/artwork_image.dart';
 import '../../player/presentation/provider_identity.dart';
+import '../../player/presentation/player_glass_widgets.dart';
 
 import 'package:app/models/media_item_palette.dart';
 
@@ -293,6 +294,7 @@ class _RadioStationPager extends StatefulWidget {
 class _RadioStationPagerState extends State<_RadioStationPager> {
   int _page = 0;
   final Map<String, MediaItemPalette> _palettes = {};
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -319,6 +321,12 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
         if (entry != null) _palettes[entry.key] = entry.value;
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Color _paletteColor(MediaItemPalette? palette) =>
@@ -361,6 +369,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
       child: Stack(
         children: [
           PageView.builder(
+            controller: _pageController,
             scrollDirection: Axis.vertical,
             itemCount: widget.stations.length,
             onPageChanged: (index) => setState(() => _page = index),
@@ -379,7 +388,10 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                       ? null
                       : () => widget.onSelect!(item),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 16,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -441,6 +453,21 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
               );
             },
           ),
+          if (widget.stations.length > 1)
+            Positioned(
+              left: 18,
+              top: 0,
+              bottom: 0,
+              width: 6,
+              child: IgnorePointer(
+                child: PageIndicator(
+                  count: widget.stations.length,
+                  currentPage: _page,
+                  vertical: true,
+                  maxHeightFactor: 0.8,
+                ),
+              ),
+            ),
           if (_radioProvider(station) != null)
             Positioned(
               top: 2,
@@ -470,6 +497,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
       ),
     );
   }
+
 }
 
 class _RadioProviderDetailsDialog extends StatelessWidget {
