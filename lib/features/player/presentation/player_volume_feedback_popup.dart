@@ -17,37 +17,41 @@ class PlayerVolumeFeedbackPopup extends StatelessWidget {
   final PlayerVolumeController controller;
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: controller,
-    builder: (context, _) => Positioned(
-      left: 0,
-      right: 0,
-      top: 12,
-      child: SafeArea(
-        bottom: false,
-        child: IgnorePointer(
-          child: Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.12),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              ),
-              child: controller.visible
-                  ? _VolumeFeedbackBar(player: player)
-                  : const SizedBox.shrink(
-                      key: ValueKey('volume-feedback-hidden'),
+  Widget build(BuildContext context) => Positioned(
+    left: 0,
+    right: 0,
+    top: 12,
+    child: AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final visible = controller.visible;
+        return SafeArea(
+          bottom: false,
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: Center(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: visible ? 1 : 0),
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                child: _VolumeFeedbackBar(player: player),
+                builder: (context, progress, child) {
+                  return Opacity(
+                    opacity: progress,
+                    child: FractionalTranslation(
+                      translation: Offset(0, -0.18 * (1 - progress)),
+                      child: Transform.scale(
+                        scale: 0.96 + (0.04 * progress),
+                        child: child,
+                      ),
                     ),
+                  );
+                },
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     ),
   );
 }
@@ -61,7 +65,6 @@ class _VolumeFeedbackBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final volume = player.effectiveVolumeLevel?.clamp(0, 100);
     return GlassPill(
-      key: const ValueKey('volume-feedback-visible'),
       constraints: const BoxConstraints(maxWidth: 300),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       child: Row(
