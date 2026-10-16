@@ -19,7 +19,6 @@ abstract final class GlassTokens {
   static const iconDisabled = Color(0xFF87918C);
   static const interactionOverlay = Color(0x1AFFFFFF);
   static const disabledOpacity = 0.38;
-  static const inactiveOpacity = 0.56;
 
   // Icon button component tokens alias shared semantic tokens above.
   static const iconButtonPrimaryIconEnabled = textPrimary;

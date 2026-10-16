@@ -94,9 +94,7 @@ class GlassIconButton extends StatelessWidget {
     if (!isPrimary) return button;
 
     return Opacity(
-      opacity: disabled
-          ? GlassTokens.disabledOpacity
-          : GlassTokens.inactiveOpacity,
+      opacity: isDisabled ? GlassTokens.disabledOpacity : 1,
       child: GlassSurface(
         borderRadius: buttonSize / 2,
         padding: EdgeInsets.zero,
