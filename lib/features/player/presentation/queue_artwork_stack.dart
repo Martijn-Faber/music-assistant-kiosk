@@ -171,6 +171,25 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     return _upcomingQueueItemsAfter(currentTrackIdentity);
   }
 
+  bool get _canSwipeToNextQueueItem {
+    final queue = _queueController.queue;
+    final items = _queueController.items;
+    if (queue == null || items.isEmpty) return true;
+
+    final currentIndex = _pendingSkipQueueIndex ??
+        _localArtworkQueueIndex ??
+        _queueIndexForTrack(
+          _playerTrackIdentity(player),
+          indexHint: _displayedQueueIndexHint,
+        ) ??
+        queue.currentIndex;
+    // If the current slot is unknown, allow the gesture and let the server
+    // handle it. A known final item has nowhere to advance in this queue.
+    return currentIndex == null ||
+        currentIndex < 0 ||
+        currentIndex < items.length - 1;
+  }
+
   List<MusicAssistantQueueItem> _upcomingQueueItemsAfter(
     String? trackIdentity,
   ) {
@@ -434,7 +453,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           // Latch this at gesture start. If a request begins mid-gesture, ignore
           // the whole gesture so its end event cannot accidentally skip again.
           _ignoreArtworkDrag =
-              _playbackController.isPlaybackRequestInProgress;
+              _playbackController.isPlaybackRequestInProgress ||
+              !_canSwipeToNextQueueItem;
           if (_ignoreArtworkDrag) return;
           // If another swipe starts before the artwork spring completes,
           // promote its target before dragging the next card.
@@ -486,6 +506,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           }
           final upwardVelocity = details.velocity.pixelsPerSecond.dy;
           final shouldSkip = !_playbackController.isPlaybackRequestInProgress &&
+              _canSwipeToNextQueueItem &&
               (_artworkDragOffset.dy < -size * .3 ||
                   upwardVelocity < -1100);
           final releaseOffset = _artworkDragOffset;
@@ -580,10 +601,11 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       unawaited(_sendNextTrackCommand());
       return;
     }
+    if (baseIndex == queueItems.length - 1) return;
 
     // Update the displayed player immediately, then replace the pending target
     // on each swipe. Only the last target is sent after the user pauses.
-    _pendingSkipQueueIndex = (baseIndex + 1) % queueItems.length;
+    _pendingSkipQueueIndex = baseIndex + 1;
     final selectedItem = queueItems[_pendingSkipQueueIndex!];
     _playbackController.displayQueueItemLocally(
       selectedItem,
