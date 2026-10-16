@@ -363,7 +363,10 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
       // A manual queue selection can jump over several tracks. Promote the
       // artwork matching the new player URI instead of assuming one-step next.
       _displayedQueueIndexHint = swipeTargetQueueIndex;
-      final promotedArtwork = queue != null && swipeTargetQueueIndex != null
+      final promotedArtwork = widget.player.currentMedia?.mediaType ==
+              MusicAssistantMediaType.radio
+          ? widget.player.currentMedia?.imageUrl
+          : queue != null && swipeTargetQueueIndex != null
           ? _queueItemArtwork(queueItems[swipeTargetQueueIndex])
           : widget.player.currentMedia?.imageUrl;
       _transitionFromArtwork = oldWidget.player.currentMedia?.imageUrl;
@@ -933,6 +936,12 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final items = _queueController.items;
     if (localIndex != null && localIndex >= 0 && localIndex < items.length) {
       return _displayedArtworkUrl ?? _queueItemArtwork(items[localIndex]);
+    }
+    // Radio artwork is supplied by the live player media. The queue item may
+    // describe the station without carrying the artwork currently shown by
+    // the backdrop, so prefer the player's URL for the active radio item.
+    if (player.currentMedia?.mediaType == MusicAssistantMediaType.radio) {
+      return player.currentMedia?.imageUrl;
     }
     final trackIdentity = _playerTrackIdentity(player);
     if (trackIdentity == _displayedArtworkTrackIdentity) {
