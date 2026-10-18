@@ -932,22 +932,29 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
   }
 
   String? get _currentArtworkUrl {
+    final media = player.currentMedia;
+
+    // Live radio: the stream identity never changes, but the metadata (and
+    // artwork) does. Follow the player unless a local swipe is still pending.
+    if (media?.mediaType == MusicAssistantMediaType.radio &&
+        _pendingSkipQueueIndex == null &&
+        media?.imageUrl != null) {
+      return media!.imageUrl;
+    }
+
     final localIndex = _localArtworkQueueIndex;
     final items = _queueController.items;
     if (localIndex != null && localIndex >= 0 && localIndex < items.length) {
       return _displayedArtworkUrl ?? _queueItemArtwork(items[localIndex]);
     }
-    // Radio artwork is supplied by the live player media. The queue item may
-    // describe the station without carrying the artwork currently shown by
-    // the backdrop, so prefer the player's URL for the active radio item.
-    if (player.currentMedia?.mediaType == MusicAssistantMediaType.radio) {
-      return player.currentMedia?.imageUrl;
+    if (media?.mediaType == MusicAssistantMediaType.radio) {
+      return media?.imageUrl;
     }
     final trackIdentity = _playerTrackIdentity(player);
     if (trackIdentity == _displayedArtworkTrackIdentity) {
-      return _displayedArtworkUrl ?? player.currentMedia?.imageUrl;
+      return _displayedArtworkUrl ?? media?.imageUrl;
     }
-    return player.currentMedia?.imageUrl;
+    return media?.imageUrl;
   }
 
   Widget _nextArtworkLayer({
