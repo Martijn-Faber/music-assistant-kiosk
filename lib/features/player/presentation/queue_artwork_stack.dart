@@ -483,7 +483,13 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
             size,
           ).toDouble();
           final rawDistance = -_rawArtworkDragY;
-          if (rawDistance >= 0) {
+
+          if (_preventArtworkSkip) {
+            // Nothing to advance to (last queue item, or a request is in flight).
+            // Use the same strong resistance as the downward pull, in both
+            // directions, so the card only stretches slightly and springs back.
+            _artworkDragOffset = Offset(0, _rawArtworkDragY * .14);
+          } else if (rawDistance >= 0) {
             final resistancePoint = size * .22;
             // Short upward pulls feel weighted. Past the breakaway point the
             // card follows more freely toward dismissal.
@@ -504,27 +510,23 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         },
         onVerticalDragEnd: (details) {
           final upwardVelocity = details.velocity.pixelsPerSecond.dy;
-          final shouldSkip = !_preventArtworkSkip &&
+          final wasBlocked = _preventArtworkSkip;
+          final shouldSkip = !wasBlocked &&
               !_playbackController.isPlaybackRequestInProgress &&
               _canSwipeToNextQueueItem &&
-              (_artworkDragOffset.dy < -size * .3 ||
-                  upwardVelocity < -1100);
+              (_artworkDragOffset.dy < -size * .3 || upwardVelocity < -1100);
           _preventArtworkSkip = false;
           final releaseOffset = _artworkDragOffset;
           setState(() {
             _isDraggingArtwork = false;
             _isSkippingFromArtwork = shouldSkip;
           });
-          // If skipping is blocked (or the swipe was too short), this same
-          // spring returns the card to center from either drag direction.
           _settleArtworkDrag(
-            upwardVelocity.abs(),
+            wasBlocked ? 0 : upwardVelocity.abs(),
             size,
             startOffset: releaseOffset,
             target: shouldSkip ? 1 : 0,
-            endOffset: shouldSkip
-                ? _offscreenOffset(releaseOffset)
-                : Offset.zero,
+            endOffset: shouldSkip ? _offscreenOffset(releaseOffset) : Offset.zero,
           );
           if (shouldSkip) _skipToNextTrack();
         },
