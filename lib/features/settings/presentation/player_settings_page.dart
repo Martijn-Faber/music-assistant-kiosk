@@ -14,7 +14,6 @@ class PlayerSettingsPage extends StatefulWidget {
     required this.selectedPlayerId,
     required this.serverAddress,
     required this.serverInfo,
-    required this.deviceName,
     required this.clock24HourFormat,
     required this.onClock24HourFormatChanged,
     required this.onLocaleChanged,
@@ -27,7 +26,6 @@ class PlayerSettingsPage extends StatefulWidget {
   final String? selectedPlayerId;
   final String serverAddress;
   final MusicAssistantServerInfoMessage? serverInfo;
-  final String? deviceName;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
   final ValueChanged<Locale> onLocaleChanged;
@@ -48,6 +46,29 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
       _selectedPlayerId = widget.selectedPlayerId;
     }
   }
+
+  Widget _settingsGroup(List<Widget> items) => GlassSurface(
+    borderRadius: GlassTokens.cardRadius,
+    padding: EdgeInsets.zero,
+    tint: GlassTokens.surfaceTint,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var index = 0; index < items.length; index++) ...[
+          if (index > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Divider(
+                height: 1,
+                thickness: 0.5,
+                color: GlassTokens.border.withValues(alpha: 0.4),
+              ),
+            ),
+          items[index],
+        ],
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -78,23 +99,23 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   GlassSectionLabel(l10n.settingsSignedInAsLabel),
                   const SizedBox(height: 8),
                   GlassInfoRow(
-                    icon: CupertinoIcons.person,
-                    leading: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: const Color(0xFF52625E),
-                      foregroundImage:
-                          widget.user.avatarUrl?.trim().isNotEmpty == true
-                          ? NetworkImage(widget.user.avatarUrl!.trim())
-                          : null,
-                      child: const Icon(
-                        CupertinoIcons.person,
-                        size: 18,
-                        color: Color(0xFFE9F0EB),
+                      icon: CupertinoIcons.person,
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: const Color(0xFF52625E),
+                        foregroundImage:
+                            widget.user.avatarUrl?.trim().isNotEmpty == true
+                            ? NetworkImage(widget.user.avatarUrl!.trim())
+                            : null,
+                        child: const Icon(
+                          CupertinoIcons.person,
+                          size: 18,
+                          color: Color(0xFFE9F0EB),
+                        ),
                       ),
-                    ),
-                    value: widget.user.displayName?.trim().isNotEmpty == true
-                        ? '${widget.user.displayName} (${widget.user.username})'
-                        : widget.user.username,
+                      value: widget.user.displayName?.trim().isNotEmpty == true
+                          ? '${widget.user.displayName} (${widget.user.username})'
+                          : widget.user.username,
                   ),
                   const SizedBox(height: 18),
                   GlassSectionLabel(l10n.settingsPlayerOnScreenLabel),
@@ -128,7 +149,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                     const SizedBox(height: 8),
                     Text(
                       l10n.settingsPlayersNoneFoundMessage,
-                      style: TextStyle(color: Color(0xFFAAB7B4)),
+                      style: const TextStyle(color: Color(0xFFAAB7B4)),
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -148,7 +169,9 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                       ),
                     ],
                     onChanged: (code) {
-                      if (code != null) widget.onLocaleChanged(Locale(code));
+                      if (code != null) {
+                        widget.onLocaleChanged(Locale(code));
+                      }
                     },
                   ),
                   const SizedBox(height: 20),
@@ -156,35 +179,32 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   const SizedBox(height: 8),
                   _clockFormatSelector(l10n),
                   const SizedBox(height: 20),
-                  GlassSectionLabel(l10n.settingsConnectedToLabel),
+                  GlassSectionLabel(l10n.settingsServerSectionLabel),
                   const SizedBox(height: 8),
-                  GlassInfoRow(
-                    icon: CupertinoIcons.desktopcomputer,
-                    value: widget.serverAddress,
-                  ),
-                  const SizedBox(height: 8),
-                  GlassInfoRow(
-                    icon: CupertinoIcons.hifispeaker,
-                    value:
-                        widget.deviceName ?? l10n.settingsNoPlayerSelectedValue,
-                  ),
-                  if (widget.serverInfo case final info?) ...[
-                    const SizedBox(height: 20),
-                    GlassSectionLabel(l10n.settingsServerSectionLabel),
-                    const SizedBox(height: 8),
-                    for (final entry in [
-                      (l10n.settingsServerNameLabel, info.name),
-                      (l10n.settingsServerVersionLabel, info.serverVersion),
-                      (l10n.settingsServerStatusLabel, info.status),
-                    ])
-                      if (entry.$2 is String && (entry.$2 as String).isNotEmpty) ...[
+                  _settingsGroup([
+                    GlassInfoRow(
+                      icon: CupertinoIcons.desktopcomputer,
+                      value: widget.serverAddress,
+                      embedded: true,
+                    ),
+                    if (widget.serverInfo case final info?) ...[
+                      if (info.name?.isNotEmpty == true)
                         GlassInfoRow(
                           icon: CupertinoIcons.info,
-                          value: '${entry.$1}: ${entry.$2}',
+                          value:
+                              '${info.name}${info.serverVersion.isNotEmpty ? ' (${info.serverVersion})' : ''}',
+                          embedded: true,
                         ),
-                        const SizedBox(height: 6),
-                      ],
-                  ],
+                      if (info.status is String &&
+                          (info.status as String).isNotEmpty)
+                        GlassInfoRow(
+                          icon: CupertinoIcons.info,
+                          value:
+                              '${l10n.settingsServerStatusLabel}: ${info.status}',
+                          embedded: true,
+                        ),
+                    ],
+                  ]),
                   const SizedBox(height: 24),
                   GlassOutlineButton(
                     icon: CupertinoIcons.power,
@@ -201,7 +221,10 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     );
   }
 
-  Widget _clockFormatSelector(AppLocalizations l10n) {
+  Widget _clockFormatSelector(
+    AppLocalizations l10n, {
+    bool embedded = false,
+  }) {
     final selected = switch (widget.clock24HourFormat) {
       true => 2,
       false => 1,
@@ -214,6 +237,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
         l10n.settingsClockFormat24HourOption,
       ],
       selectedIndex: selected,
+      embedded: embedded,
       onSelected: (index) => widget.onClock24HourFormatChanged(switch (index) {
         1 => false,
         2 => true,

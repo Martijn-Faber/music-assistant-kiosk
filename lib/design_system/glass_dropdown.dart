@@ -12,19 +12,18 @@ class GlassDropdown<T> extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.hint,
+    this.embedded = false,
   });
 
   final T? value;
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?> onChanged;
   final String? hint;
+  final bool embedded;
 
   @override
-  Widget build(BuildContext context) => GlassSurface(
-    borderRadius: GlassTokens.radiusLarge,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-    tint: GlassTokens.surfaceTint,
-    child: Theme(
+  Widget build(BuildContext context) {
+    final dropdown = Theme(
       data: Theme.of(context).copyWith(
         canvasColor: const Color(0xFF263333),
         highlightColor: const Color(0x22FFFFFF),
@@ -63,6 +62,18 @@ class GlassDropdown<T> extends StatelessWidget {
               .toList(),
         ),
       ),
-    ),
-  );
+    );
+    if (embedded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+        child: dropdown,
+      );
+    }
+    return GlassSurface(
+      borderRadius: GlassTokens.radiusLarge,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      tint: GlassTokens.surfaceTint,
+      child: dropdown,
+    );
+  }
 }

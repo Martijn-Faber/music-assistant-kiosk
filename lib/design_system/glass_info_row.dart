@@ -4,18 +4,22 @@ import 'glass_surface.dart';
 import 'glass_tokens.dart';
 
 class GlassInfoRow extends StatelessWidget {
-  const GlassInfoRow({super.key, required this.icon, required this.value, this.leading});
+  const GlassInfoRow({
+    super.key,
+    required this.icon,
+    required this.value,
+    this.leading,
+    this.embedded = false,
+  });
 
   final IconData icon;
   final String value;
   final Widget? leading;
+  final bool embedded;
 
   @override
-  Widget build(BuildContext context) => GlassSurface(
-    borderRadius: GlassTokens.radiusMedium,
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    tint: GlassTokens.surfaceTintSubtle,
-    child: Row(
+  Widget build(BuildContext context) {
+    final row = Row(
       children: [
         leading ??
             Icon(icon, size: GlassTokens.iconSizeM, color: GlassTokens.textSecondary),
@@ -29,6 +33,18 @@ class GlassInfoRow extends StatelessWidget {
           ),
         ),
       ],
-    ),
-  );
+    );
+    if (embedded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: row,
+      );
+    }
+    return GlassSurface(
+      borderRadius: GlassTokens.radiusMedium,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      tint: GlassTokens.surfaceTintSubtle,
+      child: row,
+    );
+  }
 }

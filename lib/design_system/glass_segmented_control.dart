@@ -9,18 +9,17 @@ class GlassSegmentedControl extends StatelessWidget {
     required this.options,
     required this.selectedIndex,
     required this.onSelected,
+    this.embedded = false,
   });
 
   final List<String> options;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+  final bool embedded;
 
   @override
-  Widget build(BuildContext context) => GlassSurface(
-    borderRadius: GlassTokens.radiusMedium,
-    padding: const EdgeInsets.all(4),
-    tint: GlassTokens.surfaceTint,
-    child: Row(
+  Widget build(BuildContext context) {
+    final control = Row(
       children: [
         for (var index = 0; index < options.length; index++)
           Expanded(
@@ -62,6 +61,18 @@ class GlassSegmentedControl extends StatelessWidget {
             ),
           ),
       ],
-    ),
-  );
+    );
+    if (embedded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: control,
+      );
+    }
+    return GlassSurface(
+      borderRadius: GlassTokens.radiusMedium,
+      padding: const EdgeInsets.all(4),
+      tint: GlassTokens.surfaceTint,
+      child: control,
+    );
+  }
 }

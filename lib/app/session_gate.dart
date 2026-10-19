@@ -590,7 +590,6 @@ class _SessionGateState extends State<SessionGate> {
       selectedPlayerId: _selectedPlayerId,
       serverAddress:
           Uri.tryParse(repository.serverUrl)?.authority ?? repository.serverUrl,
-      deviceName: player?.name,
       clock24HourFormat: _clock24HourFormat,
       onClock24HourFormatChanged: _setClockFormat,
       onLocaleChanged: widget.onLocaleChanged,
