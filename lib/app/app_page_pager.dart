@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/platform/screen_brightness_bridge.dart';
 import '../design_system/page_indicator.dart';
 
 /// App-level pager for the screensaver, idle, player, and settings pages.
@@ -23,19 +24,23 @@ class AppPagePager extends StatefulWidget {
 
 class AppPagePagerState extends State<AppPagePager> {
   static const _screensaverDelay = Duration(minutes: 1);
-
   late final PageController _controller;
   late int _pageIndex;
   bool _showPager = false;
   double? _dragStartPage;
   Timer? _pagerHideTimer;
   Timer? _screensaverTimer;
+  Timer? _inactivityTimer;
+  bool _isInactive = false;
+  bool _hasUserActivity = false;
+  bool? _lastDimmed;
 
   @override
   void initState() {
     super.initState();
     _pageIndex = widget.isIdle ? 0 : 2;
     _controller = PageController(initialPage: _pageIndex);
+    _restartInactivityTimer(userActivity: false);
   }
 
   @override
@@ -43,6 +48,8 @@ class AppPagePagerState extends State<AppPagePager> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isIdle != widget.isIdle) {
       _screensaverTimer?.cancel();
+      if (widget.isIdle) _hasUserActivity = false;
+      _applyBrightness();
       final targetPage = widget.isIdle ? 0 : 2;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted ||
@@ -63,8 +70,34 @@ class AppPagePagerState extends State<AppPagePager> {
   void dispose() {
     _pagerHideTimer?.cancel();
     _screensaverTimer?.cancel();
+    _inactivityTimer?.cancel();
+    ScreenBrightnessBridge.setDimmed(false);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _restartInactivityTimer({bool userActivity = true}) {
+    _inactivityTimer?.cancel();
+    _isInactive = false;
+    _hasUserActivity = userActivity;
+    _applyBrightness();
+    _inactivityTimer = Timer(_screensaverDelay, () {
+      if (!mounted) return;
+      _isInactive = true;
+      _hasUserActivity = false;
+      _applyBrightness();
+    });
+  }
+
+  void _applyBrightness() {
+    final dimmed = !(_hasUserActivity) && (widget.isIdle || _isInactive);
+    if (_lastDimmed == dimmed) return;
+    _lastDimmed = dimmed;
+    ScreenBrightnessBridge.setDimmed(dimmed);
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    _restartInactivityTimer();
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
@@ -133,9 +166,12 @@ class AppPagePagerState extends State<AppPagePager> {
   @override
   Widget build(BuildContext context) {
     final showBottomControl = _showPager || _pageIndex == 2;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onPointerDown,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
         NotificationListener<ScrollNotification>(
           onNotification: _handleScrollNotification,
           child: PageView.builder(
@@ -251,7 +287,8 @@ class AppPagePagerState extends State<AppPagePager> {
             ),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }
