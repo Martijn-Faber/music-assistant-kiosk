@@ -59,7 +59,7 @@ class GlassIconButton extends StatelessWidget {
             : isSelected
                 ? GlassTokens.iconButtonSecondaryContainerSelected
                 : GlassTokens.iconButtonSecondaryContainerEnabled;
-    final effectiveBackgroundColor = isLoading
+    final effectiveBackgroundColor = isLoading || (!isPrimary && isDisabled)
         ? Colors.transparent
         : backgroundColor;
     final buttonSize = isPrimary ? size : GlassTokens.iconButtonSecondarySize;
