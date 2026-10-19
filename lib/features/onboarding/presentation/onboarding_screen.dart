@@ -20,6 +20,7 @@ class OnboardingScreen extends StatefulWidget {
     required this.isLoading,
     required this.error,
     required this.onConnect,
+    required this.onLocaleChanged,
     this.playerSetupPage,
     this.showPlayerSetup = false,
   });
@@ -27,6 +28,7 @@ class OnboardingScreen extends StatefulWidget {
   final bool isLoading;
   final String? error;
   final ConnectionSubmit onConnect;
+  final ValueChanged<Locale> onLocaleChanged;
   final Widget? playerSetupPage;
   final bool showPlayerSetup;
 
@@ -296,9 +298,103 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (session != null) unawaited(session.close());
   }
 
+  void _showLanguagePicker() {
+    final currentLanguage = Localizations.localeOf(context).languageCode;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final l10n = AppLocalizations.of(dialogContext);
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: GlassSurface(
+              borderRadius: GlassTokens.radiusLarge,
+              padding: const EdgeInsets.all(20),
+              tint: GlassTokens.surfaceTint,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.settingsLanguageLabel,
+                    style: const TextStyle(
+                      color: GlassTokens.textPrimary,
+                      fontSize: GlassTokens.fontSize18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final option in [
+                    ('en', l10n.settingsLanguageEnglishOption),
+                    ('nl', l10n.settingsLanguageDutchOption),
+                  ])
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(
+                        GlassTokens.radiusMedium,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(dialogContext).pop();
+                          widget.onLocaleChanged(Locale(option.$1));
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  option.$2,
+                                  style: TextStyle(
+                                    color: currentLanguage == option.$1
+                                        ? GlassTokens.textPrimary
+                                        : GlassTokens.textSecondary,
+                                    fontSize: GlassTokens.fontSize16,
+                                    fontWeight: currentLanguage == option.$1
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                              if (currentLanguage == option.$1)
+                                const Icon(
+                                  CupertinoIcons.check_mark,
+                                  color: GlassTokens.textPrimary,
+                                  size: GlassTokens.iconSizeM,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFF090D12),
+    floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
+    floatingActionButton: Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: GlassIconButton(
+        icon: CupertinoIcons.globe,
+        tooltip: AppLocalizations.of(context).settingsLanguageLabel,
+        type: GlassIconButtonType.primary,
+        onPressed: _showLanguagePicker,
+      ),
+    ),
     body: Stack(
       fit: StackFit.expand,
       children: [

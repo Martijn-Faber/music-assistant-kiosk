@@ -549,6 +549,7 @@ class _SessionGateState extends State<SessionGate> {
         isLoading: _isConnecting,
         error: _connectionError,
         onConnect: _connect,
+        onLocaleChanged: widget.onLocaleChanged,
         showPlayerSetup: _needsPlayerSetup,
         playerSetupPage: repository == null
             ? null
