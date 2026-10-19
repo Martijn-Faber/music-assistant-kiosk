@@ -13,7 +13,7 @@ import 'album_backdrop.dart';
 import 'player_glass_widgets.dart';
 import 'player_now_playing_page.dart';
 import 'player_queue_sheet.dart';
-import 'player_volume_controller.dart';
+import '../viewmodels/player_volume_view_model.dart';
 import 'player_volume_feedback_popup.dart';
 import 'player_volume_dialog.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
@@ -50,7 +50,7 @@ class PlayerScreen extends StatefulWidget {
   final String? qualityLabel;
   final String? playerActionError;
   final String? error;
-  final PlayerVolumeController volumeController;
+  final PlayerVolumeViewModel volumeController;
   final bool? clock24HourFormat;
   final ValueChanged<bool?> onClock24HourFormatChanged;
   final ValueChanged<Locale> onLocaleChanged;
@@ -70,7 +70,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   String? get qualityLabel => widget.qualityLabel;
   String? get playerActionError => widget.playerActionError;
   String? get error => widget.error;
-  PlayerVolumeController get volumeController => widget.volumeController;
+  PlayerVolumeViewModel get volumeController => widget.volumeController;
   bool? get clock24HourFormat => widget.clock24HourFormat;
   ValueChanged<bool?> get onClock24HourFormatChanged =>
       widget.onClock24HourFormatChanged;
@@ -214,7 +214,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 queueController: queueController,
                 playbackController: playbackController,
                 playerId: player.playerId,
-                initialMediaUri: currentMedia?.uri,
                 onQueueCleared: onQueueCleared,
               ),
             ),

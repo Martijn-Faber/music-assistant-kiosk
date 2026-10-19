@@ -6,8 +6,8 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../data/music_assistant_repository.dart';
 
-class PlayerVolumeController extends ChangeNotifier {
-  PlayerVolumeController({
+class PlayerVolumeViewModel extends ChangeNotifier {
+  PlayerVolumeViewModel({
     required bool Function() isMounted,
     required String? Function() selectedPlayerId,
     required MusicAssistantRepository? Function() repository,

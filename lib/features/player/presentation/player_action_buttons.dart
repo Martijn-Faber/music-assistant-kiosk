@@ -6,6 +6,7 @@ import '../../../design_system/glass_icon_toggle_button.dart';
 import '../../../design_system/global_snackbar.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../data/music_assistant_repository.dart';
+import '../viewmodels/player_favorite_view_model.dart';
 
 class PlayerFavoriteButton extends StatefulWidget {
   const PlayerFavoriteButton({
@@ -22,53 +23,23 @@ class PlayerFavoriteButton extends StatefulWidget {
 }
 
 class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
-  static final Map<String, bool> _favoriteCache = {};
-  bool? _favorite;
-  bool _busy = false;
-  int _loadRevision = 0;
-  int _favoriteEventRevision = 0;
-  void Function()? _unsubscribeFromMediaItemUpdates;
+  late PlayerFavoriteViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _listenForFavoriteUpdates();
-    _load();
+    _createViewModel();
   }
 
-  void _listenForFavoriteUpdates() {
-    _unsubscribeFromMediaItemUpdates?.call();
-    final uri = widget.uri;
-    if (uri == null || uri.isEmpty) return;
-    _unsubscribeFromMediaItemUpdates = widget.repository
-        .listenToMediaItemUpdates(
-          uri: uri,
-          onFavoriteUpdated: (favorite) {
-            _favoriteEventRevision++;
-            // Invalidate an initial fetch that started before this newer event.
-            _loadRevision++;
-            _favoriteCache[uri] = favorite;
-            if (mounted && widget.uri == uri) {
-              setState(() => _favorite = favorite);
-            }
-          },
-        );
+  void _createViewModel() {
+    _viewModel = PlayerFavoriteViewModel(
+      repository: widget.repository,
+      uri: widget.uri,
+    )..addListener(_onViewModelChanged);
   }
 
-  Future<void> _load() async {
-    final uri = widget.uri;
-    if (uri == null || uri.isEmpty) return;
-    final revision = ++_loadRevision;
-    final cached = _favoriteCache[uri];
-    if (cached != null && mounted) setState(() => _favorite = cached);
-    try {
-      final item = await widget.repository.fetchMediaItem(uri);
-      final isFavorite = item['favorite'] == true;
-      _favoriteCache[uri] = isFavorite;
-      if (mounted && revision == _loadRevision && widget.uri == uri) {
-        setState(() => _favorite = isFavorite);
-      }
-    } catch (_) {}
+  void _onViewModelChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -76,34 +47,25 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.uri != widget.uri ||
         oldWidget.repository != widget.repository) {
-      _favorite = null;
-      _listenForFavoriteUpdates();
-      _load();
+      _viewModel
+        ..removeListener(_onViewModelChanged)
+        ..dispose();
+      _createViewModel();
     }
   }
 
   @override
   void dispose() {
-    _unsubscribeFromMediaItemUpdates?.call();
+    _viewModel
+      ..removeListener(_onViewModelChanged)
+      ..dispose();
     super.dispose();
   }
 
   Future<void> _toggle() async {
-    final uri = widget.uri;
-    final current = _favorite;
-    if (uri == null || current == null || _busy) return;
-    final eventRevision = _favoriteEventRevision;
-    setState(() => _busy = true);
     try {
-      await widget.repository.setFavorite(uri, !current);
-      // A media_item_updated event may have reported a newer value while the
-      // request was pending. Only apply this optimistic value if none arrived.
-      if (_favoriteEventRevision == eventRevision) {
-        _favoriteCache[uri] = !current;
-        if (mounted && widget.uri == uri) setState(() => _favorite = !current);
-      }
-    } catch (error) {
-      debugPrint('Could not update favorite: $error');
+      await _viewModel.toggle();
+    } catch (_) {
       if (mounted) {
         GlobalSnackbarHost.show(
           context,
@@ -111,8 +73,6 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
           kind: GlobalSnackbarKind.error,
         );
       }
-    } finally {
-      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -121,12 +81,12 @@ class _PlayerFavoriteButtonState extends State<PlayerFavoriteButton> {
         icon: CupertinoIcons.heart,
         selectedIcon: CupertinoIcons.heart_fill,
         type: GlassIconButtonType.primary,
-        tooltip: _favorite == true
+        tooltip: _viewModel.favorite == true
             ? AppLocalizations.of(context).playerRemoveFavoriteTooltip
             : AppLocalizations.of(context).playerAddFavoriteTooltip,
-        disabled: _favorite == null,
-        isSelected: _favorite == true,
-        isLoading: _busy,
+        disabled: _viewModel.favorite == null,
+        isSelected: _viewModel.favorite == true,
+        isLoading: _viewModel.isBusy,
         onPressed: _toggle,
       );
 }

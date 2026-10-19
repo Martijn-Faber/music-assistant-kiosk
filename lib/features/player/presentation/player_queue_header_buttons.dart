@@ -6,21 +6,16 @@ import '../../../design_system/glass_icon_toggle_button.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/global_snackbar.dart';
 import '../../../l10n/generated/app_localizations.dart';
-import '../data/music_assistant_repository.dart';
-import 'player_queue_controller.dart';
+import '../viewmodels/player_queue_view_model.dart';
 
 class PlayerQueueShuffleButton extends StatefulWidget {
   const PlayerQueueShuffleButton({
     super.key,
-    required this.repository,
     required this.queueController,
-    required this.playerId,
     required this.disabled,
   });
 
-  final MusicAssistantRepository repository;
-  final PlayerQueueController queueController;
-  final String playerId;
+  final PlayerQueueViewModel queueController;
   final bool disabled;
 
   @override
@@ -29,13 +24,9 @@ class PlayerQueueShuffleButton extends StatefulWidget {
 }
 
 class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
-  bool? _shuffleEnabled;
-  bool _isToggling = false;
-
   @override
   void initState() {
     super.initState();
-    _shuffleEnabled = widget.queueController.queue?.shuffleEnabled;
     widget.queueController.addListener(_onQueueChanged);
   }
 
@@ -45,38 +36,31 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
     if (oldWidget.queueController != widget.queueController) {
       oldWidget.queueController.removeListener(_onQueueChanged);
       widget.queueController.addListener(_onQueueChanged);
-      _shuffleEnabled = widget.queueController.queue?.shuffleEnabled;
     }
   }
 
   void _onQueueChanged() {
-    if (!mounted || _isToggling) return;
-    final enabled = widget.queueController.queue?.shuffleEnabled;
-    if (_shuffleEnabled != enabled) setState(() => _shuffleEnabled = enabled);
+    if (mounted) setState(() {});
   }
 
   Future<void> _toggleShuffle() async {
-    final current = _shuffleEnabled;
-    if (current == null || _isToggling || widget.disabled) return;
+    final current = widget.queueController.queue?.shuffleEnabled;
+    if (current == null ||
+        widget.queueController.isUpdatingShuffle ||
+        widget.disabled) {
+      return;
+    }
     final next = !current;
-    setState(() {
-      _shuffleEnabled = next;
-      _isToggling = true;
-    });
     try {
-      await widget.repository.setQueueShuffle(widget.playerId, next);
-      await widget.queueController.refresh();
+      await widget.queueController.setShuffleEnabled(next);
     } catch (error) {
       debugPrint('Could not update queue shuffle: $error');
       if (!mounted) return;
-      setState(() => _shuffleEnabled = current);
       GlobalSnackbarHost.show(
         context,
         message: AppLocalizations.of(context).queueShuffleChangeFailed,
         kind: GlobalSnackbarKind.error,
       );
-    } finally {
-      if (mounted) setState(() => _isToggling = false);
     }
   }
 
@@ -88,8 +72,9 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = _shuffleEnabled;
+    final enabled = widget.queueController.queue?.shuffleEnabled;
     final unavailable = widget.disabled;
+    final isUpdating = widget.queueController.isUpdatingShuffle;
     return GlassIconToggleButton(
       icon: CupertinoIcons.shuffle,
       type: GlassIconButtonType.secondary,
@@ -98,9 +83,9 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
           : enabled == true
               ? AppLocalizations.of(context).queueDisableShuffleTooltip
               : AppLocalizations.of(context).queueEnableShuffleTooltip,
-      disabled: unavailable || enabled == null,
+      disabled: unavailable || enabled == null || isUpdating,
       isSelected: enabled == true,
-      isLoading: _isToggling,
+      isLoading: isUpdating,
       onPressed: _toggleShuffle,
     );
   }
@@ -109,14 +94,10 @@ class _PlayerQueueShuffleButtonState extends State<PlayerQueueShuffleButton> {
 class PlayerQueueAutoplayButton extends StatefulWidget {
   const PlayerQueueAutoplayButton({
     super.key,
-    required this.repository,
     required this.queueController,
-    required this.playerId,
   });
 
-  final MusicAssistantRepository repository;
-  final PlayerQueueController queueController;
-  final String playerId;
+  final PlayerQueueViewModel queueController;
 
   @override
   State<PlayerQueueAutoplayButton> createState() =>
@@ -124,13 +105,9 @@ class PlayerQueueAutoplayButton extends StatefulWidget {
 }
 
 class _PlayerQueueAutoplayButtonState extends State<PlayerQueueAutoplayButton> {
-  bool? _enabled;
-  bool _isToggling = false;
-
   @override
   void initState() {
     super.initState();
-    _enabled = widget.queueController.queue?.autoplayEnabled;
     widget.queueController.addListener(_onQueueChanged);
   }
 
@@ -140,37 +117,27 @@ class _PlayerQueueAutoplayButtonState extends State<PlayerQueueAutoplayButton> {
     if (oldWidget.queueController != widget.queueController) {
       oldWidget.queueController.removeListener(_onQueueChanged);
       widget.queueController.addListener(_onQueueChanged);
-      _enabled = widget.queueController.queue?.autoplayEnabled;
     }
   }
 
   void _onQueueChanged() {
-    if (!mounted || _isToggling) return;
-    final enabled = widget.queueController.queue?.autoplayEnabled;
-    if (_enabled != enabled) setState(() => _enabled = enabled);
+    if (mounted) setState(() {});
   }
 
   Future<void> _toggle() async {
-    final current = _enabled;
-    if (current == null || _isToggling) return;
+    final current = widget.queueController.queue?.autoplayEnabled;
+    if (current == null || widget.queueController.isUpdatingAutoplay) return;
     final next = !current;
-    setState(() {
-      _enabled = next;
-      _isToggling = true;
-    });
     try {
-      await widget.repository.setQueueAutoplay(widget.playerId, next);
+      await widget.queueController.setAutoplayEnabled(next);
     } catch (error) {
       debugPrint('Could not update queue autoplay: $error');
       if (!mounted) return;
-      setState(() => _enabled = current);
       GlobalSnackbarHost.show(
         context,
         message: AppLocalizations.of(context).queueAutoplayChangeFailed,
         kind: GlobalSnackbarKind.error,
       );
-    } finally {
-      if (mounted) setState(() => _isToggling = false);
     }
   }
 
@@ -182,16 +149,17 @@ class _PlayerQueueAutoplayButtonState extends State<PlayerQueueAutoplayButton> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = _enabled;
+    final enabled = widget.queueController.queue?.autoplayEnabled;
+    final isUpdating = widget.queueController.isUpdatingAutoplay;
     return GlassIconToggleButton(
       icon: CupertinoIcons.repeat,
       type: GlassIconButtonType.secondary,
       tooltip: enabled == true
           ? AppLocalizations.of(context).queueDisableAutoplayTooltip
           : AppLocalizations.of(context).queueEnableAutoplayTooltip,
-      disabled: enabled == null,
+      disabled: enabled == null || isUpdating,
       isSelected: enabled == true,
-      isLoading: _isToggling,
+      isLoading: isUpdating,
       onPressed: _toggle,
     );
   }

@@ -6,16 +6,34 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../data/music_assistant_repository.dart';
 
 /// Owns the SDK queue and queue items shared by now playing and the queue sheet.
-class PlayerQueueController extends ChangeNotifier {
-  PlayerQueueController({required this.repository, required this.playerId}) {
+class PlayerQueueViewModel extends ChangeNotifier {
+  PlayerQueueViewModel({
+    required this.repository,
+    required this.playerId,
+    this.currentPlayingUri,
+  }) {
     _unsubscribeFromQueueEvents = repository.listenToQueueEvents(
       playerId: playerId,
       onEvent: _onQueueEvent,
+    );
+    _unsubscribeFromPlayerEvents = repository.listenToPlayerEvents(
+      onChanged: (player) {
+        if (_disposed) return;
+        final uri = player.currentMedia?.uri;
+        if (player.playerId == playerId &&
+            uri != null &&
+            uri != currentPlayingUri) {
+          currentPlayingUri = uri;
+          notifyListeners();
+        }
+      },
+      onRemoved: (_) {},
     );
   }
 
   final MusicAssistantRepository repository;
   final String playerId;
+  String? currentPlayingUri;
 
   MusicAssistantPlayerQueue? queue;
   bool get isDynamic => queue?.isDynamic ?? false;
@@ -24,9 +42,12 @@ class PlayerQueueController extends ChangeNotifier {
   Map<String, MusicAssistantExtraAttributes> itemExtraAttributesByQueueItemId =
       const {};
   Map<String, MusicAssistantAlbumOrItemMapping> albumByQueueItemId = const {};
+  bool isUpdatingShuffle = false;
+  bool isUpdatingAutoplay = false;
   Future<void>? _loading;
   Timer? _refreshTimer;
   void Function()? _unsubscribeFromQueueEvents;
+  void Function()? _unsubscribeFromPlayerEvents;
   bool _disposed = false;
 
   Future<void> load() {
@@ -45,6 +66,53 @@ class PlayerQueueController extends ChangeNotifier {
     }
     await (_loading ??= _fetch());
   }
+
+  Future<void> setShuffleEnabled(bool enabled) async {
+    final previousQueue = queue;
+    isUpdatingShuffle = true;
+    if (previousQueue != null) {
+      queue = previousQueue.copyWith(shuffleEnabled: enabled);
+    }
+    notifyListeners();
+    try {
+      await repository.setQueueShuffle(playerId, enabled);
+      await refresh();
+    } catch (_) {
+      queue = previousQueue;
+      rethrow;
+    } finally {
+      isUpdatingShuffle = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> setAutoplayEnabled(bool enabled) async {
+    final previousQueue = queue;
+    isUpdatingAutoplay = true;
+    if (previousQueue != null) {
+      queue = previousQueue.copyWith(autoplayEnabled: enabled);
+    }
+    notifyListeners();
+    try {
+      await repository.setQueueAutoplay(playerId, enabled);
+      await refresh();
+    } catch (_) {
+      queue = previousQueue;
+      rethrow;
+    } finally {
+      isUpdatingAutoplay = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> clear() => repository.clearQueue(playerId);
+
+  Future<void> removeItem({required int index, String? queueItemId}) =>
+      repository.removeQueueItem(
+        playerId,
+        index: index,
+        queueItemId: queueItemId,
+      );
 
   String? queueArtist(MusicAssistantQueueItem item) {
     final artists = item.mediaItem?.artists
@@ -105,6 +173,7 @@ class PlayerQueueController extends ChangeNotifier {
     _disposed = true;
     _refreshTimer?.cancel();
     _unsubscribeFromQueueEvents?.call();
+    _unsubscribeFromPlayerEvents?.call();
     super.dispose();
   }
 }

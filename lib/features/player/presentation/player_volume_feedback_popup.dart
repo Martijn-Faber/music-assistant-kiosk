@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
 import '../../../design_system/glass_tokens.dart';
-import 'player_volume_controller.dart';
+import '../viewmodels/player_volume_view_model.dart';
 import 'player_glass_widgets.dart';
 
 class PlayerVolumeFeedbackPopup extends StatelessWidget {
@@ -14,7 +14,7 @@ class PlayerVolumeFeedbackPopup extends StatelessWidget {
   });
 
   final MusicAssistantPlayer player;
-  final PlayerVolumeController controller;
+  final PlayerVolumeViewModel controller;
 
   @override
   Widget build(BuildContext context) => Positioned(

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/music_assistant_repository.dart';
+import '../viewmodels/player_volume_dialog_view_model.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../../../design_system/glass_design_system.dart'
     show GlassSlider, GlassTokens;
@@ -23,78 +24,32 @@ class PlayerVolumeDialog extends StatefulWidget {
 }
 
 class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
-  late Future<List<MusicAssistantPlayer>> _targets;
-  final Map<String, int> _volumeLevels = {};
-  final Map<String, DateTime> _ignoreVolumeEventsUntil = {};
-  final Set<String> _adjustingPlayerIds = {};
-  String? _savingPlayerId;
-  late final void Function() _unsubscribe;
+  late final PlayerVolumeDialogViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _targets = _loadTargets();
-    final targetIds = {widget.player.playerId, ...?widget.player.groupMembers};
-    _unsubscribe = widget.repository.listenToPlayerEvents(
-      onChanged: (player) {
-        if (!targetIds.contains(player.playerId) ||
-            player.volumeLevel == null ||
-            !mounted ||
-            _adjustingPlayerIds.contains(player.playerId) ||
-            (_ignoreVolumeEventsUntil[player.playerId]?.isAfter(DateTime.now()) ??
-                false)) {
-          return;
-        }
-        setState(() {
-          _volumeLevels[player.playerId] = player.volumeLevel!.clamp(0, 100);
-        });
-      },
-      onRemoved: (_) {},
-    );
+    _viewModel = PlayerVolumeDialogViewModel(
+      repository: widget.repository,
+      player: widget.player,
+    )..addListener(_onViewModelChanged);
+  }
+
+  void _onViewModelChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _unsubscribe();
+    _viewModel
+      ..removeListener(_onViewModelChanged)
+      ..dispose();
     super.dispose();
   }
 
-  Future<List<MusicAssistantPlayer>> _loadTargets() async {
-    final players = await widget.repository.fetchPlayers();
-    final memberIds = widget.player.groupMembers ?? const <String>[];
-    final targets = memberIds.isEmpty
-        ? players
-              .where((player) => player.playerId == widget.player.playerId)
-              .toList()
-        : players
-              .where(
-                (player) =>
-                    memberIds.contains(player.playerId) ||
-                    memberIds.contains(player.name),
-              )
-              .toList();
-    final resolvedTargets = targets.isEmpty ? [widget.player] : targets;
-    for (final target in resolvedTargets) {
-      _volumeLevels.putIfAbsent(
-        target.playerId,
-        () => target.volumeLevel?.clamp(0, 100).toInt() ?? 0,
-      );
-    }
-    return resolvedTargets;
-  }
-
   Future<void> _saveVolume(String playerId, double value) async {
-    final volume = value.round().clamp(0, 100).toInt();
-    setState(() {
-      _savingPlayerId = playerId;
-      _adjustingPlayerIds.add(playerId);
-      _volumeLevels[playerId] = volume;
-    });
     try {
-      await widget.repository.setPlayerVolume(playerId, volume);
-      _ignoreVolumeEventsUntil[playerId] = DateTime.now().add(
-        const Duration(seconds: 2),
-      );
+      await _viewModel.saveVolume(playerId, value);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -104,13 +59,6 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
             ),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _savingPlayerId = null;
-          _adjustingPlayerIds.remove(playerId);
-        });
       }
     }
   }
@@ -151,7 +99,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
             ),
             Flexible(
               child: FutureBuilder<List<MusicAssistantPlayer>>(
-                future: _targets,
+                future: _viewModel.targets,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const SizedBox(
@@ -181,7 +129,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     ),
                     itemBuilder: (context, index) {
                       final target = targets[index];
-                      final volume = _volumeLevels[target.playerId] ?? 0;
+                      final volume = _viewModel.volumeFor(target.playerId);
                       final canSetVolume = target.supportedFeatures?.contains(
                             MusicAssistantPlayerFeature.volumeSet,
                           ) ==
@@ -209,7 +157,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                   ),
                                 ),
                               ),
-                              if (_savingPlayerId == target.playerId) ...[
+                              if (_viewModel.isSaving(target.playerId)) ...[
                                 const SizedBox.square(
                                   dimension: 14,
                                   child: CircularProgressIndicator(
@@ -237,14 +185,10 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             min: 0,
                             max: 100,
                             onChangeStart: canSetVolume
-                                ? (_) => setState(
-                                    () => _adjustingPlayerIds.add(target.playerId),
-                                  )
+                                ? (_) => _viewModel.setAdjusting(target.playerId, true)
                                 : null,
                             onChanged: canSetVolume
-                                ? (value) => setState(
-                                    () => _volumeLevels[target.playerId] = value.round(),
-                                  )
+                                ? (value) => _viewModel.previewVolume(target.playerId, value)
                                 : null,
                             onChangeEnd: canSetVolume
                                 ? (value) => _saveVolume(target.playerId, value)

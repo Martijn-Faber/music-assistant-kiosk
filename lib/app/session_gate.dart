@@ -11,7 +11,7 @@ import '../features/player/data/music_assistant_repository.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../features/player/presentation/player_screen.dart';
 import '../features/player/presentation/player_setup_page.dart';
-import '../features/player/presentation/player_volume_controller.dart';
+import '../features/player/viewmodels/player_volume_view_model.dart';
 
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key, required this.onLocaleChanged});
@@ -25,7 +25,7 @@ class SessionGate extends StatefulWidget {
 class _SessionGateState extends State<SessionGate> {
   final _sessionStorage = SessionStorage();
   final _volumeButtons = VolumeButtonBridge();
-  late final _volumeController = PlayerVolumeController(
+  late final _volumeController = PlayerVolumeViewModel(
     isMounted: () => mounted,
     selectedPlayerId: () => _selectedPlayerId,
     repository: () => _repository,

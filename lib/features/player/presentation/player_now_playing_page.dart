@@ -10,14 +10,14 @@ import '../data/music_assistant_repository.dart';
 import '../domain/playback_quality_info.dart';
 import 'player_action_buttons.dart';
 import 'player_glass_widgets.dart';
-import 'player_playback_controller.dart';
-import 'player_queue_controller.dart';
+import '../viewmodels/player_playback_view_model.dart';
+import '../viewmodels/player_queue_view_model.dart';
 import 'queue_artwork_stack.dart';
 import 'provider_identity.dart';
 
 typedef ShowPlayerQueue = void Function(
-  PlayerQueueController queueController,
-  PlayerPlaybackController playbackController,
+  PlayerQueueViewModel queueController,
+  PlayerPlaybackViewModel playbackController,
 );
 
 /// The full-screen page shown while the selected player has an active item.
@@ -67,8 +67,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   @override
   bool get wantKeepAlive => true;
 
-  late PlayerQueueController _queueController;
-  late PlayerPlaybackController _playbackController;
+  late PlayerQueueViewModel _queueController;
+  late PlayerPlaybackViewModel _playbackController;
   Timer? _serverItemChangeTimer;
   bool _serverItemChangeInProgress = false;
 
@@ -79,11 +79,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   }
 
   void _createQueueController() {
-    _queueController = PlayerQueueController(
+    _queueController = PlayerQueueViewModel(
       repository: repository,
       playerId: player.playerId,
+      currentPlayingUri: player.currentMedia?.uri,
     );
-    _playbackController = PlayerPlaybackController(
+    _playbackController = PlayerPlaybackViewModel(
       repository: repository,
       playerId: player.playerId,
     );

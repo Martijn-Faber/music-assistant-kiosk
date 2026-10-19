@@ -4,8 +4,8 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../data/music_assistant_repository.dart';
 
 /// Owns optimistic now-playing state and requests that change the active item.
-class PlayerPlaybackController extends ChangeNotifier {
-  PlayerPlaybackController({required this.repository, required this.playerId});
+class PlayerPlaybackViewModel extends ChangeNotifier {
+  PlayerPlaybackViewModel({required this.repository, required this.playerId});
 
   final MusicAssistantRepository repository;
   final String playerId;

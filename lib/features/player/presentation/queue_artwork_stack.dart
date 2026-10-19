@@ -8,8 +8,8 @@ import '../../../design_system/glass_tokens.dart';
 import '../data/music_assistant_repository.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
-import 'player_queue_controller.dart';
-import 'player_playback_controller.dart';
+import '../viewmodels/player_queue_view_model.dart';
+import '../viewmodels/player_playback_view_model.dart';
 
 /// Displays and animates the current and upcoming queue artwork.
 class QueueArtworkStack extends StatefulWidget {
@@ -24,8 +24,8 @@ class QueueArtworkStack extends StatefulWidget {
 
   final MusicAssistantPlayer player;
   final MusicAssistantRepository repository;
-  final PlayerQueueController queueController;
-  final PlayerPlaybackController playbackController;
+  final PlayerQueueViewModel queueController;
+  final PlayerPlaybackViewModel playbackController;
   final double size;
 
   @override
@@ -45,8 +45,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
 
   MusicAssistantPlayer get player => widget.player;
   MusicAssistantRepository get repository => widget.repository;
-  PlayerQueueController get _queueController => widget.queueController;
-  PlayerPlaybackController get _playbackController =>
+  PlayerQueueViewModel get _queueController => widget.queueController;
+  PlayerPlaybackViewModel get _playbackController =>
       widget.playbackController;
 
   String? _queueItemArtwork(MusicAssistantQueueItem item) =>
@@ -268,6 +268,17 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     }
   }
 
+  void _clearLocalDisplayedMediaAfterBuild() {
+    final expectedMedia = _playbackController.localDisplayedMedia;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          !identical(_playbackController.localDisplayedMedia, expectedMedia)) {
+        return;
+      }
+      _playbackController.clearLocalDisplayedMedia();
+    });
+  }
+
   @override
   void didUpdateWidget(covariant QueueArtworkStack oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -297,9 +308,9 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         _pendingSkipQueueIndex = null;
         _localArtworkQueueIndex = pendingSkipIndex;
         _skipCommandDebounceTimer?.cancel();
-        _playbackController.clearLocalDisplayedMedia();
+        _clearLocalDisplayedMediaAfterBuild();
       } else if (_pendingSkipQueueIndex == null) {
-        _playbackController.clearLocalDisplayedMedia();
+        _clearLocalDisplayedMediaAfterBuild();
       }
       final swipeHandoffProgress =
           _artworkDrag.value.clamp(0.0, 1.0).toDouble();

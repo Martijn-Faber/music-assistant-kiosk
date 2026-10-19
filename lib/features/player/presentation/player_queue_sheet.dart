@@ -11,8 +11,8 @@ import 'package:music_assistant_api/music_assistant_api.dart';
 import '../data/music_assistant_repository.dart';
 import '../domain/recent_media_item.dart';
 import 'artwork_image.dart';
-import 'player_playback_controller.dart';
-import 'player_queue_controller.dart';
+import '../viewmodels/player_playback_view_model.dart';
+import '../viewmodels/player_queue_view_model.dart';
 import 'player_queue_header_buttons.dart';
 import '../../../design_system/glass_tokens.dart';
 import '../../../design_system/glass_scroll_fade.dart';
@@ -28,15 +28,13 @@ class PlayerQueueSheet extends StatefulWidget {
     required this.queueController,
     required this.playbackController,
     required this.playerId,
-    required this.initialMediaUri,
     required this.onQueueCleared,
   });
 
   final MusicAssistantRepository repository;
-  final PlayerQueueController queueController;
-  final PlayerPlaybackController playbackController;
+  final PlayerQueueViewModel queueController;
+  final PlayerPlaybackViewModel playbackController;
   final String playerId;
-  final String? initialMediaUri;
   final ValueChanged<String> onQueueCleared;
 
   @override
@@ -63,11 +61,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   List<MusicAssistantQueueItem>? _queueItemsOverride;
   int? _startingQueueRowIndex;
   int? _currentQueueRowIndexOverride;
+  String? _lastObservedPlayingUri;
   bool _didPositionQueueAtCurrentItem = false;
   bool _queuePositioned = false;
   int? _lastAutoScrolledQueueRowIndex;
-  late String? _currentPlayingUri;
-  late final void Function() _unsubscribeFromPlayerEvents;
   Timer? _queueRefreshTimer;
   bool _queueRefreshInFlight = false;
   bool _queueRefreshPending = false;
@@ -86,32 +83,17 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
   void initState() {
     super.initState();
     _queue = _loadQueue();
-    _currentPlayingUri = widget.initialMediaUri;
+    _lastObservedPlayingUri = widget.queueController.currentPlayingUri;
     widget.queueController.addListener(_onSharedQueueChanged);
-    _unsubscribeFromPlayerEvents = widget.repository.listenToPlayerEvents(
-      onChanged: (player) {
-        if (player.playerId != widget.playerId ||
-            (player.currentMedia?.uri == null &&
-                player.currentMedia?.title == null)) {
-          return;
-        }
-        if (!mounted) return;
-        setState(() {
-          // Some player updates include a title but omit the URI. Keep the last
-          // known URI in that case so the queue highlight does not fall back to
-          // an older currentIndex from the initially loaded queue.
-          if (player.currentMedia?.uri != null) {
-            _currentPlayingUri = player.currentMedia!.uri;
-            _currentQueueRowIndexOverride = null;
-          }
-        });
-      },
-      onRemoved: (_) {},
-    );
   }
 
   void _onSharedQueueChanged() {
     if (!mounted) return;
+    final playingUri = widget.queueController.currentPlayingUri;
+    if (playingUri != null && playingUri != _lastObservedPlayingUri) {
+      _lastObservedPlayingUri = playingUri;
+      _currentQueueRowIndexOverride = null;
+    }
     if (_isRemovingQueueItem) {
       // Keep the shared update: the optimistic delete is still settling.
       _queueRefreshPending = true;
@@ -277,7 +259,6 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
   @override
   void dispose() {
-    _unsubscribeFromPlayerEvents();
     widget.queueController.removeListener(_onSharedQueueChanged);
     _queueRefreshTimer?.cancel();
     _dismissProgress.dispose();
@@ -426,7 +407,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
 
     setState(() => _isClearingQueue = true);
     try {
-      await widget.repository.clearQueue(widget.playerId);
+      await widget.queueController.clear();
       if (mounted) {
         widget.onQueueCleared(widget.playerId);
         if (mounted) Navigator.of(context).pop();
@@ -488,8 +469,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     required String? queueItemId,
   }) async {
     try {
-      await widget.repository.removeQueueItem(
-        widget.playerId,
+      await widget.queueController.removeItem(
         index: queueIndex,
         queueItemId: queueItemId,
       );
@@ -612,16 +592,12 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       ),
                     ),
                     PlayerQueueShuffleButton(
-                      repository: widget.repository,
                       queueController: widget.queueController,
-                      playerId: widget.playerId,
                       disabled: widget.queueController
                           .isDynamic,
                     ),
                     PlayerQueueAutoplayButton(
-                      repository: widget.repository,
                       queueController: widget.queueController,
-                      playerId: widget.playerId,
                     ),
                     PlayerQueueClearButton(
                       isClearing: _isClearingQueue,
@@ -691,11 +667,13 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                         );
                       }
                       final currentQueueIndex = queue.currentIndex;
-                      final uriMatch = _currentPlayingUri == null
+                      final currentPlayingUri =
+                          widget.queueController.currentPlayingUri;
+                      final uriMatch = currentPlayingUri == null
                           ? -1
                           : queueItems.indexWhere(
                               (item) =>
-                                  _queueItemUri(item) == _currentPlayingUri,
+                                  _queueItemUri(item) == currentPlayingUri,
                             );
                       final serverIndexMatch = currentQueueIndex == null
                           ? -1
