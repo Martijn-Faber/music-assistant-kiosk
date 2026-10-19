@@ -207,7 +207,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   ]),
                   const SizedBox(height: 24),
                   GlassOutlineButton(
-                    icon: CupertinoIcons.power,
+                    icon: CupertinoIcons.square_arrow_right,
                     label: l10n.settingsSignOutAction,
                     onPressed: widget.onSignOut,
                   ),
