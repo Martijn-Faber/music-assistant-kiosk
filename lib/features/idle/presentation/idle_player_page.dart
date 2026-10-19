@@ -11,6 +11,7 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../player/presentation/artwork_image.dart';
 import '../../player/presentation/provider_identity.dart';
 import '../../player/presentation/player_glass_widgets.dart';
+import '../../../design_system/page_indicator.dart';
 
 import 'package:app/models/media_item_palette.dart';
 

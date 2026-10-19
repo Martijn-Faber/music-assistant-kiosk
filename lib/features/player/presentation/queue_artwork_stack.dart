@@ -55,6 +55,28 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         album: _queueController.albumByQueueItemId[item.queueItemId],
       );
 
+  final Set<String> _prewarmedBackdropArtwork = <String>{};
+
+  void _prewarmBackdropArtwork(String? imageUrl) {
+    if (imageUrl == null || !_prewarmedBackdropArtwork.add(imageUrl)) return;
+    final provider = artworkImageProvider(
+      imageUrl: imageUrl,
+      serverUrl: repository.serverUrl,
+      token: repository.token,
+    );
+    if (provider == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        precacheImage(
+          ResizeImage(provider, width: 32, height: 32),
+          context,
+        ).catchError((Object _) {}),
+      );
+    });
+  }
+
   String? _displayedArtworkUrl;
   String? _displayedArtworkTrackIdentity;
   int? _displayedQueueIndexHint;
@@ -620,10 +642,12 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     // on each swipe. Only the last target is sent after the user pauses.
     _pendingSkipQueueIndex = baseIndex + 1;
     final selectedItem = queueItems[_pendingSkipQueueIndex!];
+    final artworkUrl = _queueItemArtwork(selectedItem);
+    _prewarmBackdropArtwork(artworkUrl);
     _playbackController.displayQueueItemLocally(
       selectedItem,
       artist: _queueController.queueArtist(selectedItem),
-      imageUrl: _queueItemArtwork(selectedItem),
+      imageUrl: artworkUrl,
     );
     _skipCommandDebounceTimer?.cancel();
     _skipCommandDebounceTimer = Timer(_skipCommandDebounce, () {
@@ -690,6 +714,10 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final followingArtworkUrl = upcomingItems.length < 2
         ? null
         : _queueItemArtwork(upcomingItems[1]);
+    // Warm the exact tiny decode used by AlbumBackdrop while these tracks are
+    // already queued as upcoming artwork, before the user swipes to them.
+    _prewarmBackdropArtwork(nextArtworkUrl);
+    _prewarmBackdropArtwork(followingArtworkUrl);
     final stackHeight = size * 1.1;
     final hasMultipleQueueItems = _queueController.items.length > 1;
     final inTransition =

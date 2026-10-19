@@ -6,12 +6,21 @@ import 'package:flutter/services.dart';
 import '../core/platform/volume_button_bridge.dart';
 import '../core/storage/session_storage.dart';
 import '../l10n/generated/app_localizations.dart';
+import 'app_page_pager.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/player/data/music_assistant_repository.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../features/player/presentation/player_screen.dart';
+import '../features/player/presentation/player_glass_widgets.dart';
+import '../features/player/presentation/player_now_playing_page.dart';
 import '../features/player/presentation/player_setup_page.dart';
+import '../features/player/presentation/player_volume_dialog.dart';
+import '../features/player/presentation/player_volume_feedback_popup.dart';
+import '../features/player/presentation/album_backdrop.dart';
 import '../features/player/viewmodels/player_volume_view_model.dart';
+import '../features/idle/presentation/idle_player_page.dart';
+import '../features/screensaver/presentation/clock_screensaver_page.dart';
+import '../features/settings/presentation/player_settings_page.dart';
 
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key, required this.onLocaleChanged});
@@ -23,6 +32,9 @@ class SessionGate extends StatefulWidget {
 }
 
 class _SessionGateState extends State<SessionGate> {
+  final _pagerKey = GlobalKey<AppPagePagerState>();
+  MusicAssistantPlayerMedia? _backdropMediaOverride;
+  String? _backdropOverridePlayerId;
   final _sessionStorage = SessionStorage();
   final _volumeButtons = VolumeButtonBridge();
   late final _volumeController = PlayerVolumeViewModel(
@@ -243,6 +255,8 @@ class _SessionGateState extends State<SessionGate> {
       _serverInfo = null;
       _selectedPlayerId = null;
       _qualityLabel = null;
+      _backdropMediaOverride = null;
+      _backdropOverridePlayerId = null;
       _connectionError = null;
       _playerError = null;
       _playerActionError = null;
@@ -270,6 +284,8 @@ class _SessionGateState extends State<SessionGate> {
           _players[index] = player;
         }
         _selectedPlayerId = playerId;
+        _backdropMediaOverride = null;
+        _backdropOverridePlayerId = null;
         _needsPlayerSetup = false;
         _playerSetupError = null;
         _qualityLabel = null;
@@ -354,6 +370,15 @@ class _SessionGateState extends State<SessionGate> {
           }
           if (_selectedPlayerId == player.playerId && trackChanged) {
             _qualityLabel = null;
+            final backdropOverride = _backdropMediaOverride;
+            final serverMedia = updatedPlayer.currentMedia;
+            if (backdropOverride != null &&
+                (serverMedia == null ||
+                    serverMedia.queueItemId == backdropOverride.queueItemId ||
+                    serverMedia.uri == backdropOverride.uri)) {
+              _backdropMediaOverride = null;
+              _backdropOverridePlayerId = null;
+            }
           }
         });
 
@@ -377,6 +402,8 @@ class _SessionGateState extends State<SessionGate> {
           if (wasSelected) {
             _selectedPlayerId = null;
             _qualityLabel = null;
+            _backdropMediaOverride = null;
+            _backdropOverridePlayerId = null;
           }
         });
         if (wasSelected) {
@@ -470,7 +497,11 @@ class _SessionGateState extends State<SessionGate> {
         elapsedTime: null,
         elapsedTimeLastUpdated: null,
       );
-      if (_selectedPlayerId == playerId) _qualityLabel = null;
+      if (_selectedPlayerId == playerId) {
+        _qualityLabel = null;
+        _backdropMediaOverride = null;
+        _backdropOverridePlayerId = null;
+      }
     });
   }
 
@@ -499,6 +530,17 @@ class _SessionGateState extends State<SessionGate> {
     }
   }
 
+  void _onDisplayedMediaChanged(
+    String playerId,
+    MusicAssistantPlayerMedia? media,
+  ) {
+    if (_selectedPlayerId != playerId) return;
+    setState(() {
+      _backdropMediaOverride = media;
+      _backdropOverridePlayerId = media == null ? null : playerId;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = _repository;
@@ -520,21 +562,121 @@ class _SessionGateState extends State<SessionGate> {
       );
     }
 
-    return PlayerScreen(
-      repository: repository,
+    final player = _players
+        .where((item) => item.playerId == _selectedPlayerId)
+        .firstOrNull;
+    final currentMedia = player?.currentMedia;
+    final hasCurrentTrack = currentMedia?.title?.trim().isNotEmpty ?? false;
+    final isPlaying =
+        player?.playbackState == MusicAssistantPlaybackState.playing;
+    final isIdle = !hasCurrentTrack && !isPlaying;
+    final backdropMedia = _backdropOverridePlayerId == _selectedPlayerId
+        ? _backdropMediaOverride ?? currentMedia
+        : currentMedia;
+    final nowPlayingLabel = hasCurrentTrack
+        ? [
+            currentMedia!.title!.trim(),
+            if (currentMedia.artist?.trim().isNotEmpty == true)
+              currentMedia.artist!.trim(),
+          ].join(' · ')
+        : isPlaying
+        ? AppLocalizations.of(context).playerMusicIsPlaying
+        : null;
+
+    final settingsPage = PlayerSettingsPage(
+      user: repository.user,
       serverInfo: _serverInfo,
       players: _players,
       selectedPlayerId: _selectedPlayerId,
-      qualityLabel: _qualityLabel,
-      playerActionError: _playerActionError,
-      error: _playerError,
-      volumeController: _volumeController,
+      serverAddress:
+          Uri.tryParse(repository.serverUrl)?.authority ?? repository.serverUrl,
+      deviceName: player?.name,
       clock24HourFormat: _clock24HourFormat,
       onClock24HourFormatChanged: _setClockFormat,
       onLocaleChanged: widget.onLocaleChanged,
       onSelectPlayer: _selectPlayer,
-      onQueueCleared: _markPlayerIdle,
-      onDisconnect: _disconnect,
+      onSignOut: _disconnect,
+    );
+
+    final idlePage = player == null
+        ? const NothingPlayingPage()
+        : IdlePlayerPage(
+            key: ValueKey('${repository.serverUrl}:$_selectedPlayerId'),
+            repository: repository,
+            player: player,
+            onPlaybackStarted: () =>
+                _pagerKey.currentState?.openPlayerPage(),
+          );
+    final playerPage = player == null || isIdle
+        ? const NothingPlayingPage()
+        : PlayerScreen(
+            key: ValueKey('${repository.serverUrl}:$_selectedPlayerId'),
+            repository: repository,
+            player: player,
+            qualityLabel: _qualityLabel,
+            playerActionError: _playerActionError,
+            error: _playerError,
+            onQueueCleared: _markPlayerIdle,
+            onDisplayedMediaChanged: (media) =>
+                _onDisplayedMediaChanged(player.playerId, media),
+          );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF101819),
+      body: AlbumBackdrop(
+        imageUrl: isIdle ? null : backdropMedia?.imageUrl,
+        palette: backdropMedia?.palette,
+        serverUrl: repository.serverUrl,
+        token: repository.token,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            SafeArea(
+              child: Center(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: AppPagePager(
+                    key: _pagerKey,
+                    isIdle: isIdle,
+                    activePageControl: player == null
+                        ? null
+                        : PlayerNamePill(
+                            playerName: player.name,
+                            groupMemberCount:
+                                (player.groupMembers?.length ?? 0) > 1
+                                    ? player.groupMembers!.length
+                                    : null,
+                            onTap: () => showDialog<void>(
+                              context: context,
+                              builder: (_) => PlayerVolumeDialog(
+                                repository: repository,
+                                player: player,
+                              ),
+                            ),
+                          ),
+                    pages: [
+                      ClockScreensaverPage(
+                        nowPlayingLabel: nowPlayingLabel,
+                        onNowPlayingTap: () =>
+                            _pagerKey.currentState?.openPlayerPage(),
+                        alwaysUse24HourFormat: _clock24HourFormat,
+                      ),
+                      idlePage,
+                      playerPage,
+                      settingsPage,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (player != null)
+              PlayerVolumeFeedbackPopup(
+                player: player,
+                controller: _volumeController,
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
