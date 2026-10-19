@@ -8,6 +8,7 @@ import '../core/storage/session_storage.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'app_page_pager.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../features/onboarding/presentation/onboarding_components.dart';
 import '../features/player/data/music_assistant_repository.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 import '../features/player/presentation/player_screen.dart';
@@ -59,6 +60,8 @@ class _SessionGateState extends State<SessionGate> {
   String? _selectedPlayerId;
   void Function()? _unsubscribeFromPlayers;
   bool _isLoading = true;
+  bool _showStartupLoading = true;
+  bool _onboardingComplete = false;
   bool _isConnecting = false;
   bool _needsPlayerSetup = false;
   bool _isRefreshingSetupPlayers = false;
@@ -94,6 +97,16 @@ class _SessionGateState extends State<SessionGate> {
     MusicAssistantRepository? repository;
     try {
       final savedSession = await _sessionStorage.readSession();
+      _onboardingComplete = await _sessionStorage.readOnboardingComplete();
+      if (mounted) {
+        setState(() => _showStartupLoading = _onboardingComplete);
+      }
+      // Existing installs with saved credentials have already completed setup.
+      if (savedSession != null && !_onboardingComplete) {
+        _onboardingComplete = true;
+        await _sessionStorage.saveOnboardingComplete(true);
+        if (mounted) setState(() => _showStartupLoading = true);
+      }
       if (savedSession == null) return;
 
       repository = await MusicAssistantRepository.resume(
@@ -146,7 +159,12 @@ class _SessionGateState extends State<SessionGate> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _showStartupLoading = false;
+        });
+      }
     }
   }
 
@@ -245,6 +263,8 @@ class _SessionGateState extends State<SessionGate> {
     } finally {
       await repository?.disconnect();
       await _sessionStorage.clearCredentials();
+      await _sessionStorage.saveOnboardingComplete(false);
+      _onboardingComplete = false;
     }
     if (!mounted) return;
 
@@ -275,6 +295,8 @@ class _SessionGateState extends State<SessionGate> {
       }
       final player = await repository.fetchPlayer(playerId);
       await _sessionStorage.saveSelectedPlayerId(playerId);
+      await _sessionStorage.saveOnboardingComplete(true);
+      _onboardingComplete = true;
       if (!mounted) return;
       setState(() {
         final index = _players.indexWhere((item) => item.playerId == playerId);
@@ -543,6 +565,27 @@ class _SessionGateState extends State<SessionGate> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showStartupLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF090D12),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            ConnectionBackdrop(),
+            Center(
+              child: SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final repository = _repository;
     if (repository == null || _needsPlayerSetup) {
       return OnboardingScreen(

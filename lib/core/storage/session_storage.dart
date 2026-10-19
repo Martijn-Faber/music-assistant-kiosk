@@ -19,6 +19,18 @@ class SessionStorage {
   static const _playerKey = 'music_assistant_player';
   static const _clock24HourKey = 'clock_24_hour_format';
   static const _localeKey = 'app_locale';
+  static const _onboardingCompleteKey = 'onboarding_complete';
+
+  Future<bool> readOnboardingComplete() async =>
+      await _storage.read(key: _onboardingCompleteKey) == 'true';
+
+  Future<void> saveOnboardingComplete(bool complete) async {
+    if (complete) {
+      await _storage.write(key: _onboardingCompleteKey, value: 'true');
+    } else {
+      await _storage.delete(key: _onboardingCompleteKey);
+    }
+  }
 
   Future<String?> readLocale() => _storage.read(key: _localeKey);
 
