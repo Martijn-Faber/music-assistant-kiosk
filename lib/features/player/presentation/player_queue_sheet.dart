@@ -529,7 +529,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
             right: BorderSide(color: Color(0x66FFFFFF), width: 0.8),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            padding: const EdgeInsets.only(top: 8, bottom: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -557,57 +557,59 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                     ),
                   ),
                 ),
-                Row(
-                  children: [
-                    const Icon(
-                      CupertinoIcons.music_note_list,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).queueTitle,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: GlassTokens.fontSize22,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (_queueSourceSubtitle case final subtitle?)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        CupertinoIcons.music_note_list,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
+                              AppLocalizations.of(context).queueTitle,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: GlassTokens.fontSize22,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                        ],
+                            if (_queueSourceSubtitle case final subtitle?)
+                              Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                    PlayerQueueShuffleButton(
-                      queueController: widget.queueController,
-                      disabled: widget.queueController
-                          .isDynamic,
-                    ),
-                    PlayerQueueAutoplayButton(
-                      queueController: widget.queueController,
-                    ),
-                    PlayerQueueClearButton(
-                      isClearing: _isClearingQueue,
-                      isRemovingQueueItem: _isRemovingQueueItem,
-                      onPressed: _confirmClearQueue,
-                    ),
-                    PlayerQueueCloseButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                      PlayerQueueShuffleButton(
+                        queueController: widget.queueController,
+                        disabled: widget.queueController.isDynamic,
+                      ),
+                      PlayerQueueAutoplayButton(
+                        queueController: widget.queueController,
+                      ),
+                      PlayerQueueClearButton(
+                        isClearing: _isClearingQueue,
+                        isRemovingQueueItem: _isRemovingQueueItem,
+                        onPressed: _confirmClearQueue,
+                      ),
+                      PlayerQueueCloseButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -778,9 +780,14 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                   index + 1 == currentQueueRowIndex;
                               return touchesCurrentItem
                                   ? const SizedBox(height: 1)
-                                  : const Divider(
-                                      color: Color(0x33FFFFFF),
-                                      height: 1,
+                                  : const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                      child: Divider(
+                                        color: Color(0x33FFFFFF),
+                                        height: 1,
+                                      ),
                                     );
                             },
                             itemBuilder: (context, index) {
@@ -813,16 +820,16 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                               final artist = widget.queueController
                                   .queueArtist(item);
                               final isLoading = _startingQueueRowIndex == index;
+                              final onTap =
+                                  _startingQueueRowIndex == null &&
+                                      !_isClearingQueue
+                                  ? () => _playQueueItem(
+                                      rowIndex: index,
+                                      queueIndex: queueIndex,
+                                      queueItemId: queueItemId,
+                                    )
+                                  : null;
                               final tile = ListTile(
-                                onTap:
-                                    _startingQueueRowIndex == null &&
-                                        !_isClearingQueue
-                                    ? () => _playQueueItem(
-                                        rowIndex: index,
-                                        queueIndex: queueIndex,
-                                        queueItemId: queueItemId,
-                                      )
-                                    : null,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                 ),
@@ -1042,29 +1049,40 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                                 child: child,
                                               ),
                                             ),
-                                        child: isCurrent
-                                            ? GlassSurface(
-                                                key: const ValueKey(
-                                                  'current-track',
+                                        child: Material(
+                                          key: ValueKey(
+                                            isCurrent
+                                                ? 'current-track'
+                                                : 'queue-track',
+                                          ),
+                                          type: MaterialType.transparency,
+                                          child: isCurrent
+                                              ? Padding(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                  ),
+                                                  child: GlassInteractiveSurface(
+                                                    borderRadius: 14,
+                                                    padding: EdgeInsets.zero,
+                                                    tint: const Color(
+                                                      0x33202730,
+                                                    ),
+                                                    blurSigma: 0,
+                                                    showShadow: false,
+                                                    onTap: onTap,
+                                                    child: tile,
+                                                  ),
+                                                )
+                                              : InkWell(
+                                                  onTap: onTap,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 20,
+                                                    ),
+                                                    child: tile,
+                                                  ),
                                                 ),
-                                                borderRadius: 14,
-                                                padding: EdgeInsets.zero,
-                                                tint: const Color(0x33202730),
-                                                blurSigma: 0,
-                                                showShadow: false,
-                                                child: Material(
-                                                  type:
-                                                      MaterialType.transparency,
-                                                  child: tile,
-                                                ),
-                                              )
-                                            : Material(
-                                                key: const ValueKey(
-                                                  'queue-track',
-                                                ),
-                                                type: MaterialType.transparency,
-                                                child: tile,
-                                              ),
+                                        ),
                                       ),
                                     ),
                                   ),
