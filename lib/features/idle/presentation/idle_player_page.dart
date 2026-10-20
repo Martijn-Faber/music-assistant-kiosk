@@ -18,7 +18,15 @@ import '../../player/domain/media_item_palette_colors.dart';
 String _radioUri(MusicAssistantRadio radio) => radio.uri ?? radio.itemId;
 
 String? _radioImageUrl(MusicAssistantRadio radio) =>
-    radio.metadata?.images?.firstOrNull?.path;
+    _imagePath(radio.metadata?.images?.firstOrNull);
+
+String? _imagePath(MusicAssistantMediaItemImage? image) {
+  final proxyId = image?.proxyId;
+  if (proxyId != null && proxyId.isNotEmpty) {
+    return '/imageproxy/$proxyId';
+  }
+  return image?.path;
+}
 
 String? _radioImageProxyId(MusicAssistantRadio radio) => radio.metadata?.images
     ?.map((image) => image.proxyId)
@@ -36,7 +44,7 @@ String? _radioProvider(MusicAssistantRadio radio) {
 }
 
 String? _playlistImageUrl(MusicAssistantPlaylist playlist) =>
-    playlist.metadata?.images?.firstOrNull?.path;
+    _imagePath(playlist.metadata?.images?.firstOrNull);
 
 class IdlePlayerPage extends StatefulWidget {
   const IdlePlayerPage({
@@ -378,11 +386,6 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
             onPageChanged: (index) => setState(() => _page = index),
             itemBuilder: (context, index) {
               final item = widget.stations[index];
-              final provider = artworkImageProvider(
-                imageUrl: _radioImageUrl(item),
-                serverUrl: widget.repository.serverUrl,
-                token: widget.repository.token,
-              );
               final isLoading = widget.loadingStationId == _radioUri(item);
               return Material(
                 color: Colors.transparent,
@@ -406,21 +409,14 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                if (provider == null)
-                                  const _PlaceholderTile(
-                                    icon: CupertinoIcons
-                                        .antenna_radiowaves_left_right,
-                                  )
-                                else
-                                  Image(
-                                    image: provider,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) =>
-                                        const _PlaceholderTile(
-                                          icon: CupertinoIcons
-                                              .antenna_radiowaves_left_right,
-                                        ),
-                                  ),
+                                ArtworkImage(
+                                  imageUrl: _radioImageUrl(item),
+                                  serverUrl: widget.repository.serverUrl,
+                                  token: widget.repository.token,
+                                  size: 88,
+                                  imageSize: 512,
+                                  showShadow: false,
+                                ),
                                 if (isLoading)
                                   const ColoredBox(
                                     color: Color(0x77000000),
@@ -637,16 +633,13 @@ class _PlaylistRow extends StatelessWidget {
   }
 
   Widget _artwork() {
-    final provider = artworkImageProvider(
+    return ArtworkImage(
       imageUrl: _playlistImageUrl(playlist),
       serverUrl: repository.serverUrl,
       token: repository.token,
-    );
-    if (provider == null) return const _PlaceholderTile();
-    return Image(
-      image: provider,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => const _PlaceholderTile(),
+      size: 52,
+      imageSize: 256,
+      showShadow: false,
     );
   }
 }
