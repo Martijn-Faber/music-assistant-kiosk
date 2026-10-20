@@ -13,7 +13,7 @@ import '../../player/presentation/provider_identity.dart';
 import '../../player/presentation/player_glass_widgets.dart';
 import '../../../design_system/page_indicator.dart';
 
-import 'package:app/models/media_item_palette.dart';
+import '../../player/domain/media_item_palette_colors.dart';
 
 String _radioUri(MusicAssistantRadio radio) => radio.uri ?? radio.itemId;
 
@@ -294,7 +294,7 @@ class _RadioStationPager extends StatefulWidget {
 
 class _RadioStationPagerState extends State<_RadioStationPager> {
   int _page = 0;
-  final Map<String, MediaItemPalette> _palettes = {};
+  final Map<String, MusicAssistantMediaItemPalette> _palettes = {};
   final PageController _pageController = PageController();
 
   @override
@@ -304,7 +304,9 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
   }
 
   Future<void> _loadPalettes() async {
-    final entries = await Future.wait<MapEntry<String, MediaItemPalette>?>(
+    final entries = await Future.wait<
+      MapEntry<String, MusicAssistantMediaItemPalette>?
+    >(
       widget.stations.map((station) async {
         final imageId = _radioImageProxyId(station);
         if (imageId == null) return null;
@@ -330,7 +332,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
     super.dispose();
   }
 
-  Color _paletteColor(MediaItemPalette? palette) =>
+  Color _paletteColor(MusicAssistantMediaItemPalette? palette) =>
       palette?.backgroundDarkColor ??
       palette?.primaryColor ??
       palette?.accentColor ??

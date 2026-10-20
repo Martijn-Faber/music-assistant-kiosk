@@ -1,10 +1,10 @@
 import 'dart:ui' as ui;
 
-import 'package:app/models/media_item_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
 import 'artwork_image.dart';
+import '../domain/media_item_palette_colors.dart';
 
 class AlbumBackdrop extends StatelessWidget {
   const AlbumBackdrop({
@@ -34,12 +34,9 @@ class AlbumBackdrop extends StatelessWidget {
       token: token,
     );
 
-    final baseColor =
-        MediaItemPalette.toColor(palette?.backgroundDark) ?? _fallbackColor;
-    final accentColor =
-        MediaItemPalette.toColor(palette?.accent) ?? baseColor;
-    final primaryColor =
-        MediaItemPalette.toColor(palette?.primary) ?? accentColor;
+    final baseColor = palette?.backgroundDarkColor ?? _fallbackColor;
+    final accentColor = palette?.accentColor ?? baseColor;
+    final primaryColor = palette?.primaryColor ?? accentColor;
 
     return Stack(
       fit: StackFit.expand,

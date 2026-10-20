@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app/models/media_item_palette.dart';
 import 'package:music_assistant/auth_helpers.dart' as music_auth;
 import 'package:music_assistant/music_assistant.dart';
 import 'package:music_assistant_api/music_assistant_api.dart' as mass;
@@ -306,13 +305,17 @@ class MusicAssistantRepository {
     return stations;
   }
 
-  Future<MediaItemPalette?> fetchImagePalette(String imageId) async {
+  Future<mass.MusicAssistantMediaItemPalette?> fetchImagePalette(
+    String imageId,
+  ) async {
     final response = await _client.sendCommand(
       'metadata/get_image_palette',
       args: {'image_id': imageId},
     );
     if (response is Map) {
-      return MediaItemPalette.fromJson(Map<String, dynamic>.from(response));
+      return mass.MusicAssistantMediaItemPalette.fromJson(
+        Map<String, dynamic>.from(response),
+      );
     }
     return null;
   }
