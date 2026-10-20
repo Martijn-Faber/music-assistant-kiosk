@@ -27,6 +27,8 @@ class PlayerVolumeDialog extends StatefulWidget {
 class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
   late final PlayerVolumeDialogViewModel _viewModel;
   final Set<String> _addingPlayerIds = {};
+  final Set<String> _recentlyAddedPlayerIds = {};
+  final Set<String> _dismissingAddedPlayerIds = {};
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -71,6 +73,19 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
     setState(() => _addingPlayerIds.add(player.playerId));
     try {
       await _viewModel.addToGroup(player.playerId);
+      if (!mounted) return;
+      setState(() => _recentlyAddedPlayerIds.add(player.playerId));
+      await Future<void>.delayed(const Duration(milliseconds: 380));
+      if (mounted) {
+        setState(() => _dismissingAddedPlayerIds.add(player.playerId));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+      }
+      if (mounted) {
+        setState(() {
+          _recentlyAddedPlayerIds.remove(player.playerId);
+          _dismissingAddedPlayerIds.remove(player.playerId);
+        });
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -289,7 +304,16 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             final candidates =
                                 (allPlayersSnapshot.data ??
                                         const <MusicAssistantPlayer>[])
-                                    .where(_viewModel.canAddToGroup)
+                                    .where(
+                                      (candidate) =>
+                                          _viewModel.canAddToGroup(candidate) ||
+                                          _addingPlayerIds.contains(
+                                            candidate.playerId,
+                                          ) ||
+                                          _recentlyAddedPlayerIds.contains(
+                                            candidate.playerId,
+                                          ),
+                                    )
                                     .toList();
                             if (allPlayersSnapshot.connectionState !=
                                 ConnectionState.done) {
@@ -319,57 +343,141 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                             return Column(
                               children: [
                                 for (final candidate in candidates)
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: ListTile(
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                          ),
-                                      onTap:
-                                          _addingPlayerIds.contains(
+                                  Builder(
+                                    builder: (context) {
+                                      final isAdding = _addingPlayerIds
+                                          .contains(candidate.playerId);
+                                      final wasAdded = _recentlyAddedPlayerIds
+                                          .contains(candidate.playerId);
+                                      final isDismissing =
+                                          _dismissingAddedPlayerIds.contains(
                                             candidate.playerId,
-                                          )
-                                          ? null
-                                          : () => _addToGroup(candidate),
-                                      leading: const Icon(
-                                        CupertinoIcons.hifispeaker,
-                                        color: Colors.white70,
-                                      ),
-                                      title: Text(
-                                        candidate.name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                          );
+                                      return AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 220,
                                         ),
-                                      ),
-                                      trailing: IconButton(
-                                        tooltip: AppLocalizations.of(
-                                          context,
-                                        ).playerGroupAddAction,
-                                        onPressed:
-                                            _addingPlayerIds.contains(
-                                              candidate.playerId,
-                                            )
-                                            ? null
-                                            : () => _addToGroup(candidate),
-                                        icon:
-                                            _addingPlayerIds.contains(
-                                              candidate.playerId,
-                                            )
-                                            ? const SizedBox.square(
-                                                dimension: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.white70,
-                                                    ),
-                                              )
-                                            : const Icon(
-                                                CupertinoIcons.add_circled,
-                                                color: Colors.white,
+                                        switchInCurve: Curves.easeOutCubic,
+                                        switchOutCurve: Curves.easeInCubic,
+                                        transitionBuilder: (child, animation) =>
+                                            SizeTransition(
+                                              sizeFactor: animation,
+                                              axisAlignment: -1,
+                                              child: FadeTransition(
+                                                opacity: animation,
+                                                child: ScaleTransition(
+                                                  scale: Tween<double>(
+                                                    begin: .985,
+                                                    end: 1,
+                                                  ).animate(animation),
+                                                  child: child,
+                                                ),
                                               ),
-                                      ),
-                                    ),
+                                            ),
+                                        child: isDismissing
+                                            ? const SizedBox(
+                                                key: ValueKey('dismissed'),
+                                              )
+                                            : Material(
+                                                key: const ValueKey(
+                                                  'speaker-row',
+                                                ),
+                                                color: Colors.transparent,
+                                                child: ListTile(
+                                                  contentPadding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 20,
+                                                      ),
+                                                  onTap: isAdding || wasAdded
+                                                      ? null
+                                                      : () => _addToGroup(
+                                                          candidate,
+                                                        ),
+                                                  leading: const Icon(
+                                                    CupertinoIcons.hifispeaker,
+                                                    color: Colors.white70,
+                                                  ),
+                                                  title: Text(
+                                                    candidate.name,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  trailing: IconButton(
+                                                    tooltip:
+                                                        AppLocalizations.of(
+                                                          context,
+                                                        ).playerGroupAddAction,
+                                                    onPressed:
+                                                        isAdding || wasAdded
+                                                        ? null
+                                                        : () => _addToGroup(
+                                                            candidate,
+                                                          ),
+                                                    icon: AnimatedSwitcher(
+                                                      duration: const Duration(
+                                                        milliseconds: 180,
+                                                      ),
+                                                      switchInCurve:
+                                                          Curves.easeOutCubic,
+                                                      switchOutCurve:
+                                                          Curves.easeInCubic,
+                                                      transitionBuilder:
+                                                          (
+                                                            child,
+                                                            animation,
+                                                          ) => FadeTransition(
+                                                            opacity: animation,
+                                                            child: ScaleTransition(
+                                                              scale:
+                                                                  Tween<double>(
+                                                                    begin: .88,
+                                                                    end: 1,
+                                                                  ).animate(
+                                                                    animation,
+                                                                  ),
+                                                              child: child,
+                                                            ),
+                                                          ),
+                                                      child: wasAdded
+                                                          ? const Icon(
+                                                              CupertinoIcons
+                                                                  .checkmark_circle_fill,
+                                                              key: ValueKey(
+                                                                'added',
+                                                              ),
+                                                              color:
+                                                                  Colors.white,
+                                                            )
+                                                          : isAdding
+                                                          ? const SizedBox.square(
+                                                              key: ValueKey(
+                                                                'adding',
+                                                              ),
+                                                              dimension: 18,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    color: Colors
+                                                                        .white70,
+                                                                  ),
+                                                            )
+                                                          : const Icon(
+                                                              CupertinoIcons
+                                                                  .add_circled,
+                                                              key: ValueKey(
+                                                                'available',
+                                                              ),
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                      );
+                                    },
                                   ),
                               ],
                             );
