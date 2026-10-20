@@ -29,7 +29,7 @@ class AlbumBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = artworkImageProvider(
+    final provider = artworkLowResolutionImageProvider(
       imageUrl: imageUrl,
       serverUrl: serverUrl,
       token: token,
@@ -51,7 +51,7 @@ class AlbumBackdrop extends StatelessWidget {
                 child: ImageFiltered(
                   imageFilter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Image(
-                    image: ResizeImage(provider, width: 32, height: 32),
+                    image: provider,
                     fit: BoxFit.cover,
                     // Keep the previous blurred frame visible while refreshed
                     // artwork is loading so metadata updates don't flash the

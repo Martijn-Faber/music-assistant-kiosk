@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -11,6 +13,8 @@ class ArtworkImage extends StatelessWidget {
     required this.token,
     this.size = 164,
     this.showShadow = true,
+    this.gaplessPlayback = true,
+    this.useLowResolutionPlaceholder = false,
     this.safeInVirtualizedList = false,
   });
 
@@ -19,6 +23,8 @@ class ArtworkImage extends StatelessWidget {
   final String token;
   final double size;
   final bool showShadow;
+  final bool gaplessPlayback;
+  final bool useLowResolutionPlaceholder;
   final bool safeInVirtualizedList;
 
   @override
@@ -33,6 +39,13 @@ class ArtworkImage extends StatelessWidget {
     final imageProvider = sourceProvider == null
         ? null
         : ResizeImage(sourceProvider, width: decodeWidth);
+    final lowResolutionProvider = useLowResolutionPlaceholder
+        ? artworkLowResolutionImageProvider(
+            imageUrl: imageUrl,
+            serverUrl: serverUrl,
+            token: token,
+          )
+        : null;
 
     return Container(
       width: size,
@@ -65,15 +78,37 @@ class ArtworkImage extends StatelessWidget {
               : Image(
                   image: imageProvider,
                   fit: BoxFit.cover,
-                  gaplessPlayback: true,
+                  gaplessPlayback: gaplessPlayback,
+                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                    if (lowResolutionProvider == null) return child;
+                    final highResolutionReady =
+                        wasSynchronouslyLoaded || frame != null;
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _placeholder(loading: true),
+                        _lowResolutionArtwork(lowResolutionProvider),
+                        AnimatedOpacity(
+                          opacity: highResolutionReady ? 1 : 0,
+                          duration: GlassTokens.motionQuick,
+                          child: child,
+                        ),
+                      ],
+                    );
+                  },
                   loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
+                    if (progress == null || lowResolutionProvider != null) {
+                      return child;
+                    }
                     return Stack(
                       fit: StackFit.expand,
                       children: [_placeholder(loading: true), child],
                     );
                   },
-                  errorBuilder: (context, error, stackTrace) => _placeholder(),
+                  errorBuilder: (context, error, stackTrace) =>
+                      lowResolutionProvider == null
+                      ? _placeholder()
+                      : _lowResolutionArtwork(lowResolutionProvider),
                 ),
         ),
       ),
@@ -108,6 +143,17 @@ class ArtworkImage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _lowResolutionArtwork(ImageProvider provider) => ImageFiltered(
+    imageFilter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+    child: Image(
+      image: provider,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.low,
+      gaplessPlayback: false,
+      errorBuilder: (context, error, stackTrace) => _placeholder(),
+    ),
+  );
 }
 
 /// Resolves artwork directly so an in-flight queue image doesn't consult a
@@ -220,12 +266,19 @@ NetworkImage? artworkImageProvider({
   required String? imageUrl,
   required String serverUrl,
   required String token,
+  int? imageProxySize,
+  String? imageProxyFormat,
 }) {
-  final uri = _resolveArtworkUri(imageUrl, serverUrl);
+  final uri = _resolveArtworkUri(
+    imageUrl,
+    serverUrl,
+    imageProxySize: imageProxySize,
+    imageProxyFormat: imageProxyFormat,
+  );
   if (uri == null) return null;
 
   final serverUri = Uri.tryParse(serverUrl);
-  // Stuur altijd de bearer token mee als de aanvraag naar onze eigen serverUrl gaat
+  // Send the bearer token when the request targets our configured server.
   final useAuthorization = serverUri != null && uri.host == serverUri.host;
   
   return NetworkImage(
@@ -234,24 +287,70 @@ NetworkImage? artworkImageProvider({
   );
 }
 
-Uri? _resolveArtworkUri(String? value, String baseUrl) {
+ImageProvider? artworkLowResolutionImageProvider({
+  required String? imageUrl,
+  required String serverUrl,
+  required String token,
+}) {
+  final uri = _resolveArtworkUri(imageUrl, serverUrl);
+  if (uri == null) return null;
+
+  if (uri.path.contains('imageproxy')) {
+    // Ask the image proxy for a small JPEG so the placeholder uses less
+    // bandwidth than the full-resolution artwork request.
+    return artworkImageProvider(
+      imageUrl: imageUrl,
+      serverUrl: serverUrl,
+      token: token,
+      imageProxySize: 32,
+      imageProxyFormat: 'jpg',
+    );
+  }
+
+  // Non-proxy artwork has no server-side resize option, so decode it smaller
+  // on the client as a fallback.
+  final sourceProvider = artworkImageProvider(
+    imageUrl: imageUrl,
+    serverUrl: serverUrl,
+    token: token,
+  );
+  return sourceProvider == null
+      ? null
+      : ResizeImage(sourceProvider, width: 32, height: 32);
+}
+
+Uri? _resolveArtworkUri(
+  String? value,
+  String baseUrl, {
+  int? imageProxySize,
+  String? imageProxyFormat,
+}) {
   if (value == null || value.trim().isEmpty) return null;
   final trimmed = value.trim();
   final baseUri = Uri.tryParse(baseUrl);
   if (baseUri == null) return null;
 
-  // Als de URL een imageproxy pad bevat (ongeacht welk lokaal IP of domein er voor staat),
-  // herschrijven we hem direct naar je actieve baseUrl (Cloudflare Tunnel)!
+  // Route image-proxy URLs through the configured server, regardless of the
+  // host embedded in the original URL, and preserve any existing parameters.
   final parsedValue = Uri.tryParse(trimmed);
   if (parsedValue != null && parsedValue.path.contains('imageproxy')) {
+    final queryParameters = Map<String, String>.from(
+      parsedValue.queryParameters,
+    );
+    if (imageProxySize != null) {
+      queryParameters['size'] = imageProxySize.toString();
+    }
+    if (imageProxyFormat != null) {
+      queryParameters['fmt'] = imageProxyFormat;
+    }
     final resolved = baseUri.replace(
       path: parsedValue.path,
-      queryParameters: parsedValue.queryParameters.isNotEmpty ? parsedValue.queryParameters : null,
+      queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
     );
     return {'http', 'https'}.contains(resolved.scheme) ? resolved : null;
   }
 
-  // Standaard afhandeling voor overige absolute of relatieve URLs
+  // Resolve other absolute or relative artwork URLs as usual.
   if (parsedValue != null && parsedValue.hasScheme) {
     return {'http', 'https'}.contains(parsedValue.scheme) ? parsedValue : null;
   }

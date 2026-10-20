@@ -34,6 +34,7 @@ class QueueArtworkStack extends StatefulWidget {
 
 class _QueueArtworkStackState extends State<QueueArtworkStack>
     with TickerProviderStateMixin {
+  static const _previewCardMaxOpacity = .75;
   static const _artworkSpring = SpringDescription(
     mass: 1,
     stiffness: 300,
@@ -55,26 +56,27 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
         album: _queueController.albumByQueueItemId[item.queueItemId],
       );
 
-  final Set<String> _prewarmedBackdropArtwork = <String>{};
+  final Set<String> _prewarmedArtwork = <String>{};
 
-  void _prewarmBackdropArtwork(String? imageUrl) {
-    if (imageUrl == null || !_prewarmedBackdropArtwork.add(imageUrl)) return;
-    final provider = artworkImageProvider(
+  void _prewarmArtwork(String? imageUrl) {
+    if (imageUrl == null || !_prewarmedArtwork.add(imageUrl)) return;
+    final provider = artworkLowResolutionImageProvider(
       imageUrl: imageUrl,
       serverUrl: repository.serverUrl,
       token: repository.token,
     );
     if (provider == null) return;
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(
-        precacheImage(
-          ResizeImage(provider, width: 32, height: 32),
-          context,
-        ).catchError((Object _) {}),
-      );
+      unawaited(precacheImage(provider, context).catchError((Object _) {}));
     });
+  }
+
+  void _prewarmUpcomingArtworkAfter(int queueIndex) {
+    final items = _queueController.items;
+    for (final item in items.skip(queueIndex + 1).take(2)) {
+      _prewarmArtwork(_queueItemArtwork(item));
+    }
   }
 
   String? _displayedArtworkUrl;
@@ -623,6 +625,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     }
 
     final baseIndex = _pendingSkipQueueIndex ??
+        _localArtworkQueueIndex ??
         _queueIndexForTrack(
           _playerTrackIdentity(player),
           indexHint: _displayedQueueIndexHint,
@@ -639,7 +642,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     _pendingSkipQueueIndex = baseIndex + 1;
     final selectedItem = queueItems[_pendingSkipQueueIndex!];
     final artworkUrl = _queueItemArtwork(selectedItem);
-    _prewarmBackdropArtwork(artworkUrl);
+    _prewarmArtwork(artworkUrl);
+    _prewarmUpcomingArtworkAfter(_pendingSkipQueueIndex!);
     _playbackController.displayQueueItemLocally(
       selectedItem,
       artist: _queueController.queueArtist(selectedItem),
@@ -710,10 +714,9 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     final followingArtworkUrl = upcomingItems.length < 2
         ? null
         : _queueItemArtwork(upcomingItems[1]);
-    // Warm the exact tiny decode used by AlbumBackdrop while these tracks are
-    // already queued as upcoming artwork, before the user swipes to them.
-    _prewarmBackdropArtwork(nextArtworkUrl);
-    _prewarmBackdropArtwork(followingArtworkUrl);
+    // Decode the upcoming artwork at card size before a swipe promotes it.
+    _prewarmArtwork(nextArtworkUrl);
+    _prewarmArtwork(followingArtworkUrl);
     final stackHeight = size * 1.1;
     final hasMultipleQueueItems = _queueController.items.length > 1;
     final inTransition =
@@ -780,22 +783,10 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
 
             if (followingIndex < items.length) {
               children.add(
-                Positioned(
-                  left: 0,
-                  top: size * .42,
-                  width: size,
-                  height: size,
-                  child: Opacity(
-                    opacity: swipeProgress,
-                    child: Transform.translate(
-                      offset: Offset(0, -size * .21 * swipeProgress),
-                      child: _nextArtworkCard(
-                        artworkAt(followingIndex),
-                        size,
-                        scale: .74 + (.12 * swipeProgress),
-                      ),
-                    ),
-                  ),
+                _followingArtworkLayer(
+                  artworkAt(followingIndex),
+                  size,
+                  swipeProgress,
                 ),
               );
             }
@@ -858,23 +849,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
             // is in progress. Once playback advances, it becomes the
             // ordinary next card and no fourth card is shown at rest.
             children.add(
-              Positioned(
-                left: 0,
-                top: size * .42,
-                width: size,
-                height: size,
-                child: Opacity(
-                  opacity: dragProgress,
-                  child: Transform.translate(
-                    offset: Offset(0, -size * .21 * dragProgress),
-                    child: _nextArtworkCard(
-                      followingArtworkUrl,
-                      size,
-                      scale: .74 + (.12 * dragProgress),
-                    ),
-                  ),
-                ),
-              ),
+              _followingArtworkLayer(followingArtworkUrl, size, dragProgress),
             );
           }
 
@@ -887,7 +862,9 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                 scale: .86 + (.14 * dragProgress),
                 translateY: -size * .21 * dragProgress,
                 glassBorderOpacity: 1 - dragProgress,
-                fade: .25 * (1 - dragProgress),
+                opacity:
+                    _previewCardMaxOpacity +
+                    ((1 - _previewCardMaxOpacity) * dragProgress),
               ),
             );
           }
@@ -995,6 +972,28 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     return media?.imageUrl;
   }
 
+  Widget _followingArtworkLayer(
+    String? imageUrl,
+    double size,
+    double progress,
+  ) => Positioned(
+    left: 0,
+    top: size * .42,
+    width: size,
+    height: size,
+    child: Opacity(
+      opacity: _previewCardMaxOpacity * progress,
+      child: Transform.translate(
+        offset: Offset(0, -size * .21 * progress),
+        child: _nextArtworkCard(
+          imageUrl,
+          size,
+          scale: .74 + (.12 * progress),
+        ),
+      ),
+    ),
+  );
+
   Widget _nextArtworkLayer({
     required String? imageUrl,
     required double size,
@@ -1002,26 +1001,43 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     required double scale,
     double translateY = 0,
     double glassBorderOpacity = 1,
-    double fade = 0,
+    double opacity = 1,
   }) => Positioned(
     left: 0,
     top: top,
     width: size,
     height: size,
-    child: ColorFiltered(
-      colorFilter: ColorFilter.mode(
-        Colors.black.withValues(alpha: fade),
-        BlendMode.srcATop,
-      ),
-      child: Transform.translate(
-        offset: Offset(0, translateY),
-        child: _nextArtworkCard(
-          imageUrl,
-          size,
-          scale: scale,
-          glassBorderOpacity: glassBorderOpacity,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Transform.translate(
+          offset: Offset(0, translateY),
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
         ),
-      ),
+        Opacity(
+          opacity: opacity,
+          child: Transform.translate(
+            offset: Offset(0, translateY),
+            child: _nextArtworkCard(
+              imageUrl,
+              size,
+              scale: scale,
+              glassBorderOpacity: glassBorderOpacity,
+            ),
+          ),
+        ),
+      ],
     ),
   );
 
@@ -1101,6 +1117,8 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           token: repository.token,
           size: size,
           showShadow: false,
+          gaplessPlayback: false,
+          useLowResolutionPlaceholder: true,
         ),
       ),
     ),
