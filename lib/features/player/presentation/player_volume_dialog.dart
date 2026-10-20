@@ -403,6 +403,13 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                                       color: Colors.white,
                                                     ),
                                                   ),
+                                                  subtitle: Text(
+                                                    candidate.deviceInfo.model,
+                                                    style: const TextStyle(
+                                                      color: GlassTokens.textSecondary,
+                                                      fontSize: GlassTokens.fontSize13,
+                                                    ),
+                                                  ),
                                                   trailing: IconButton(
                                                     tooltip:
                                                         AppLocalizations.of(
