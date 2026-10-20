@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/glass_tokens.dart';
 
+final Set<String> _loggedNonProxyArtworkPaths = <String>{};
+final Set<String> _loggedProxyArtworkRequests = <String>{};
+
 class ArtworkImage extends StatelessWidget {
   const ArtworkImage({
     super.key,
@@ -14,9 +17,17 @@ class ArtworkImage extends StatelessWidget {
     this.size = 164,
     this.showShadow = true,
     this.gaplessPlayback = true,
+    this.imageSize = 0,
     this.useLowResolutionPlaceholder = false,
     this.safeInVirtualizedList = false,
-  });
+  }) : assert(
+         imageSize == 0 ||
+             imageSize == 80 ||
+             imageSize == 160 ||
+             imageSize == 256 ||
+             imageSize == 512 ||
+             imageSize == 1024,
+       );
 
   final String? imageUrl;
   final String serverUrl;
@@ -24,6 +35,9 @@ class ArtworkImage extends StatelessWidget {
   final double size;
   final bool showShadow;
   final bool gaplessPlayback;
+  /// Requested proxy rendition: 0 uses original size; other values are fixed
+  /// sizes.
+  final int imageSize;
   final bool useLowResolutionPlaceholder;
   final bool safeInVirtualizedList;
 
@@ -33,12 +47,16 @@ class ArtworkImage extends StatelessWidget {
       imageUrl: imageUrl,
       serverUrl: serverUrl,
       token: token,
+      imageProxySize: imageSize,
+      imageProxyFormat: 'jpg',
     );
     final pixelRatio = MediaQuery.devicePixelRatioOf(context);
     final decodeWidth = (size * pixelRatio).round().clamp(1, 512).toInt();
     final imageProvider = sourceProvider == null
         ? null
-        : ResizeImage(sourceProvider, width: decodeWidth);
+        : imageSize == 0
+        ? ResizeImage(sourceProvider, width: decodeWidth)
+        : sourceProvider;
     final lowResolutionProvider = useLowResolutionPlaceholder
         ? artworkLowResolutionImageProvider(
             imageUrl: imageUrl,
@@ -71,6 +89,7 @@ class ArtworkImage extends StatelessWidget {
               : safeInVirtualizedList
               ? _NetworkArtworkFrame(
                   imageProvider: imageProvider,
+                  lowResolutionImageProvider: lowResolutionProvider,
                   size: size,
                   placeholderBuilder: (loading) =>
                       _placeholder(loading: loading),
@@ -161,11 +180,13 @@ class ArtworkImage extends StatelessWidget {
 class _NetworkArtworkFrame extends StatefulWidget {
   const _NetworkArtworkFrame({
     required this.imageProvider,
+    required this.lowResolutionImageProvider,
     required this.size,
     required this.placeholderBuilder,
   });
 
   final ImageProvider imageProvider;
+  final ImageProvider? lowResolutionImageProvider;
   final double size;
   final Widget Function(bool loading) placeholderBuilder;
 
@@ -178,6 +199,10 @@ class _NetworkArtworkFrameState extends State<_NetworkArtworkFrame> {
   ImageStreamListener? _imageListener;
   ImageInfo? _imageInfo;
   bool _failed = false;
+  ImageStream? _lowResolutionImageStream;
+  ImageStreamListener? _lowResolutionImageListener;
+  ImageInfo? _lowResolutionImageInfo;
+  bool _lowResolutionFailed = false;
 
   @override
   void didChangeDependencies() {
@@ -189,12 +214,15 @@ class _NetworkArtworkFrameState extends State<_NetworkArtworkFrame> {
   void didUpdateWidget(covariant _NetworkArtworkFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageProvider != widget.imageProvider ||
+        oldWidget.lowResolutionImageProvider !=
+            widget.lowResolutionImageProvider ||
         oldWidget.size != widget.size) {
       _resolveImage();
     }
   }
 
   void _resolveImage() {
+    _resolveLowResolutionImage();
     final configuration = createLocalImageConfiguration(
       context,
       size: Size(widget.size, widget.size),
@@ -235,6 +263,61 @@ class _NetworkArtworkFrameState extends State<_NetworkArtworkFrame> {
     stream.addListener(listener);
   }
 
+  void _resolveLowResolutionImage() {
+    final provider = widget.lowResolutionImageProvider;
+    if (provider == null) {
+      final previousStream = _lowResolutionImageStream;
+      final previousListener = _lowResolutionImageListener;
+      if (previousStream != null && previousListener != null) {
+        previousStream.removeListener(previousListener);
+      }
+      _lowResolutionImageStream = null;
+      _lowResolutionImageListener = null;
+      _lowResolutionImageInfo?.dispose();
+      _lowResolutionImageInfo = null;
+      _lowResolutionFailed = false;
+      return;
+    }
+    final configuration = createLocalImageConfiguration(
+      context,
+      size: Size(widget.size, widget.size),
+    );
+    final stream = provider.resolve(configuration);
+    if (_lowResolutionImageStream?.key == stream.key) return;
+
+    final previousStream = _lowResolutionImageStream;
+    final previousListener = _lowResolutionImageListener;
+    if (previousStream != null && previousListener != null) {
+      previousStream.removeListener(previousListener);
+    }
+    _lowResolutionImageInfo?.dispose();
+    _lowResolutionImageInfo = null;
+    _lowResolutionFailed = false;
+    _lowResolutionImageStream = stream;
+
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (imageInfo, _) {
+        if (!mounted || !identical(_lowResolutionImageStream, stream)) {
+          imageInfo.dispose();
+          return;
+        }
+        final previousInfo = _lowResolutionImageInfo;
+        setState(() {
+          _lowResolutionImageInfo = imageInfo;
+          _lowResolutionFailed = false;
+        });
+        previousInfo?.dispose();
+      },
+      onError: (Object _, StackTrace? __) {
+        if (!mounted || !identical(_lowResolutionImageStream, stream)) return;
+        setState(() => _lowResolutionFailed = true);
+      },
+    );
+    _lowResolutionImageListener = listener;
+    stream.addListener(listener);
+  }
+
   @override
   void dispose() {
     final stream = _imageStream;
@@ -242,27 +325,65 @@ class _NetworkArtworkFrameState extends State<_NetworkArtworkFrame> {
     if (stream != null && listener != null) {
       stream.removeListener(listener);
     }
+    final lowResolutionStream = _lowResolutionImageStream;
+    final lowResolutionListener = _lowResolutionImageListener;
+    if (lowResolutionStream != null && lowResolutionListener != null) {
+      lowResolutionStream.removeListener(lowResolutionListener);
+    }
     _imageInfo?.dispose();
+    _lowResolutionImageInfo?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final imageInfo = _imageInfo;
-    if (_failed) return widget.placeholderBuilder(false);
-    if (imageInfo == null) return widget.placeholderBuilder(true);
-    return RawImage(
-      image: imageInfo.image,
-      scale: imageInfo.scale,
-      fit: BoxFit.cover,
-      width: widget.size,
-      height: widget.size,
-      filterQuality: FilterQuality.medium,
+    final lowResolutionImageInfo = _lowResolutionImageInfo;
+    if (_failed) {
+      if (lowResolutionImageInfo != null) {
+        return _lowResolutionArtwork(lowResolutionImageInfo);
+      }
+      return widget.placeholderBuilder(false);
+    }
+    if (imageInfo == null && lowResolutionImageInfo == null) {
+      return widget.placeholderBuilder(!_lowResolutionFailed);
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (lowResolutionImageInfo != null)
+          _lowResolutionArtwork(lowResolutionImageInfo),
+        AnimatedOpacity(
+          opacity: imageInfo == null ? 0 : 1,
+          duration: GlassTokens.motionQuick,
+          child: imageInfo == null
+              ? const SizedBox.expand()
+              : _rawArtwork(imageInfo),
+        ),
+      ],
     );
   }
+
+  Widget _lowResolutionArtwork(ImageInfo imageInfo) => ImageFiltered(
+    imageFilter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+    child: _rawArtwork(imageInfo, filterQuality: FilterQuality.low),
+  );
+
+  Widget _rawArtwork(
+    ImageInfo imageInfo, {
+    FilterQuality filterQuality = FilterQuality.medium,
+  }) => RawImage(
+    image: imageInfo.image,
+    scale: imageInfo.scale,
+    fit: BoxFit.cover,
+    width: widget.size,
+    height: widget.size,
+    filterQuality: filterQuality,
+  );
 }
 
-NetworkImage? artworkImageProvider({
+ImageProvider? artworkImageProvider({
   required String? imageUrl,
   required String serverUrl,
   required String token,
@@ -280,10 +401,40 @@ NetworkImage? artworkImageProvider({
   final serverUri = Uri.tryParse(serverUrl);
   // Send the bearer token when the request targets our configured server.
   final useAuthorization = serverUri != null && uri.host == serverUri.host;
-  
-  return NetworkImage(
+  final networkProvider = NetworkImage(
     uri.toString(),
     headers: useAuthorization ? {'Authorization': 'Bearer $token'} : null,
+  );
+  if (imageProxySize == null) {
+    return networkProvider;
+  }
+
+  if (uri.path.contains('imageproxy')) {
+    final logKey = '${uri.host}${uri.path}?size=$imageProxySize';
+    if (_loggedProxyArtworkRequests.add(logKey)) {
+      debugPrint(
+        'Artwork image proxy request: size=$imageProxySize '
+        'format=${uri.queryParameters['fmt'] ?? 'server default'} '
+        'url=$logKey',
+      );
+    }
+    return networkProvider;
+  }
+
+  final logKey = '${uri.host}${uri.path}';
+  if (_loggedNonProxyArtworkPaths.add(logKey)) {
+    debugPrint(
+      'Artwork URL is not using the image proxy: requestedSize=$imageProxySize '
+      'url=$logKey',
+    );
+  }
+  if (imageProxySize == 0) return networkProvider;
+
+  // Non-proxy artwork cannot be resized by the server, so resize it locally.
+  return ResizeImage(
+    networkProvider,
+    width: imageProxySize,
+    height: imageProxySize,
   );
 }
 
@@ -292,31 +443,14 @@ ImageProvider? artworkLowResolutionImageProvider({
   required String serverUrl,
   required String token,
 }) {
-  final uri = _resolveArtworkUri(imageUrl, serverUrl);
-  if (uri == null) return null;
-
-  if (uri.path.contains('imageproxy')) {
-    // Ask the image proxy for a small JPEG so the placeholder uses less
-    // bandwidth than the full-resolution artwork request.
-    return artworkImageProvider(
-      imageUrl: imageUrl,
-      serverUrl: serverUrl,
-      token: token,
-      imageProxySize: 32,
-      imageProxyFormat: 'jpg',
-    );
-  }
-
-  // Non-proxy artwork has no server-side resize option, so decode it smaller
-  // on the client as a fallback.
-  final sourceProvider = artworkImageProvider(
+  // Keep preview quality selection inside this image-loading module.
+  return artworkImageProvider(
     imageUrl: imageUrl,
     serverUrl: serverUrl,
     token: token,
+    imageProxySize: 80,
+    imageProxyFormat: 'jpg',
   );
-  return sourceProvider == null
-      ? null
-      : ResizeImage(sourceProvider, width: 32, height: 32);
 }
 
 Uri? _resolveArtworkUri(

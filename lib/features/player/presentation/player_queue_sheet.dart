@@ -858,6 +858,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                       token: widget.repository.token,
                                       size: 48,
                                       safeInVirtualizedList: true,
+                                      imageSize: 256,
                                     ),
                                   ],
                                 ),

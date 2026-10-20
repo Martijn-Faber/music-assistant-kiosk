@@ -1118,6 +1118,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           size: size,
           showShadow: false,
           gaplessPlayback: false,
+          imageSize: 512,
           useLowResolutionPlaceholder: true,
         ),
       ),

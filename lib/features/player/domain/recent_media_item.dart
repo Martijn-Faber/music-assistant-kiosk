@@ -81,22 +81,35 @@ class RecentMediaItem {
     final albumImage = switch (album) {
       MusicAssistantFullAlbum(:final value) =>
         value.metadata?.images?.isNotEmpty == true
-            ? value.metadata!.images!.first.path
+            ? _imagePathFromModel(value.metadata!.images!.first)
             : null,
-      MusicAssistantMappedAlbum(:final value) => value.image?.path,
+      MusicAssistantMappedAlbum(:final value) =>
+        _imagePathFromModel(value.image),
       null => null,
     };
     return _firstString([
-      item.image?.path,
+      _imagePathFromModel(item.image),
       albumImage,
-      ...?mediaItem?.album?.metadata?.images?.map((image) => image.path),
-      ...?mediaItem?.metadata?.images?.map((image) => image.path),
+      ...?mediaItem?.album?.metadata?.images?.map(_imagePathFromModel),
+      ...?mediaItem?.metadata?.images?.map(_imagePathFromModel),
     ]);
+  }
+
+  static String? _imagePathFromModel(MusicAssistantMediaItemImage? image) {
+    final proxyId = image?.proxyId;
+    if (proxyId != null && proxyId.isNotEmpty) {
+      return '/imageproxy/$proxyId';
+    }
+    return image?.path;
   }
 
   static String? _imageUrlFromValue(dynamic value) {
     if (value is String && value.trim().isNotEmpty) return value;
     if (value is Map) {
+      final proxyId = _firstString([value['proxy_id'], value['proxyId']]);
+      if (proxyId != null) {
+        return '/imageproxy/$proxyId';
+      }
       return _firstString([value['url'], value['path'], value['image_url']]);
     }
     if (value is List) {
