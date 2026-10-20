@@ -170,35 +170,11 @@ abstract class AppLocalizations {
   /// **'24 hour'**
   String get settingsClockFormat24HourOption;
 
-  /// Section label above the Music Assistant server address and selected player.
-  ///
-  /// In en, this message translates to:
-  /// **'Connected to'**
-  String get settingsConnectedToLabel;
-
-  /// Value shown for the selected player when no speaker or group has been chosen.
-  ///
-  /// In en, this message translates to:
-  /// **'No player selected'**
-  String get settingsNoPlayerSelectedValue;
-
   /// Section label for the connected Music Assistant server's details.
   ///
   /// In en, this message translates to:
   /// **'Music Assistant server'**
   String get settingsServerSectionLabel;
-
-  /// Field label for the connected Music Assistant server name.
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get settingsServerNameLabel;
-
-  /// Field label for the connected Music Assistant server version.
-  ///
-  /// In en, this message translates to:
-  /// **'Version'**
-  String get settingsServerVersionLabel;
 
   /// Field label for the connected Music Assistant server status.
   ///

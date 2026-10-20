@@ -46,19 +46,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsClockFormat24HourOption => '24 hour';
 
   @override
-  String get settingsConnectedToLabel => 'Connected to';
-
-  @override
-  String get settingsNoPlayerSelectedValue => 'No player selected';
-
-  @override
   String get settingsServerSectionLabel => 'Music Assistant server';
-
-  @override
-  String get settingsServerNameLabel => 'Name';
-
-  @override
-  String get settingsServerVersionLabel => 'Version';
 
   @override
   String get settingsServerStatusLabel => 'Status';

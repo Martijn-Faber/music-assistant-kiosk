@@ -48,25 +48,9 @@
   "@settingsClockFormat24HourOption": {
     "description": "Klokoptie voor tijd van 00:00 tot 23:59, bijvoorbeeld 15:45."
   },
-  "settingsConnectedToLabel": "Verbonden met",
-  "@settingsConnectedToLabel": {
-    "description": "Sectielabel boven het adres van de Music Assistant-server en de geselecteerde speler."
-  },
-  "settingsNoPlayerSelectedValue": "Geen speler geselecteerd",
-  "@settingsNoPlayerSelectedValue": {
-    "description": "Waarde voor de geselecteerde speler als er geen speaker of groep is gekozen."
-  },
   "settingsServerSectionLabel": "Music Assistant-server",
   "@settingsServerSectionLabel": {
     "description": "Sectielabel voor de gegevens van de verbonden Music Assistant-server."
-  },
-  "settingsServerNameLabel": "Naam",
-  "@settingsServerNameLabel": {
-    "description": "Veldlabel voor de naam van de verbonden Music Assistant-server."
-  },
-  "settingsServerVersionLabel": "Versie",
-  "@settingsServerVersionLabel": {
-    "description": "Veldlabel voor de versie van de verbonden Music Assistant-server."
   },
   "settingsServerStatusLabel": "Status",
   "@settingsServerStatusLabel": {

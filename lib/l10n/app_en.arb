@@ -48,25 +48,9 @@
   "@settingsClockFormat24HourOption": {
     "description": "Clock format option to display time from 00:00 to 23:59, for example 15:45."
   },
-  "settingsConnectedToLabel": "Connected to",
-  "@settingsConnectedToLabel": {
-    "description": "Section label above the Music Assistant server address and selected player."
-  },
-  "settingsNoPlayerSelectedValue": "No player selected",
-  "@settingsNoPlayerSelectedValue": {
-    "description": "Value shown for the selected player when no speaker or group has been chosen."
-  },
   "settingsServerSectionLabel": "Music Assistant server",
   "@settingsServerSectionLabel": {
     "description": "Section label for the connected Music Assistant server's details."
-  },
-  "settingsServerNameLabel": "Name",
-  "@settingsServerNameLabel": {
-    "description": "Field label for the connected Music Assistant server name."
-  },
-  "settingsServerVersionLabel": "Version",
-  "@settingsServerVersionLabel": {
-    "description": "Field label for the connected Music Assistant server version."
   },
   "settingsServerStatusLabel": "Status",
   "@settingsServerStatusLabel": {
