@@ -33,6 +33,7 @@ class SessionGate extends StatefulWidget {
 }
 
 class _SessionGateState extends State<SessionGate> {
+  static const _sessionRestoreTimeout = Duration(seconds: 45);
   final _pagerKey = GlobalKey<AppPagePagerState>();
   MusicAssistantPlayerMedia? _backdropMediaOverride;
   String? _backdropOverridePlayerId;
@@ -94,29 +95,47 @@ class _SessionGateState extends State<SessionGate> {
   }
 
   Future<void> _restoreSession() async {
+    final restoreTimer = Stopwatch()..start();
+    Future<T> waitForRestore<T>(Future<T> operation) {
+      final remaining = _sessionRestoreTimeout - restoreTimer.elapsed;
+      if (remaining <= Duration.zero) {
+        return Future<T>.error(
+          TimeoutException('Session restore timed out.'),
+        );
+      }
+      return operation.timeout(remaining);
+    }
+
     MusicAssistantRepository? repository;
     try {
-      final savedSession = await _sessionStorage.readSession();
-      _onboardingComplete = await _sessionStorage.readOnboardingComplete();
+      final savedSession = await waitForRestore(_sessionStorage.readSession());
+      _onboardingComplete = await waitForRestore(
+        _sessionStorage.readOnboardingComplete(),
+      );
       if (mounted) {
         setState(() => _showStartupLoading = _onboardingComplete);
       }
       // Existing installs with saved credentials have already completed setup.
       if (savedSession != null && !_onboardingComplete) {
         _onboardingComplete = true;
-        await _sessionStorage.saveOnboardingComplete(true);
+        await waitForRestore(_sessionStorage.saveOnboardingComplete(true));
         if (mounted) setState(() => _showStartupLoading = true);
       }
       if (savedSession == null) return;
 
-      repository = await MusicAssistantRepository.resume(
-        serverUrl: savedSession.serverUrl,
-        token: savedSession.token,
+      final restoredRepository = await waitForRestore(
+        MusicAssistantRepository.resume(
+          serverUrl: savedSession.serverUrl,
+          token: savedSession.token,
+        ),
       );
-      final players = await repository.fetchPlayers();
-      final serverInfo = await repository.fetchServerInfo();
+      repository = restoredRepository;
+      final players = await waitForRestore(restoredRepository.fetchPlayers());
+      final serverInfo = await waitForRestore(
+        restoredRepository.fetchServerInfo(),
+      );
       if (!mounted) {
-        await repository.disconnect();
+        await restoredRepository.disconnect();
         return;
       }
 
@@ -128,9 +147,11 @@ class _SessionGateState extends State<SessionGate> {
           : null;
       final selectedPlayer = selectedPlayerId == null
           ? null
-          : await repository.fetchPlayer(selectedPlayerId);
+          : await waitForRestore(
+              restoredRepository.fetchPlayer(selectedPlayerId),
+            );
       if (!mounted) {
-        await repository.disconnect();
+        await restoredRepository.disconnect();
         return;
       }
       if (selectedPlayer != null) {
@@ -145,13 +166,23 @@ class _SessionGateState extends State<SessionGate> {
         _serverInfo = serverInfo;
         _selectedPlayerId = selectedPlayerId;
         _needsPlayerSetup = selectedPlayerId == null;
+        _showStartupLoading = false;
       });
-      _listenToPlayerChanges(repository);
+      _listenToPlayerChanges(restoredRepository);
       await _setVolumeControlEnabled(_playerSupportsVolumeSet(selectedPlayer));
       if (selectedPlayerId != null)
         unawaited(_refreshQuality(selectedPlayerId));
     } catch (_) {
-      await repository?.disconnect();
+      final failedRepository = repository;
+      if (failedRepository != null) {
+        try {
+          await failedRepository
+              .disconnect()
+              .timeout(const Duration(seconds: 2));
+        } catch (_) {
+          // The loading screen still needs to give way to onboarding on timeout.
+        }
+      }
       if (mounted) {
         setState(
           () => _connectionError =
