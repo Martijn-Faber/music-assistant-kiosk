@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 import '../../../design_system/glass_tokens.dart';
@@ -45,15 +46,28 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
 
   @override
   Widget build(BuildContext context) {
-    final time = MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(_now),
-      alwaysUse24HourFormat:
-          widget.alwaysUse24HourFormat ??
-          MediaQuery.alwaysUse24HourFormatOf(context),
-    );
-    final date = MaterialLocalizations.of(context).formatFullDate(_now);
+    final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
+    final use24HourFormat =
+        widget.alwaysUse24HourFormat ??
+        MediaQuery.alwaysUse24HourFormatOf(context);
+    final startListeningLabel =
+        AppLocalizations.of(context).playerStartListening;
 
-    return Center(
+    // The app language is user selectable, but the ambient clock should use
+    // the device's regional date conventions (for example, Hungarian dates).
+    return Localizations.override(
+      context: context,
+      locale: deviceLocale,
+      delegates: GlobalMaterialLocalizations.delegates,
+      child: Builder(
+        builder: (context) {
+          final materialLocalizations = MaterialLocalizations.of(context);
+          final time = materialLocalizations.formatTimeOfDay(
+            TimeOfDay.fromDateTime(_now),
+            alwaysUse24HourFormat: use24HourFormat,
+          );
+          final date = materialLocalizations.formatFullDate(_now);
+          return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
@@ -119,7 +133,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
                     Flexible(
                       child: Text(
                         widget.nowPlayingLabel ??
-                            AppLocalizations.of(context).playerStartListening,
+                            startListeningLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -136,6 +150,9 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage> {
             ),
           ],
         ),
+      ),
+    );
+        },
       ),
     );
   }
