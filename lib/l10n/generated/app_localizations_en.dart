@@ -367,6 +367,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not change this speaker volume.';
 
   @override
+  String get playerGroupAddSpeaker => 'Add speaker to group';
+
+  @override
+  String get playerGroupAddAction => 'Add to group';
+
+  @override
+  String get playerGroupAddFailed => 'Could not add speaker to the group.';
+
+  @override
+  String get playerGroupNoSpeakersAvailable =>
+      'No compatible speakers available to add.';
+
+  @override
   String playbackStartingOn(String player) {
     return 'Starting on $player…';
   }

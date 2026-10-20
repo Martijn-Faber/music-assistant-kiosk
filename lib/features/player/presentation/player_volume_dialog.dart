@@ -25,6 +25,7 @@ class PlayerVolumeDialog extends StatefulWidget {
 
 class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
   late final PlayerVolumeDialogViewModel _viewModel;
+  final Set<String> _addingPlayerIds = {};
 
   @override
   void initState() {
@@ -60,6 +61,25 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _addToGroup(MusicAssistantPlayer player) async {
+    setState(() => _addingPlayerIds.add(player.playerId));
+    try {
+      await _viewModel.addToGroup(player.playerId);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context).playerGroupAddFailed}\n$error',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _addingPlayerIds.remove(player.playerId));
     }
   }
 
@@ -120,14 +140,13 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     );
                   }
                   final targets = snapshot.data!;
-                  return ListView.separated(
+                  return ListView(
                     shrinkWrap: true,
-                    itemCount: targets.length,
-                    separatorBuilder: (_, _) => const Divider(
-                      color: Color(0x33FFFFFF),
-                      height: 18,
-                    ),
-                    itemBuilder: (context, index) {
+                    children: [
+                      for (var index = 0; index < targets.length; index++) ...[
+                        if (index > 0)
+                          const Divider(color: Color(0x33FFFFFF), height: 18),
+                        Builder(builder: (context) {
                       final target = targets[index];
                       final volume = _viewModel.volumeFor(target.playerId);
                       final canSetVolume = target.supportedFeatures?.contains(
@@ -198,7 +217,66 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                           ),
                         ],
                       );
-                    },
+                    }),
+                      ],
+                      const Divider(color: Color(0x33FFFFFF), height: 24),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          AppLocalizations.of(context).playerGroupAddSpeaker,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: GlassTokens.fontSize15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      FutureBuilder<List<MusicAssistantPlayer>>(
+                        future: _viewModel.allPlayers,
+                        builder: (context, allPlayersSnapshot) {
+                          final candidates = (allPlayersSnapshot.data ?? const <MusicAssistantPlayer>[])
+                              .where(_viewModel.canAddToGroup)
+                              .toList();
+                          if (allPlayersSnapshot.connectionState != ConnectionState.done) {
+                            return const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Center(child: CircularProgressIndicator(color: Colors.white70)),
+                            );
+                          }
+                          if (candidates.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                AppLocalizations.of(context).playerGroupNoSpeakersAvailable,
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                            );
+                          }
+                          return Column(
+                            children: [
+                              for (final candidate in candidates)
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: const Icon(CupertinoIcons.hifispeaker, color: Colors.white70),
+                                  title: Text(candidate.name, style: const TextStyle(color: Colors.white)),
+                                  trailing: IconButton(
+                                    tooltip: AppLocalizations.of(context).playerGroupAddAction,
+                                    onPressed: _addingPlayerIds.contains(candidate.playerId)
+                                        ? null
+                                        : () => _addToGroup(candidate),
+                                    icon: _addingPlayerIds.contains(candidate.playerId)
+                                        ? const SizedBox.square(
+                                            dimension: 18,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                                          )
+                                        : const Icon(CupertinoIcons.add_circled, color: Colors.white),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                   );
                 },
               ),

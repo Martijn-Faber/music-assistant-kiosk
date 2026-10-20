@@ -375,6 +375,20 @@ class AppLocalizationsNl extends AppLocalizations {
       'Het volume van deze speaker wijzigen is mislukt.';
 
   @override
+  String get playerGroupAddSpeaker => 'Speaker aan groep toevoegen';
+
+  @override
+  String get playerGroupAddAction => 'Aan groep toevoegen';
+
+  @override
+  String get playerGroupAddFailed =>
+      'Speaker toevoegen aan de groep is mislukt.';
+
+  @override
+  String get playerGroupNoSpeakersAvailable =>
+      'Geen compatibele speakers beschikbaar om toe te voegen.';
+
+  @override
   String playbackStartingOn(String player) {
     return 'Starten op $player…';
   }

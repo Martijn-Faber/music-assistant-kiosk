@@ -27,6 +27,25 @@ final radios = await client.music.radios.libraryItems();
 final playlists = await client.music.playlists.libraryItems();
 ```
 
+## Player grouping
+
+The client also exposes `groupMany` and `ungroupPlayer` helpers for dynamic
+player membership:
+
+```dart
+await client.groupMany('living-room-group', ['soundbar-player-id']);
+await client.ungroupPlayer('soundbar-player-id');
+```
+
+`groupMany` sends `players/cmd/group_many` with `target_player` and
+`child_player_ids`. `ungroupPlayer` sends `players/cmd/ungroup` with
+`player_id`. Music Assistant controls whether a group accepts membership
+changes; Sync Groups need dynamic members enabled for runtime changes.
+
+The kiosk's selection and playback behavior, including queue routing for
+individual players versus groups, is documented in
+[`docs/PLAYER_GROUPING_AND_PLAYBACK.md`](../../docs/PLAYER_GROUPING_AND_PLAYBACK.md).
+
 Library results preserve the server's array shape. Each entry is either a
 typed radio or playlist item, or a `MusicAssistantLibraryCollection` that
 contains the generated `MusicAssistantMediaCollection` DTO and typed child

@@ -79,6 +79,24 @@ class MusicAssistantRepository {
     return await _playerApiClient.players.get(playerId);
   }
 
+  Future<void> addPlayerToGroup(String groupId, String playerId) =>
+      _playerApiClient.groupMany(groupId, [playerId]);
+
+  Future<String> _queueIdForPlayback(String playerId) async {
+    final player = await _playerApiClient.players.get(playerId);
+    if (player.type == mass.MusicAssistantPlayerType.player) {
+      final isGrouped =
+          player.syncedTo != null || (player.groupMembers?.length ?? 0) > 1;
+      if (isGrouped) await _playerApiClient.ungroupPlayer(playerId);
+      // An individual player's active queue may still resolve to its former
+      // group's queue immediately after ungrouping. Target the player's own
+      // queue so playback stays on the player selected in settings.
+      return playerId;
+    }
+    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    return queue?.queueId ?? playerId;
+  }
+
   Future<mass.MusicAssistantServerInfoMessage> fetchServerInfo() async {
     final response = await _client.sendCommand('info');
     if (response is! Map) {
@@ -281,9 +299,9 @@ class MusicAssistantRepository {
     required int index,
     String? queueItemId,
   }) async {
-    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final queueId = await _queueIdForPlayback(playerId);
     await _client.playerQueues.playIndex(
-      queue?.queueId ?? playerId,
+      queueId,
       queueItemId ?? index,
     );
   }
@@ -385,17 +403,17 @@ class MusicAssistantRepository {
     String playerId,
     mass.MusicAssistantRadio station,
   ) async {
-    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final queueId = await _queueIdForPlayback(playerId);
     await _client.playerQueues.playMedia(
-      queue?.queueId ?? playerId,
+      queueId,
       station.uri ?? station.itemId,
     );
   }
 
   Future<void> playRecentItem(String playerId, RecentMediaItem item) async {
-    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final queueId = await _queueIdForPlayback(playerId);
     await _client.playerQueues.playMedia(
-      queue?.queueId ?? playerId,
+      queueId,
       item.uri,
       radioMode: item.mediaType.toLowerCase() == 'radio',
     );
@@ -431,9 +449,9 @@ class MusicAssistantRepository {
     String playerId,
     mass.MusicAssistantPlaylist playlist,
   ) async {
-    final queue = await _client.playerQueues.getActiveQueue(playerId);
+    final queueId = await _queueIdForPlayback(playerId);
     await _client.playerQueues.playMedia(
-      queue?.queueId ?? playerId,
+      queueId,
       playlist.uri ?? playlist.itemId,
     );
   }

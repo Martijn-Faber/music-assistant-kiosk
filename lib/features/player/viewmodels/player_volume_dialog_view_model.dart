@@ -6,7 +6,9 @@ import '../data/music_assistant_repository.dart';
 /// Loads group volume targets and coordinates volume updates for the dialog.
 class PlayerVolumeDialogViewModel extends ChangeNotifier {
   PlayerVolumeDialogViewModel({required this.repository, required this.player}) {
+    _currentMemberIds = {...?player.groupMembers};
     _targetsFuture = _loadTargets();
+    _allPlayersFuture = repository.fetchPlayers();
     final targetIds = {player.playerId, ...?player.groupMembers};
     _unsubscribe = repository.listenToPlayerEvents(
       onChanged: (updatedPlayer) {
@@ -31,17 +33,35 @@ class PlayerVolumeDialogViewModel extends ChangeNotifier {
 
   final MusicAssistantRepository repository;
   final MusicAssistantPlayer player;
-  late final Future<List<MusicAssistantPlayer>> _targetsFuture;
+  late Future<List<MusicAssistantPlayer>> _targetsFuture;
+  late final Future<List<MusicAssistantPlayer>> _allPlayersFuture;
   final Map<String, int> _volumeLevels = {};
   final Map<String, DateTime> _ignoreVolumeEventsUntil = {};
   final Set<String> _adjustingPlayerIds = {};
+  late final Set<String> _currentMemberIds;
   String? savingPlayerId;
   late final void Function() _unsubscribe;
   bool _disposed = false;
 
   Future<List<MusicAssistantPlayer>> get targets => _targetsFuture;
+  Future<List<MusicAssistantPlayer>> get allPlayers => _allPlayersFuture;
+  Set<String> get currentMemberIds => _currentMemberIds;
+  List<String> get groupablePlayerIds => player.canGroupWith ?? const [];
   int volumeFor(String playerId) => _volumeLevels[playerId] ?? 0;
   bool isSaving(String playerId) => savingPlayerId == playerId;
+
+  bool canAddToGroup(MusicAssistantPlayer candidate) =>
+      candidate.type != MusicAssistantPlayerType.group &&
+      currentMemberIds.contains(candidate.playerId) == false &&
+      (groupablePlayerIds.contains(candidate.playerId) ||
+          candidate.canGroupWith?.contains(player.playerId) == true);
+
+  Future<void> addToGroup(String playerId) async {
+    await repository.addPlayerToGroup(player.playerId, playerId);
+    _currentMemberIds.add(playerId);
+    _targetsFuture = _loadTargets();
+    notifyListeners();
+  }
 
   void setAdjusting(String playerId, bool adjusting) {
     if (adjusting) {
@@ -58,7 +78,11 @@ class PlayerVolumeDialogViewModel extends ChangeNotifier {
 
   Future<List<MusicAssistantPlayer>> _loadTargets() async {
     final players = await repository.fetchPlayers();
-    final memberIds = player.groupMembers ?? const <String>[];
+    final currentGroup = await repository.fetchPlayer(player.playerId);
+    _currentMemberIds
+      ..clear()
+      ..addAll(currentGroup.groupMembers ?? const <String>[]);
+    final memberIds = _currentMemberIds;
     final targets = memberIds.isEmpty
         ? players.where((item) => item.playerId == player.playerId).toList()
         : players

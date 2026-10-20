@@ -261,6 +261,22 @@ class MusicAssistantClient {
     );
   }
 
+  /// Adds one or more players to an existing group player.
+  Future<void> groupMany(String playerId, List<String> childPlayerIds) async {
+    await sendCommand(
+      'players/cmd/group_many',
+      args: {'target_player': playerId, 'child_player_ids': childPlayerIds},
+    );
+  }
+
+  /// Removes a player from its current sync group, if it belongs to one.
+  Future<void> ungroupPlayer(String playerId) async {
+    await sendCommand(
+      'players/cmd/ungroup',
+      args: {'player_id': playerId},
+    );
+  }
+
   /// Fetches the active queue for a player.
   Future<MusicAssistantPlayerQueue> getActiveQueue(String playerId) async {
     final queueResponse = await sendCommand(

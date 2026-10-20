@@ -770,6 +770,30 @@ abstract class AppLocalizations {
   /// **'Could not change this speaker volume.'**
   String get playerVolumeChangeFailed;
 
+  /// No description provided for @playerGroupAddSpeaker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add speaker to group'**
+  String get playerGroupAddSpeaker;
+
+  /// No description provided for @playerGroupAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to group'**
+  String get playerGroupAddAction;
+
+  /// No description provided for @playerGroupAddFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add speaker to the group.'**
+  String get playerGroupAddFailed;
+
+  /// No description provided for @playerGroupNoSpeakersAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No compatible speakers available to add.'**
+  String get playerGroupNoSpeakersAvailable;
+
   /// Status message shown while playback starts on the selected speaker. The {player} placeholder is the speaker name.
   ///
   /// In en, this message translates to:

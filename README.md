@@ -90,6 +90,9 @@ Code Generation: The source and scoped schemas used to generate API models are l
 
 API Package Migration: The project is transitioning to a dedicated Dart package located in packages/music_assistant_api. It currently handles HTTP routes and generic WebSocket command dispatching (used for server info retrieval).
 
+Player grouping and playback routing behavior is documented in
+[docs/PLAYER_GROUPING_AND_PLAYBACK.md](docs/PLAYER_GROUPING_AND_PLAYBACK.md).
+
 ## Project Status & Disclaimer
 
 [!NOTE]
