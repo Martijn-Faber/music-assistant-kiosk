@@ -32,7 +32,7 @@ class PlayerVolumeFeedbackPopup extends StatelessWidget {
             child: Center(
               child: TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0, end: visible ? 1 : 0),
-                duration: const Duration(milliseconds: 180),
+                duration: GlassTokens.playerVolumeFeedbackEnterDuration,
                 curve: Curves.easeInOut,
                 child: _VolumeFeedbackBar(player: player),
                 builder: (context, progress, child) {
@@ -94,7 +94,7 @@ class _VolumeFeedbackBar extends StatelessWidget {
                   begin: volume / 100,
                   end: volume / 100,
                 ),
-                duration: const Duration(milliseconds: 320),
+                duration: GlassTokens.playerVolumeFeedbackExitDuration,
                 curve: Curves.easeOutCubic,
                 builder: (context, animatedVolume, _) => ClipRRect(
                   borderRadius: BorderRadius.circular(999),

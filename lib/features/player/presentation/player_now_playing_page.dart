@@ -356,11 +356,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     required bool centered,
   }) =>
       AnimatedSize(
-        duration: const Duration(milliseconds: 240),
+        duration: GlassTokens.nowPlayingContentTransitionDuration,
         curve: Curves.easeInOutCubic,
         alignment: centered ? Alignment.topCenter : Alignment.topLeft,
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 240),
+          duration: GlassTokens.nowPlayingContentTransitionDuration,
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
           layoutBuilder: (currentChild, previousChildren) => Stack(
@@ -418,7 +418,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           ),
         ),
         AnimatedSize(
-          duration: const Duration(milliseconds: 240),
+          duration: GlassTokens.nowPlayingContentTransitionDuration,
           curve: Curves.easeInOutCubic,
           alignment: centered ? Alignment.topCenter : Alignment.topLeft,
           child: hasArtist || hasAlbum
@@ -445,11 +445,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
               : const SizedBox.shrink(),
         ),
         AnimatedSize(
-          duration: const Duration(milliseconds: 180),
+          duration: GlassTokens.nowPlayingContentTransitionDuration,
           curve: Curves.easeInOutCubic,
           alignment: centered ? Alignment.topCenter : Alignment.topLeft,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 180),
+            duration: GlassTokens.nowPlayingContentTransitionDuration,
             child: (_playbackController.isPlaybackRequestInProgress ||
                     _serverItemChangeInProgress)
                 ? Padding(
@@ -485,11 +485,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           ),
         ),
         AnimatedSize(
-          duration: const Duration(milliseconds: 240),
+          duration: GlassTokens.nowPlayingContentTransitionDuration,
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
+            duration: GlassTokens.nowPlayingContentTransitionDuration,
             switchInCurve: Curves.easeOut,
             switchOutCurve: Curves.easeIn,
             transitionBuilder: (child, animation) => SizeTransition(

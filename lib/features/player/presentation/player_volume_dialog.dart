@@ -354,9 +354,8 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                             candidate.playerId,
                                           );
                                       return AnimatedSwitcher(
-                                        duration: const Duration(
-                                          milliseconds: 220,
-                                        ),
+                                        duration:
+                                            GlassTokens.playerVolumeContentTransitionDuration,
                                         switchInCurve: Curves.easeOutCubic,
                                         switchOutCurve: Curves.easeInCubic,
                                         transitionBuilder: (child, animation) =>
@@ -415,9 +414,9 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                                             candidate,
                                                           ),
                                                     icon: AnimatedSwitcher(
-                                                      duration: const Duration(
-                                                        milliseconds: 180,
-                                                      ),
+                                                      duration:
+                                                          GlassTokens
+                                                              .playerVolumeContentTransitionDuration,
                                                       switchInCurve:
                                                           Curves.easeOutCubic,
                                                       switchOutCurve:

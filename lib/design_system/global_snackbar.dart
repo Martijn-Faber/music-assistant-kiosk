@@ -183,21 +183,21 @@ class _SnackbarCardStack extends StatelessWidget {
       child: Dismissible(
         key: const ValueKey('snackbar-stack'),
         direction: DismissDirection.down,
-        resizeDuration: const Duration(milliseconds: 160),
+        resizeDuration: GlassTokens.snackbarResizeDuration,
         onDismissed: (_) => onDismissStack(),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             for (var index = 0; index < visibleMessages.length - 1; index++)
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 280),
+                duration: GlassTokens.snackbarTransitionDuration,
                 curve: Curves.easeOutCubic,
                 left: 0,
                 right: 0,
                 key: ValueKey('backing-${visibleMessages[index].id}'),
                 top: (visibleMessages.length - index - 1) * 5 + 9,
                 child: AnimatedScale(
-                  duration: const Duration(milliseconds: 280),
+                  duration: GlassTokens.snackbarTransitionDuration,
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
                   scale: 1 - (visibleMessages.length - index - 1) * .04,
@@ -212,7 +212,7 @@ class _SnackbarCardStack extends StatelessWidget {
             TweenAnimationBuilder<double>(
               key: ValueKey('incoming-${newest.id}'),
               tween: Tween(begin: 0, end: 1),
-              duration: const Duration(milliseconds: 420),
+              duration: GlassTokens.snackbarTransitionDuration,
               curve: Curves.easeOutBack,
               builder: (context, progress, child) => Opacity(
                 opacity: progress.clamp(0, 1),

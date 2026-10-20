@@ -345,7 +345,7 @@ class _RadioStationPagerState extends State<_RadioStationPager> {
     final background = _paletteColor(palette);
     final surfaceColor = Color.lerp(const Color(0xFF101819), background, 0.7)!;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: GlassTokens.idleControlTransitionDuration,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,

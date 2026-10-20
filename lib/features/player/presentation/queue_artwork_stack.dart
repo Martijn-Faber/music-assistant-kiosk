@@ -113,7 +113,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     super.initState();
     _artworkTransition = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: GlassTokens.queueArtworkTransitionDuration,
     )..addStatusListener(_onArtworkTransitionStatus);
     _artworkDrag = AnimationController.unbounded(vsync: this)
       ..addStatusListener(_onArtworkDragStatus);
@@ -437,11 +437,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
           ..value = 0;
         _artworkTransition.animateTo(
           1,
-          duration: Duration(
-            milliseconds: (380 + (skippedPages - 1) * 105)
-                .clamp(380, 1100)
-                .toInt(),
-          ),
+          duration: GlassTokens.queueArtworkTransitionDuration,
           curve: Curves.easeInOutCubic,
         );
       } else {

@@ -1,6 +1,42 @@
 import 'package:flutter/material.dart';
 
 abstract final class GlassTokens {
+  // Shared motion scale for interface transitions. Keep interaction feedback
+  // quick, content changes measured, and page/artwork moves unhurried.
+  static const motionQuick = Duration(milliseconds: 120);
+  static const motionStandard = Duration(milliseconds: 220);
+  static const motionEmphasized = Duration(milliseconds: 360);
+  static const motionNavigation = Duration(milliseconds: 550);
+  static const motionAmbient = Duration(milliseconds: 650);
+
+  // Component motion tokens alias the shared scale. Components should use
+  // these names so their timing can be tuned without creating new durations.
+  static const pagerPageTransitionDuration = motionNavigation;
+  static const pagerControlTransitionDuration = motionQuick;
+  static const idleControlTransitionDuration = motionEmphasized;
+  static const onboardingStepTransitionDuration = motionEmphasized;
+  static const onboardingLayoutTransitionDuration = motionEmphasized;
+  static const onboardingContentTransitionDuration = motionStandard;
+  static const artworkBackdropTransitionDuration = motionAmbient;
+  static const queueArtworkTransitionDuration = motionAmbient;
+  static const nowPlayingContentTransitionDuration = motionStandard;
+  static const pageIndicatorTransitionDuration = motionStandard;
+  static const scrollFadeTransitionDuration = motionStandard;
+  static const queueSheetSnapDuration = motionStandard;
+  static const queueSheetExpandDuration = motionEmphasized;
+  static const queueAutoScrollDuration = motionNavigation;
+  static const queueItemMoveDuration = motionStandard;
+  static const queueItemRemoveDuration = motionQuick;
+  static const queueItemReorderDuration = motionEmphasized;
+  static const queueItemDismissDuration = motionStandard;
+  static const queueItemResizeDuration = motionQuick;
+  static const playerVolumeSheetTransitionDuration = motionStandard;
+  static const playerVolumeContentTransitionDuration = motionStandard;
+  static const playerVolumeFeedbackEnterDuration = motionStandard;
+  static const playerVolumeFeedbackExitDuration = motionEmphasized;
+  static const snackbarResizeDuration = motionStandard;
+  static const snackbarTransitionDuration = motionEmphasized;
+
   static const background = Color(0xFF101819);
   static const error = Color(0xFFFFA39B);
   static const errorText = Color(0xFFFFC0BA);

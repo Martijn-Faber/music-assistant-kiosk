@@ -16,11 +16,11 @@ class OnboardingWaitingPill extends StatelessWidget {
     tint: GlassTokens.surfaceTintSubtle,
     showShadow: false,
     child: AnimatedSize(
-      duration: const Duration(milliseconds: 260),
+      duration: GlassTokens.onboardingLayoutTransitionDuration,
       curve: Curves.easeInOutCubic,
       alignment: Alignment.centerLeft,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
+        duration: GlassTokens.onboardingContentTransitionDuration,
         switchInCurve: Curves.easeOut,
         switchOutCurve: Curves.easeIn,
         layoutBuilder: (currentChild, previousChildren) => Stack(
@@ -69,7 +69,7 @@ class OnboardingStepIndicator extends StatelessWidget {
     children: [
       for (var index = 0; index < count; index++) ...[
         AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: GlassTokens.onboardingContentTransitionDuration,
           width: index == activeStep ? 22 : 6,
           height: 6,
           decoration: BoxDecoration(

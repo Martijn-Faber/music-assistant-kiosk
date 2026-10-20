@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
 
+import '../../../design_system/glass_tokens.dart';
 import 'artwork_image.dart';
 import '../domain/media_item_palette_colors.dart';
 
@@ -64,7 +65,7 @@ class AlbumBackdrop extends StatelessWidget {
           ),
         Positioned.fill(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 650),
+            duration: GlassTokens.artworkBackdropTransitionDuration,
             curve: Curves.easeInOutCubic,
             decoration: BoxDecoration(
               gradient: LinearGradient(

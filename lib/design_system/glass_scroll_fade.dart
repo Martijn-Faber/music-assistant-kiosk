@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'glass_tokens.dart';
 
 /// Applies the shared, softly animated edge fade to a vertical scroll view.
 /// Pass the same controller to this widget and to the scrollable child.
@@ -8,7 +9,7 @@ class GlassScrollFade extends StatefulWidget {
     required this.controller,
     required this.child,
     this.fadeExtent = 0.16,
-    this.duration = const Duration(milliseconds: 180),
+    this.duration = GlassTokens.scrollFadeTransitionDuration,
   });
 
   final ScrollController controller;

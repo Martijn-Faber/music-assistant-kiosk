@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/platform/screen_brightness_bridge.dart';
 import '../design_system/page_indicator.dart';
+import '../design_system/glass_tokens.dart';
 
 /// App-level pager for the screensaver, idle, player, and settings pages.
 class AppPagePager extends StatefulWidget {
@@ -59,7 +60,7 @@ class AppPagePagerState extends State<AppPagePager> {
         }
         _controller.animateToPage(
           targetPage,
-          duration: const Duration(milliseconds: 620),
+          duration: GlassTokens.pagerPageTransitionDuration,
           curve: Curves.easeInOutCubic,
         );
       });
@@ -137,7 +138,7 @@ class AppPagePagerState extends State<AppPagePager> {
         if (mounted && widget.isIdle && _controller.hasClients) {
           _controller.animateToPage(
             0,
-            duration: const Duration(milliseconds: 550),
+            duration: GlassTokens.pagerPageTransitionDuration,
             curve: Curves.easeOutCubic,
           );
         }
@@ -149,7 +150,7 @@ class AppPagePagerState extends State<AppPagePager> {
     if (!widget.isIdle || _pageIndex != 0 || !_controller.hasClients) return;
     _controller.animateToPage(
       1,
-      duration: const Duration(milliseconds: 500),
+      duration: GlassTokens.pagerPageTransitionDuration,
       curve: Curves.easeInOutCubic,
     );
   }
@@ -158,7 +159,7 @@ class AppPagePagerState extends State<AppPagePager> {
     if (!_controller.hasClients || widget.pages.length <= 2) return;
     _controller.animateToPage(
       2,
-      duration: const Duration(milliseconds: 500),
+      duration: GlassTokens.pagerPageTransitionDuration,
       curve: Curves.easeInOutCubic,
     );
   }
@@ -242,21 +243,21 @@ class AppPagePagerState extends State<AppPagePager> {
               height: 58,
               child: Center(
                 child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 140),
+                  duration: GlassTokens.pagerControlTransitionDuration,
                   curve: Curves.easeInOut,
                   offset: showBottomControl
                       ? Offset.zero
                       : const Offset(0, 0.18),
                   child: AnimatedScale(
-                    duration: const Duration(milliseconds: 140),
+                    duration: GlassTokens.pagerControlTransitionDuration,
                     curve: Curves.easeInOut,
                     scale: _showPager && _pageIndex != 2 ? 1.08 : 1,
                     child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 140),
+                      duration: GlassTokens.pagerControlTransitionDuration,
                       curve: Curves.easeInOut,
                       opacity: showBottomControl ? 1 : 0,
                       child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
+                        duration: GlassTokens.pagerControlTransitionDuration,
                         switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
                         transitionBuilder: (child, animation) =>

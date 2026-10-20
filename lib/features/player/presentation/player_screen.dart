@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:music_assistant_api/music_assistant_api.dart';
+import '../../../design_system/glass_tokens.dart';
 
 import '../data/music_assistant_repository.dart';
 import 'player_now_playing_page.dart';
@@ -44,8 +45,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 context: context,
                 isScrollControlled: true,
                 sheetAnimationStyle: const AnimationStyle(
-                  duration: Duration(milliseconds: 240),
-                  reverseDuration: Duration(milliseconds: 200),
+                  duration:
+                      GlassTokens.playerVolumeSheetTransitionDuration,
+                  reverseDuration:
+                      GlassTokens.playerVolumeSheetTransitionDuration,
                   curve: Curves.easeOutCubic,
                   reverseCurve: Curves.easeInOutCubic,
                 ),

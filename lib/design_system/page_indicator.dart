@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'glass_tokens.dart';
 
 import 'glass_pill.dart';
 
@@ -10,7 +11,7 @@ class PageDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AnimatedContainer(
-    duration: const Duration(milliseconds: 240),
+    duration: GlassTokens.pageIndicatorTransitionDuration,
     curve: Curves.easeInOutCubic,
     width: vertical ? 6 : (active ? 16 : 6),
     height: vertical ? (active ? 16 : 6) : 6,

@@ -292,7 +292,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         details.velocity.pixelsPerSecond.dy > 850;
     _sheetController.animateTo(
       shouldClose ? _minExtent : _initialExtent,
-      duration: const Duration(milliseconds: 160),
+      duration: GlassTokens.queueSheetSnapDuration,
       curve: Curves.easeOutCubic,
     );
   }
@@ -724,7 +724,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             unawaited(
                               _sheetController.animateTo(
                                 _maxExtent,
-                                duration: const Duration(milliseconds: 300),
+                                duration: GlassTokens.queueSheetExpandDuration,
                                 curve: Curves.easeOutCubic,
                               ),
                             );
@@ -738,7 +738,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                             unawaited(
                               scrollController.animateTo(
                                 offset,
-                                duration: const Duration(milliseconds: 900),
+                                duration: GlassTokens.queueAutoScrollDuration,
                                 curve: Curves.easeInOutQuart,
                               ),
                             );
@@ -916,12 +916,10 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                 onBlockedSwipe: _showBufferedDeleteWarning,
                                 child: Dismissible(
                                 key: ValueKey(itemKey),
-                                movementDuration: const Duration(
-                                  milliseconds: 220,
-                                ),
-                                resizeDuration: const Duration(
-                                  milliseconds: 100,
-                                ),
+                                movementDuration:
+                                    GlassTokens.queueItemDismissDuration,
+                                resizeDuration:
+                                    GlassTokens.queueItemResizeDuration,
                                 direction:
                                     _isClearingQueue ||
                                         (_isRemovingQueueItem &&
@@ -1002,7 +1000,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     end: 1.0,
                                   ),
                                   duration: shouldAnimateRemoteMove
-                                      ? const Duration(milliseconds: 260)
+                                      ? GlassTokens.queueItemReorderDuration
                                       : Duration.zero,
                                   curve: Curves.easeOutCubic,
                                   builder: (context, progress, child) =>
@@ -1020,7 +1018,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                     opacity: _removingQueueItemKey == itemKey
                                         ? 0
                                         : 1,
-                                    duration: const Duration(milliseconds: 100),
+                                    duration: GlassTokens.queueItemRemoveDuration,
                                     curve: Curves.easeOut,
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -1029,9 +1027,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                       child: Opacity(
                                         opacity: isPreviouslyPlayed ? .42 : 1,
                                         child: AnimatedSwitcher(
-                                        duration: const Duration(
-                                          milliseconds: 220,
-                                        ),
+                                        duration: GlassTokens.queueItemMoveDuration,
                                         switchInCurve: Curves.easeOutCubic,
                                         switchOutCurve: Curves.easeInCubic,
                                         transitionBuilder: (child, animation) =>
