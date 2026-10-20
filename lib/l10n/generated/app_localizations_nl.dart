@@ -241,13 +241,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queueTitle => 'Wachtrij';
 
   @override
-  String get queueClearConfirmationTitle => 'Wachtrij wissen?';
-
-  @override
-  String get queueClearConfirmationBody =>
-      'Alle items worden uit de wachtrij verwijderd.';
-
-  @override
   String get queueCancelAction => 'Annuleren';
 
   @override

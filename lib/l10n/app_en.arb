@@ -116,8 +116,6 @@
   "idleRadioDetailsTooltip": "Radio station details",
   "idleRadioStationTitle": "Radio station",
   "queueTitle": "Queue",
-  "queueClearConfirmationTitle": "Clear queue?",
-  "queueClearConfirmationBody": "This will remove all items from the queue.",
   "queueCancelAction": "Cancel",
   "queueClearAction": "Clear queue",
   "queueClearFailed": "Could not clear the queue.",
@@ -333,12 +331,6 @@
   },
   "@queueTitle": {
     "description": "Title shown in the playback queue interface: “Queue”."
-  },
-  "@queueClearConfirmationTitle": {
-    "description": "Title shown in the playback queue interface: “Clear queue?”."
-  },
-  "@queueClearConfirmationBody": {
-    "description": "Text shown in the playback queue interface. It communicates: “This will remove all items from the queue”."
   },
   "@queueCancelAction": {
     "description": "Button label in the playback queue interface for the action to cancel."

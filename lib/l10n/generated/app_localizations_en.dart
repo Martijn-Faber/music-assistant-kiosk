@@ -238,13 +238,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queueTitle => 'Queue';
 
   @override
-  String get queueClearConfirmationTitle => 'Clear queue?';
-
-  @override
-  String get queueClearConfirmationBody =>
-      'This will remove all items from the queue.';
-
-  @override
   String get queueCancelAction => 'Cancel';
 
   @override

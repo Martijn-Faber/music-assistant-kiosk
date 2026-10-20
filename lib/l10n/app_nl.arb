@@ -116,8 +116,6 @@
   "idleRadioDetailsTooltip": "Details van radiozender",
   "idleRadioStationTitle": "Radiozender",
   "queueTitle": "Wachtrij",
-  "queueClearConfirmationTitle": "Wachtrij wissen?",
-  "queueClearConfirmationBody": "Alle items worden uit de wachtrij verwijderd.",
   "queueCancelAction": "Annuleren",
   "queueClearAction": "Wachtrij wissen",
   "queueClearFailed": "Wachtrij wissen is mislukt.",
@@ -333,12 +331,6 @@
   },
   "@queueTitle": {
     "description": "Title shown in the playback queue interface: “Wachtrij”."
-  },
-  "@queueClearConfirmationTitle": {
-    "description": "Title shown in the playback queue interface: “Wachtrij wissen?”."
-  },
-  "@queueClearConfirmationBody": {
-    "description": "Text shown in the playback queue interface. It communicates: “Alle items worden uit de wachtrij verwijderd”."
   },
   "@queueCancelAction": {
     "description": "Button label in the playback queue interface for the action to annuleren."

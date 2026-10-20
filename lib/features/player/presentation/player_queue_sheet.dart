@@ -297,114 +297,8 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
     );
   }
 
-  Future<void> _confirmClearQueue() async {
+  Future<void> _clearQueue() async {
     if (_isClearingQueue || _isRemovingQueueItem) return;
-
-    final media = MediaQuery.of(context);
-    final shouldClear = await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.all(12),
-        child: SizedBox(
-          width: media.size.width * 0.94,
-          child: GlassSurface(
-            borderRadius: GlassTokens.radiusLarge,
-            padding: const EdgeInsets.all(20),
-            tint: const Color(0x33232A30),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(
-                    child: Icon(
-                      CupertinoIcons.exclamationmark_triangle,
-                      color: Color(0xFFFF8E7C),
-                      size: GlassTokens.iconSizeXl,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    AppLocalizations.of(context).queueClearConfirmationTitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: GlassTokens.fontSize22,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.of(context).queueClearConfirmationBody,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: GlassTokens.textSecondary,
-                      fontSize: GlassTokens.fontSize14,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 46,
-                          child: OutlinedButton(
-                            onPressed: () =>
-                                Navigator.of(dialogContext).pop(false),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white70,
-                              side: const BorderSide(color: GlassTokens.border),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  GlassTokens.radiusMedium,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              AppLocalizations.of(context).queueCancelAction,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: SizedBox(
-                          height: 46,
-                          child: FilledButton(
-                            onPressed: () =>
-                                Navigator.of(dialogContext).pop(true),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF8E7C),
-                              foregroundColor: const Color(0xFF11161C),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  GlassTokens.radiusMedium,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              AppLocalizations.of(context).queueClearAction,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (shouldClear != true || !mounted) return;
-
     setState(() => _isClearingQueue = true);
     try {
       await widget.queueController.clear();
@@ -423,7 +317,11 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isClearingQueue = false);
+      if (mounted) {
+        setState(() {
+          _isClearingQueue = false;
+        });
+      }
     }
   }
 
@@ -603,7 +501,7 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                       PlayerQueueClearButton(
                         isClearing: _isClearingQueue,
                         isRemovingQueueItem: _isRemovingQueueItem,
-                        onPressed: _confirmClearQueue,
+                        onPressed: _clearQueue,
                       ),
                       PlayerQueueCloseButton(
                         onPressed: () => Navigator.of(context).pop(),

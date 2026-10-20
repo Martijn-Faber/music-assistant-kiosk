@@ -524,18 +524,6 @@ abstract class AppLocalizations {
   /// **'Queue'**
   String get queueTitle;
 
-  /// Title shown in the playback queue interface: “Clear queue?”.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear queue?'**
-  String get queueClearConfirmationTitle;
-
-  /// Text shown in the playback queue interface. It communicates: “This will remove all items from the queue”.
-  ///
-  /// In en, this message translates to:
-  /// **'This will remove all items from the queue.'**
-  String get queueClearConfirmationBody;
-
   /// Button label in the playback queue interface for the action to cancel.
   ///
   /// In en, this message translates to:
