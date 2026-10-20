@@ -306,13 +306,15 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                         const <MusicAssistantPlayer>[])
                                     .where(
                                       (candidate) =>
-                                          _viewModel.canAddToGroup(candidate) ||
-                                          _addingPlayerIds.contains(
-                                            candidate.playerId,
-                                          ) ||
-                                          _recentlyAddedPlayerIds.contains(
-                                            candidate.playerId,
-                                          ),
+                                          candidate.available &&
+                                          !candidate.hideInUi &&
+                                          (_viewModel.canAddToGroup(candidate) ||
+                                              _addingPlayerIds.contains(
+                                                candidate.playerId,
+                                              ) ||
+                                              _recentlyAddedPlayerIds.contains(
+                                                candidate.playerId,
+                                              )),
                                     )
                                     .toList();
                             if (allPlayersSnapshot.connectionState !=
