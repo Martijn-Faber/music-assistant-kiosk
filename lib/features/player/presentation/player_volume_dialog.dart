@@ -89,7 +89,7 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
     insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
     child: GlassSurface(
       borderRadius: 24,
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+      padding: const EdgeInsets.fromLTRB(0, 14, 0, 20),
       tint: const Color(0xEE141D20),
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -99,23 +99,29 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context).playerVolumeDialogTitle,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: GlassTokens.fontSize20,
-                      fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context).playerVolumeDialogTitle,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: GlassTokens.fontSize20,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(CupertinoIcons.xmark, color: Colors.white70),
-                ),
-              ],
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      CupertinoIcons.xmark,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
             ),
             Flexible(
               child: FutureBuilder<List<MusicAssistantPlayer>>(
@@ -131,7 +137,10 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                   }
                   if (snapshot.hasError || snapshot.data?.isEmpty != false) {
                     return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 24,
+                      ),
                       child: Text(
                         AppLocalizations.of(context).playerVolumeLoadFailed,
                         textAlign: TextAlign.center,
@@ -145,83 +154,116 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                     children: [
                       for (var index = 0; index < targets.length; index++) ...[
                         if (index > 0)
-                          const Divider(color: Color(0x33FFFFFF), height: 18),
-                        Builder(builder: (context) {
-                      final target = targets[index];
-                      final volume = _viewModel.volumeFor(target.playerId);
-                      final canSetVolume = target.supportedFeatures?.contains(
-                            MusicAssistantPlayerFeature.volumeSet,
-                          ) ==
-                          true;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                CupertinoIcons.hifispeaker,
-                                size: GlassTokens.iconSizeM,
-                                color: Colors.white70,
-                              ),
-                              const SizedBox(width: 9),
-                              Expanded(
-                                child: Text(
-                                  target.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: GlassTokens.fontSize15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              if (_viewModel.isSaving(target.playerId)) ...[
-                                const SizedBox.square(
-                                  dimension: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                                const SizedBox(width: 9),
-                              ],
-                              Text(
-                                canSetVolume
-                                    ? '${volume}%'
-                                    : AppLocalizations.of(context)
-                                        .playerVolumeUnsupported,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: GlassTokens.fontSize13,
-                                  fontFeatures: [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                            ],
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Divider(
+                              color: Color(0x33FFFFFF),
+                              height: 18,
+                            ),
                           ),
-                          GlassSlider(
-                            value: volume.toDouble(),
-                            min: 0,
-                            max: 100,
-                            onChangeStart: canSetVolume
-                                ? (_) => _viewModel.setAdjusting(target.playerId, true)
-                                : null,
-                            onChanged: canSetVolume
-                                ? (value) => _viewModel.previewVolume(target.playerId, value)
-                                : null,
-                            onChangeEnd: canSetVolume
-                                ? (value) => _saveVolume(target.playerId, value)
-                                : null,
-                            activeColor: Colors.white,
-                            inactiveColor: const Color(0x55FFFFFF),
-                          ),
-                        ],
-                      );
-                    }),
+                        Builder(
+                          builder: (context) {
+                            final target = targets[index];
+                            final volume = _viewModel.volumeFor(
+                              target.playerId,
+                            );
+                            final canSetVolume =
+                                target.supportedFeatures?.contains(
+                                  MusicAssistantPlayerFeature.volumeSet,
+                                ) ==
+                                true;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        CupertinoIcons.hifispeaker,
+                                        size: GlassTokens.iconSizeM,
+                                        color: Colors.white70,
+                                      ),
+                                      const SizedBox(width: 9),
+                                      Expanded(
+                                        child: Text(
+                                          target.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: GlassTokens.fontSize15,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      if (_viewModel.isSaving(
+                                        target.playerId,
+                                      )) ...[
+                                        const SizedBox.square(
+                                          dimension: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 9),
+                                      ],
+                                      Text(
+                                        canSetVolume
+                                            ? '${volume}%'
+                                            : AppLocalizations.of(
+                                                context,
+                                              ).playerVolumeUnsupported,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: GlassTokens.fontSize13,
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  GlassSlider(
+                                    value: volume.toDouble(),
+                                    min: 0,
+                                    max: 100,
+                                    onChangeStart: canSetVolume
+                                        ? (_) => _viewModel.setAdjusting(
+                                            target.playerId,
+                                            true,
+                                          )
+                                        : null,
+                                    onChanged: canSetVolume
+                                        ? (value) => _viewModel.previewVolume(
+                                            target.playerId,
+                                            value,
+                                          )
+                                        : null,
+                                    onChangeEnd: canSetVolume
+                                        ? (value) => _saveVolume(
+                                            target.playerId,
+                                            value,
+                                          )
+                                        : null,
+                                    activeColor: Colors.white,
+                                    inactiveColor: const Color(0x55FFFFFF),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ],
-                      const Divider(color: Color(0x33FFFFFF), height: 24),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Divider(color: Color(0x33FFFFFF), height: 24),
+                      ),
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                         child: Text(
                           AppLocalizations.of(context).playerGroupAddSpeaker,
                           style: const TextStyle(
@@ -234,20 +276,32 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                       FutureBuilder<List<MusicAssistantPlayer>>(
                         future: _viewModel.allPlayers,
                         builder: (context, allPlayersSnapshot) {
-                          final candidates = (allPlayersSnapshot.data ?? const <MusicAssistantPlayer>[])
-                              .where(_viewModel.canAddToGroup)
-                              .toList();
-                          if (allPlayersSnapshot.connectionState != ConnectionState.done) {
+                          final candidates =
+                              (allPlayersSnapshot.data ??
+                                      const <MusicAssistantPlayer>[])
+                                  .where(_viewModel.canAddToGroup)
+                                  .toList();
+                          if (allPlayersSnapshot.connectionState !=
+                              ConnectionState.done) {
                             return const Padding(
                               padding: EdgeInsets.all(12),
-                              child: Center(child: CircularProgressIndicator(color: Colors.white70)),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white70,
+                                ),
+                              ),
                             );
                           }
                           if (candidates.isEmpty) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
                               child: Text(
-                                AppLocalizations.of(context).playerGroupNoSpeakersAvailable,
+                                AppLocalizations.of(
+                                  context,
+                                ).playerGroupNoSpeakersAvailable,
                                 style: const TextStyle(color: Colors.white70),
                               ),
                             );
@@ -255,21 +309,54 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                           return Column(
                             children: [
                               for (final candidate in candidates)
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: const Icon(CupertinoIcons.hifispeaker, color: Colors.white70),
-                                  title: Text(candidate.name, style: const TextStyle(color: Colors.white)),
-                                  trailing: IconButton(
-                                    tooltip: AppLocalizations.of(context).playerGroupAddAction,
-                                    onPressed: _addingPlayerIds.contains(candidate.playerId)
+                                Material(
+                                  color: Colors.transparent,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                    ),
+                                    onTap:
+                                        _addingPlayerIds.contains(
+                                          candidate.playerId,
+                                        )
                                         ? null
                                         : () => _addToGroup(candidate),
-                                    icon: _addingPlayerIds.contains(candidate.playerId)
-                                        ? const SizedBox.square(
-                                            dimension: 18,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                                    leading: const Icon(
+                                      CupertinoIcons.hifispeaker,
+                                      color: Colors.white70,
+                                    ),
+                                    title: Text(
+                                      candidate.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    trailing: IconButton(
+                                      tooltip: AppLocalizations.of(
+                                        context,
+                                      ).playerGroupAddAction,
+                                      onPressed:
+                                          _addingPlayerIds.contains(
+                                            candidate.playerId,
                                           )
-                                        : const Icon(CupertinoIcons.add_circled, color: Colors.white),
+                                          ? null
+                                          : () => _addToGroup(candidate),
+                                      icon:
+                                          _addingPlayerIds.contains(
+                                            candidate.playerId,
+                                          )
+                                          ? const SizedBox.square(
+                                              dimension: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white70,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              CupertinoIcons.add_circled,
+                                              color: Colors.white,
+                                            ),
+                                    ),
                                   ),
                                 ),
                             ],
