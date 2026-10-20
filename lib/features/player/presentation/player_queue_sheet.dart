@@ -1049,39 +1049,19 @@ class _PlayerQueueSheetState extends State<PlayerQueueSheet> {
                                                 child: child,
                                               ),
                                             ),
-                                        child: Material(
+                                        child: PlayerInteractiveRow(
                                           key: ValueKey(
                                             isCurrent
                                                 ? 'current-track'
                                                 : 'queue-track',
                                           ),
-                                          type: MaterialType.transparency,
-                                          child: isCurrent
-                                              ? Padding(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 20,
-                                                  ),
-                                                  child: GlassInteractiveSurface(
-                                                    borderRadius: 14,
-                                                    padding: EdgeInsets.zero,
-                                                    tint: const Color(
-                                                      0x33202730,
-                                                    ),
-                                                    blurSigma: 0,
-                                                    showShadow: false,
-                                                    onTap: onTap,
-                                                    child: tile,
-                                                  ),
-                                                )
-                                              : InkWell(
-                                                  onTap: onTap,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 20,
-                                                    ),
-                                                    child: tile,
-                                                  ),
-                                                ),
+                                          onTap: onTap,
+                                          horizontalInset: 20,
+                                          highlighted: isCurrent,
+                                          highlightTint: const Color(
+                                            0x33202730,
+                                          ),
+                                          child: tile,
                                         ),
                                       ),
                                     ),

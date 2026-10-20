@@ -3,9 +3,57 @@ import 'package:flutter/material.dart';
 import 'package:app/design_system/glass_tokens.dart';
 
 import '../../../design_system/glass_pill.dart';
+import '../../../design_system/glass_surface.dart';
 
 export '../../../design_system/glass_surface.dart';
 export '../../../design_system/glass_pill.dart';
+
+class PlayerInteractiveRow extends StatelessWidget {
+  const PlayerInteractiveRow({
+    super.key,
+    required this.child,
+    required this.onTap,
+    this.horizontalInset = 0,
+    this.highlighted = false,
+    this.borderRadius = 14,
+    this.highlightTint = const Color(0x33232A30),
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final double horizontalInset;
+  final bool highlighted;
+  final double borderRadius;
+  final Color highlightTint;
+
+  @override
+  Widget build(BuildContext context) {
+    if (highlighted) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+        child: GlassInteractiveSurface(
+          borderRadius: borderRadius,
+          padding: EdgeInsets.zero,
+          tint: highlightTint,
+          blurSigma: 0,
+          showShadow: false,
+          onTap: onTap,
+          child: child,
+        ),
+      );
+    }
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
 
 class PlayerNamePill extends StatelessWidget {
   const PlayerNamePill({

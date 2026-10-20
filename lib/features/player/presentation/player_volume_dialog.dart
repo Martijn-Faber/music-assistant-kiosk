@@ -377,21 +377,20 @@ class _PlayerVolumeDialogState extends State<PlayerVolumeDialog> {
                                             ? const SizedBox(
                                                 key: ValueKey('dismissed'),
                                               )
-                                            : Material(
+                                            : PlayerInteractiveRow(
                                                 key: const ValueKey(
                                                   'speaker-row',
                                                 ),
-                                                color: Colors.transparent,
+                                                onTap: isAdding || wasAdded
+                                                    ? null
+                                                    : () => _addToGroup(
+                                                        candidate,
+                                                      ),
                                                 child: ListTile(
                                                   contentPadding:
                                                       const EdgeInsets.symmetric(
                                                         horizontal: 20,
                                                       ),
-                                                  onTap: isAdding || wasAdded
-                                                      ? null
-                                                      : () => _addToGroup(
-                                                          candidate,
-                                                        ),
                                                   leading: const Icon(
                                                     CupertinoIcons.hifispeaker,
                                                     color: Colors.white70,
