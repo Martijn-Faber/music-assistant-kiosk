@@ -891,6 +891,7 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
                 scale: .86 + (.14 * dragProgress),
                 translateY: -size * .21 * dragProgress,
                 glassBorderOpacity: 1 - dragProgress,
+                fade: .25 * (1 - dragProgress),
               ),
             );
           }
@@ -1005,18 +1006,25 @@ class _QueueArtworkStackState extends State<QueueArtworkStack>
     required double scale,
     double translateY = 0,
     double glassBorderOpacity = 1,
+    double fade = 0,
   }) => Positioned(
     left: 0,
     top: top,
     width: size,
     height: size,
-    child: Transform.translate(
-      offset: Offset(0, translateY),
-      child: _nextArtworkCard(
-        imageUrl,
-        size,
-        scale: scale,
-        glassBorderOpacity: glassBorderOpacity,
+    child: ColorFiltered(
+      colorFilter: ColorFilter.mode(
+        Colors.black.withValues(alpha: fade),
+        BlendMode.srcATop,
+      ),
+      child: Transform.translate(
+        offset: Offset(0, translateY),
+        child: _nextArtworkCard(
+          imageUrl,
+          size,
+          scale: scale,
+          glassBorderOpacity: glassBorderOpacity,
+        ),
       ),
     ),
   );
