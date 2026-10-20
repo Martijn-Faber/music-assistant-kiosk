@@ -5,9 +5,6 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/glass_tokens.dart';
 
-final Set<String> _loggedNonProxyArtworkPaths = <String>{};
-final Set<String> _loggedProxyArtworkRequests = <String>{};
-
 class ArtworkImage extends StatelessWidget {
   const ArtworkImage({
     super.key,
@@ -410,24 +407,9 @@ ImageProvider? artworkImageProvider({
   }
 
   if (uri.path.contains('imageproxy')) {
-    final logKey = '${uri.host}${uri.path}?size=$imageProxySize';
-    if (_loggedProxyArtworkRequests.add(logKey)) {
-      debugPrint(
-        'Artwork image proxy request: size=$imageProxySize '
-        'format=${uri.queryParameters['fmt'] ?? 'server default'} '
-        'url=$logKey',
-      );
-    }
     return networkProvider;
   }
 
-  final logKey = '${uri.host}${uri.path}';
-  if (_loggedNonProxyArtworkPaths.add(logKey)) {
-    debugPrint(
-      'Artwork URL is not using the image proxy: requestedSize=$imageProxySize '
-      'url=$logKey',
-    );
-  }
   if (imageProxySize == 0) return networkProvider;
 
   // Non-proxy artwork cannot be resized by the server, so resize it locally.
