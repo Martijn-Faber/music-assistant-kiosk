@@ -82,6 +82,11 @@ abstract final class GlassTokens {
   static const radiusLarge = 18.0;
   static const cardRadius = radiusLarge;
 
+  static const space1 = 4.0;
+  static const space2 = 8.0;
+  static const space3 = 12.0;
+  static const space4 = 16.0;
+
   // Shared type scale. Use these in TextStyles rather than feature-local
   // numeric sizes so hierarchy can be tuned across the app in one place.
   static const fontSize9 = 9.0;

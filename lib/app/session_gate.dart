@@ -21,6 +21,7 @@ import '../features/player/presentation/album_backdrop.dart';
 import '../features/player/viewmodels/player_volume_view_model.dart';
 import '../features/idle/presentation/idle_player_page.dart';
 import '../features/screensaver/presentation/clock_screensaver_page.dart';
+import '../features/screensaver/presentation/clockface_designs.dart';
 import '../features/settings/presentation/player_settings_page.dart';
 
 class SessionGate extends StatefulWidget {
@@ -73,6 +74,11 @@ class _SessionGateState extends State<SessionGate> {
   String? _qualityLabel;
   int _qualityRequest = 0;
   bool? _clock24HourFormat;
+  int _clockfaceDesign = 0;
+  int _clockfacePreviewDesign = 0;
+  String? _weatherLocation;
+  bool _dynamicClockfaceColors = true;
+  bool _editingClockface = false;
   int _clockFormatRevision = 0;
 
   @override
@@ -80,7 +86,52 @@ class _SessionGateState extends State<SessionGate> {
     super.initState();
     _volumeButtons.setHandler(_handleHardwareButton);
     unawaited(_restoreClockFormat());
+    unawaited(_restoreClockface());
+    unawaited(_restoreWeatherLocation());
+    unawaited(_restoreDynamicClockfaceColors());
     _restoreSession();
+  }
+
+  Future<void> _restoreClockface() async {
+    final design = await _sessionStorage.readClockfaceDesign();
+    if (mounted) {
+      setState(() {
+        _clockfaceDesign = design
+            .clamp(0, ClockfaceDesign.designCount - 1)
+            .toInt();
+        _clockfacePreviewDesign = _clockfaceDesign;
+      });
+    }
+  }
+
+  Future<void> _restoreWeatherLocation() async {
+    final location = await _sessionStorage.readWeatherLocation();
+    if (mounted) setState(() => _weatherLocation = location);
+  }
+
+  Future<void> _restoreDynamicClockfaceColors() async {
+    final enabled = await _sessionStorage.readDynamicClockfaceColors();
+    if (mounted) setState(() => _dynamicClockfaceColors = enabled);
+  }
+
+  Future<void> _saveDynamicClockfaceColors(bool enabled) async {
+    setState(() => _dynamicClockfaceColors = enabled);
+    await _sessionStorage.saveDynamicClockfaceColors(enabled);
+  }
+
+  Future<void> _saveWeatherLocation(String location) async {
+    setState(() => _weatherLocation = location);
+    await _sessionStorage.saveWeatherLocation(location);
+  }
+
+  Future<void> _saveClockface(int design) async {
+    final selectedDesign = design.clamp(0, ClockfaceDesign.designCount - 1);
+    setState(() {
+      _clockfaceDesign = selectedDesign;
+      _clockfacePreviewDesign = selectedDesign;
+      _editingClockface = false;
+    });
+    await _sessionStorage.saveClockfaceDesign(selectedDesign);
   }
 
   @override
@@ -670,6 +721,15 @@ class _SessionGateState extends State<SessionGate> {
       onLocaleChanged: widget.onLocaleChanged,
       onSelectPlayer: _selectPlayer,
       onSignOut: _disconnect,
+      onChangeClockface: () {
+        _pagerKey.currentState?.openScreensaverPage(
+          onArrived: () {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _editingClockface = true);
+            });
+          },
+        );
+      },
     );
 
     final idlePage = player == null
@@ -712,6 +772,7 @@ class _SessionGateState extends State<SessionGate> {
                   child: AppPagePager(
                     key: _pagerKey,
                     isIdle: isIdle,
+                    lockPager: _editingClockface,
                     activePageControl: player == null
                         ? null
                         : PlayerNamePill(
@@ -730,10 +791,27 @@ class _SessionGateState extends State<SessionGate> {
                           ),
                     pages: [
                       ClockScreensaverPage(
+                        design: _clockfaceDesign,
+                        editing: _editingClockface,
+                        onDesignSelected: _saveClockface,
+                        dynamicColorsEnabled: _dynamicClockfaceColors,
+                        onDynamicColorsChanged: (enabled) =>
+                            unawaited(_saveDynamicClockfaceColors(enabled)),
+                        onDesignPreviewChanged: (design) {
+                          _clockfacePreviewDesign = design;
+                        },
+                        onEnterEditMode: () =>
+                            setState(() => _editingClockface = true),
+                        weatherLocation: _weatherLocation,
+                        onWeatherLocationChanged: (location) =>
+                            unawaited(_saveWeatherLocation(location)),
                         nowPlayingLabel: nowPlayingLabel,
                         onNowPlayingTap: () =>
                             _pagerKey.currentState?.openPlayerPage(),
                         alwaysUse24HourFormat: _clock24HourFormat,
+                        musicPalette: isPlaying && _dynamicClockfaceColors
+                            ? backdropMedia?.palette
+                            : null,
                       ),
                       idlePage,
                       playerPage,

@@ -18,6 +18,9 @@ class SessionStorage {
   static const _tokenKey = 'music_assistant_token';
   static const _playerKey = 'music_assistant_player';
   static const _clock24HourKey = 'clock_24_hour_format';
+  static const _clockfaceKey = 'clockface_design';
+  static const _weatherLocationKey = 'clockface_weather_location';
+  static const _dynamicClockfaceColorsKey = 'clockface_dynamic_colors';
   static const _localeKey = 'app_locale';
   static const _onboardingCompleteKey = 'onboarding_complete';
 
@@ -53,6 +56,23 @@ class SessionStorage {
       await _storage.write(key: _clock24HourKey, value: value.toString());
     }
   }
+
+  Future<int> readClockfaceDesign() async =>
+      int.tryParse(await _storage.read(key: _clockfaceKey) ?? '') ?? 0;
+
+  Future<void> saveClockfaceDesign(int value) =>
+      _storage.write(key: _clockfaceKey, value: value.toString());
+
+  Future<String?> readWeatherLocation() => _storage.read(key: _weatherLocationKey);
+
+  Future<void> saveWeatherLocation(String value) =>
+      _storage.write(key: _weatherLocationKey, value: value);
+
+  Future<bool> readDynamicClockfaceColors() async =>
+      await _storage.read(key: _dynamicClockfaceColorsKey) != 'false';
+
+  Future<void> saveDynamicClockfaceColors(bool enabled) =>
+      _storage.write(key: _dynamicClockfaceColorsKey, value: enabled.toString());
 
   Future<SavedSession?> readSession() async {
     final serverUrl = await _storage.read(key: _serverKey);

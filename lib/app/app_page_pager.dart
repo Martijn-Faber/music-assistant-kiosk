@@ -13,11 +13,15 @@ class AppPagePager extends StatefulWidget {
     required this.isIdle,
     required this.pages,
     this.activePageControl,
+    this.onPageChanged,
+    this.lockPager = false,
   });
 
   final bool isIdle;
   final List<Widget> pages;
   final Widget? activePageControl;
+  final ValueChanged<int>? onPageChanged;
+  final bool lockPager;
 
   @override
   State<AppPagePager> createState() => AppPagePagerState();
@@ -102,6 +106,7 @@ class AppPagePagerState extends State<AppPagePager> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.horizontal) return false;
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
       _pagerHideTimer?.cancel();
@@ -132,6 +137,7 @@ class AppPagePagerState extends State<AppPagePager> {
 
   void _onPageChanged(int index) {
     setState(() => _pageIndex = index);
+    widget.onPageChanged?.call(index);
     _screensaverTimer?.cancel();
     if (widget.isIdle && index != 0) {
       _screensaverTimer = Timer(_screensaverDelay, () {
@@ -164,6 +170,16 @@ class AppPagePagerState extends State<AppPagePager> {
     );
   }
 
+  Future<void> openScreensaverPage({VoidCallback? onArrived}) async {
+    if (!_controller.hasClients) return;
+    await _controller.animateToPage(
+      0,
+      duration: GlassTokens.pagerPageTransitionDuration,
+      curve: Curves.easeInOutCubic,
+    );
+    onArrived?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final showBottomControl = _showPager || _pageIndex == 2;
@@ -177,6 +193,9 @@ class AppPagePagerState extends State<AppPagePager> {
           onNotification: _handleScrollNotification,
           child: PageView.builder(
             controller: _controller,
+            physics: widget.lockPager
+                ? const NeverScrollableScrollPhysics()
+                : null,
             itemCount: widget.pages.length,
             onPageChanged: _onPageChanged,
             itemBuilder: (context, index) => AnimatedBuilder(

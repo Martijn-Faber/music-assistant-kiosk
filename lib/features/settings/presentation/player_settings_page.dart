@@ -19,6 +19,7 @@ class PlayerSettingsPage extends StatefulWidget {
     required this.onLocaleChanged,
     required this.onSelectPlayer,
     required this.onSignOut,
+    required this.onChangeClockface,
   });
 
   final List<MusicAssistantPlayer> players;
@@ -31,6 +32,7 @@ class PlayerSettingsPage extends StatefulWidget {
   final ValueChanged<Locale> onLocaleChanged;
   final ValueChanged<String> onSelectPlayer;
   final VoidCallback onSignOut;
+  final VoidCallback onChangeClockface;
 
   @override
   State<PlayerSettingsPage> createState() => _PlayerSettingsPageState();
@@ -178,6 +180,12 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                   GlassSectionLabel(l10n.settingsClockFormatLabel),
                   const SizedBox(height: 8),
                   _clockFormatSelector(l10n),
+                  const SizedBox(height: 8),
+                  GlassOutlineButton(
+                    icon: CupertinoIcons.clock,
+                    label: 'Change clockface',
+                    onPressed: widget.onChangeClockface,
+                  ),
                   const SizedBox(height: 20),
                   GlassSectionLabel(l10n.settingsServerSectionLabel),
                   const SizedBox(height: 8),
