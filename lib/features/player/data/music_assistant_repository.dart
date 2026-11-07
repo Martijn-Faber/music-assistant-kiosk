@@ -17,6 +17,8 @@ class MusicAssistantRepository {
 
   String get serverUrl => _client.serverUrl;
   String get token => _client.token;
+  Stream<mass.MusicAssistantConnectionState> get connectionState =>
+      _playerApiClient.state;
 
   static Future<bool> probeServerTimeAt(String serverUrl) async {
     final client = HttpClient();

@@ -29,6 +29,11 @@ class PlayerQueueViewModel extends ChangeNotifier {
       },
       onRemoved: (_) {},
     );
+    _connectionStateSubscription = repository.connectionState.listen((state) {
+      if (state == MusicAssistantConnectionState.connected) {
+        _scheduleRefresh();
+      }
+    });
   }
 
   final MusicAssistantRepository repository;
@@ -46,6 +51,8 @@ class PlayerQueueViewModel extends ChangeNotifier {
   bool isUpdatingAutoplay = false;
   Future<void>? _loading;
   Timer? _refreshTimer;
+  StreamSubscription<MusicAssistantConnectionState>?
+  _connectionStateSubscription;
   void Function()? _unsubscribeFromQueueEvents;
   void Function()? _unsubscribeFromPlayerEvents;
   bool _disposed = false;
@@ -159,7 +166,10 @@ class PlayerQueueViewModel extends ChangeNotifier {
         type != 'queue_updated') {
       return;
     }
-    // One queue operation can emit several events; fetch once after they settle.
+    _scheduleRefresh();
+  }
+
+  void _scheduleRefresh() {
     _refreshTimer?.cancel();
     _refreshTimer = Timer(const Duration(milliseconds: 320), () {
       unawaited(
@@ -172,6 +182,7 @@ class PlayerQueueViewModel extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _refreshTimer?.cancel();
+    unawaited(_connectionStateSubscription?.cancel());
     _unsubscribeFromQueueEvents?.call();
     _unsubscribeFromPlayerEvents?.call();
     super.dispose();

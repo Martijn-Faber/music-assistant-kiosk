@@ -1,0 +1,24 @@
+# This is an example configuration file
+# To learn more, see the full config.yaml reference: https://docs.continue.dev/reference
+
+name: Homelab
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen2.5-Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://famim.tail2bfe7f.ts.net:11434
+    roles: [chat, edit, apply]
+    capabilities: [tool_use]
+  # - name: Qwen2.5-Coder 1.5B
+  #   provider: ollama
+  #   model: qwen2.5-coder:1.5b
+  #   apiBase: http://SERVER_IP:11434
+  #   roles: [autocomplete]
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text
+    apiBase: http://famim.tail2bfe7f.ts.net:11434
+    roles: [embed]

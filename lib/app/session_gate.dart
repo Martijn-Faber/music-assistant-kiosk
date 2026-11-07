@@ -61,6 +61,9 @@ class _SessionGateState extends State<SessionGate> {
   MusicAssistantServerInfoMessage? _serverInfo;
   String? _selectedPlayerId;
   void Function()? _unsubscribeFromPlayers;
+  StreamSubscription<MusicAssistantConnectionState>?
+  _connectionStateSubscription;
+  bool _isRefreshingPlayersAfterReconnect = false;
   bool _isLoading = true;
   bool _showStartupLoading = true;
   bool _onboardingComplete = false;
@@ -140,6 +143,7 @@ class _SessionGateState extends State<SessionGate> {
     unawaited(_volumeButtons.setEnabled(false));
     _volumeButtons.dispose();
     _unsubscribeFromPlayers?.call();
+    unawaited(_connectionStateSubscription?.cancel());
     final repository = _repository;
     if (repository != null) unawaited(repository.disconnect());
     super.dispose();
@@ -337,6 +341,8 @@ class _SessionGateState extends State<SessionGate> {
     await _setVolumeControlEnabled(false);
     _unsubscribeFromPlayers?.call();
     _unsubscribeFromPlayers = null;
+    unawaited(_connectionStateSubscription?.cancel());
+    _connectionStateSubscription = null;
     final repository = _repository;
     try {
       await repository?.logout();
@@ -435,6 +441,12 @@ class _SessionGateState extends State<SessionGate> {
 
   void _listenToPlayerChanges(MusicAssistantRepository repository) {
     _unsubscribeFromPlayers?.call();
+    unawaited(_connectionStateSubscription?.cancel());
+    _connectionStateSubscription = repository.connectionState.listen((state) {
+      if (state == MusicAssistantConnectionState.connected) {
+        unawaited(_refreshPlayersAfterReconnect(repository));
+      }
+    });
     _unsubscribeFromPlayers = repository.listenToPlayerEvents(
       onChanged: (player) {
         if (!mounted) return;
@@ -516,6 +528,73 @@ class _SessionGateState extends State<SessionGate> {
         }
       },
     );
+  }
+
+  Future<void> _refreshPlayersAfterReconnect(
+    MusicAssistantRepository repository,
+  ) async {
+    if (_isRefreshingPlayersAfterReconnect) return;
+    _isRefreshingPlayersAfterReconnect = true;
+    try {
+      final refreshedPlayers = await repository.fetchPlayers();
+      if (!mounted || !identical(repository, _repository)) return;
+
+      final previousSelectedPlayer = _players
+          .where((player) => player.playerId == _selectedPlayerId)
+          .firstOrNull;
+      final updatedPlayers = refreshedPlayers.map((player) {
+        final previousPlayer = _players
+            .where((item) => item.playerId == player.playerId)
+            .firstOrNull;
+        return player.copyWith(
+          volumeLevel: player.volumeLevel ?? previousPlayer?.volumeLevel,
+          groupVolume: player.groupVolume ?? previousPlayer?.groupVolume,
+        );
+      }).toList();
+      final selectedPlayer = updatedPlayers
+          .where((player) => player.playerId == _selectedPlayerId)
+          .firstOrNull;
+      final selectedPlayerRemoved =
+          _selectedPlayerId != null && selectedPlayer == null;
+      final selectedTrackChanged =
+          previousSelectedPlayer?.currentMedia?.queueItemId !=
+              selectedPlayer?.currentMedia?.queueItemId ||
+          previousSelectedPlayer?.currentMedia?.uri !=
+              selectedPlayer?.currentMedia?.uri ||
+          previousSelectedPlayer?.currentMedia?.title !=
+              selectedPlayer?.currentMedia?.title;
+
+      setState(() {
+        _players = updatedPlayers;
+        if (selectedPlayerRemoved) {
+          _selectedPlayerId = null;
+          _qualityLabel = null;
+          _backdropMediaOverride = null;
+          _backdropOverridePlayerId = null;
+        } else if (selectedTrackChanged) {
+          _backdropMediaOverride = null;
+          _backdropOverridePlayerId = null;
+        }
+        _connectionError = null;
+      });
+
+      if (selectedPlayerRemoved) {
+        unawaited(_sessionStorage.saveSelectedPlayerId(null));
+        unawaited(_setVolumeControlEnabled(false));
+      } else if (selectedTrackChanged && _selectedPlayerId != null) {
+        unawaited(_refreshQuality(_selectedPlayerId!));
+      }
+    } catch (_) {
+      if (mounted && identical(repository, _repository)) {
+        setState(
+          () => _connectionError = AppLocalizations.of(
+            context,
+          ).commonConnectionFailed,
+        );
+      }
+    } finally {
+      _isRefreshingPlayersAfterReconnect = false;
+    }
   }
 
   Future<void> _refreshQuality(String playerId) async {

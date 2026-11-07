@@ -37,6 +37,8 @@ class MusicAssistantQueueSnapshot {
 ///
 /// Every server command is available through [sendCommand]. Typed convenience
 /// methods can be layered over it without limiting access to new server APIs.
+/// Unexpected socket closures are retried with exponential backoff until
+/// [disconnect] is called.
 class MusicAssistantClient {
   MusicAssistantClient({
     required this.serverUrl,
@@ -72,8 +74,13 @@ class MusicAssistantClient {
   StreamSubscription<Object?>? _socketSubscription;
   Completer<Map<String, dynamic>>? _serverInfoCompleter;
   int _requestSequence = 0;
+  int _reconnectAttempt = 0;
   bool _authenticated = false;
   bool _closing = false;
+  bool _disposed = false;
+  bool _hasConnected = false;
+  bool _authenticateOnReconnect = true;
+  Timer? _reconnectTimer;
 
   Map<String, dynamic>? serverInfo;
   Map<String, dynamic>? user;
@@ -147,28 +154,40 @@ class MusicAssistantClient {
     },
   );
 
-  Future<void> connect() => _connect(authenticate: true);
+  Future<void> connect() {
+    _closing = false;
+    _authenticateOnReconnect = true;
+    return _connect(authenticate: true);
+  }
 
   /// Opens the WebSocket without sending an authentication command.
-  Future<void> connectUnauthenticated() => _connect(authenticate: false);
+  Future<void> connectUnauthenticated() {
+    _closing = false;
+    _authenticateOnReconnect = false;
+    return _connect(authenticate: false);
+  }
 
   Future<void> _connect({required bool authenticate}) async {
+    if (_disposed) throw StateError('Music Assistant client is disposed.');
     if (_socket != null) throw StateError('Already connected.');
-    _closing = false;
-    _stateController.add(MusicAssistantConnectionState.connecting);
-    final socket = await WebSocket.connect(
-      _webSocketUri(serverUrl).toString(),
-    ).timeout(requestTimeout);
-    _socket = socket;
-    _serverInfoCompleter = Completer<Map<String, dynamic>>();
-    _socketSubscription = socket.listen(
-      _handleFrame,
-      onError: (Object error) => _handleSocketError(error),
-      onDone: _handleSocketClosed,
-      cancelOnError: false,
-    );
-
+    _emitState(MusicAssistantConnectionState.connecting);
+    WebSocket? connectedSocket;
     try {
+      connectedSocket = await WebSocket.connect(
+        _webSocketUri(serverUrl).toString(),
+      ).timeout(requestTimeout);
+      if (_closing) {
+        await connectedSocket.close();
+        return;
+      }
+      _socket = connectedSocket;
+      _serverInfoCompleter = Completer<Map<String, dynamic>>();
+      _socketSubscription = connectedSocket.listen(
+        _handleFrame,
+        onError: (Object error) => _handleSocketError(error),
+        onDone: _handleSocketClosed,
+        cancelOnError: false,
+      );
       serverInfo = await _serverInfoCompleter!.future.timeout(requestTimeout);
       if (authenticate) {
         final authResult = await _sendCommand(
@@ -184,9 +203,22 @@ class MusicAssistantClient {
             : null;
         _authenticated = true;
       }
-      _stateController.add(MusicAssistantConnectionState.connected);
-    } catch (_) {
-      await disconnect();
+      if (_closing) {
+        throw StateError('Disconnected from Music Assistant.');
+      }
+      _reconnectAttempt = 0;
+      _hasConnected = true;
+      _emitState(MusicAssistantConnectionState.connected);
+    } catch (error, stackTrace) {
+      _authenticated = false;
+      final subscription = _socketSubscription;
+      _socketSubscription = null;
+      await subscription?.cancel();
+      final failedSocket = _socket ?? connectedSocket;
+      _socket = null;
+      await failedSocket?.close();
+      _failPending(error, stackTrace);
+      _emitState(MusicAssistantConnectionState.disconnected);
       rethrow;
     }
   }
@@ -491,7 +523,15 @@ class MusicAssistantClient {
 
   Future<void> disconnect() async {
     _closing = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _authenticated = false;
+    final serverInfoCompleter = _serverInfoCompleter;
+    if (serverInfoCompleter != null && !serverInfoCompleter.isCompleted) {
+      serverInfoCompleter.completeError(
+        StateError('Disconnected from Music Assistant.'),
+      );
+    }
     for (final completer in _pending.values) {
       if (!completer.isCompleted) {
         completer.completeError(
@@ -506,11 +546,12 @@ class MusicAssistantClient {
     final socket = _socket;
     _socket = null;
     await socket?.close();
-    _stateController.add(MusicAssistantConnectionState.disconnected);
+    _emitState(MusicAssistantConnectionState.disconnected);
   }
 
   Future<void> dispose() async {
     await disconnect();
+    _disposed = true;
     await _eventController.close();
     await _stateController.close();
   }
@@ -570,14 +611,45 @@ class MusicAssistantClient {
 
   void _handleSocketError(Object error) {
     _failPending(error);
+    final subscription = _socketSubscription;
+    _socketSubscription = null;
+    unawaited(subscription?.cancel());
+    _handleSocketClosed();
   }
 
   void _handleSocketClosed() {
+    if (_socket == null) return;
     _authenticated = false;
     _socket = null;
+    _socketSubscription = null;
     _failPending(StateError('Music Assistant WebSocket closed.'));
     if (!_closing) {
-      _stateController.add(MusicAssistantConnectionState.disconnected);
+      _emitState(MusicAssistantConnectionState.disconnected);
+      if (_hasConnected) _scheduleReconnect();
+    }
+  }
+
+  void _emitState(MusicAssistantConnectionState state) {
+    if (!_disposed) _stateController.add(state);
+  }
+
+  void _scheduleReconnect() {
+    if (_closing || _reconnectTimer != null || _socket != null) return;
+    final exponent = _reconnectAttempt.clamp(0, 5);
+    final delaySeconds = (2 * (1 << exponent)).clamp(2, 60);
+    _reconnectAttempt++;
+    _reconnectTimer = Timer(Duration(seconds: delaySeconds), () {
+      _reconnectTimer = null;
+      if (_closing || _socket != null) return;
+      unawaited(_reconnect());
+    });
+  }
+
+  Future<void> _reconnect() async {
+    try {
+      await _connect(authenticate: _authenticateOnReconnect);
+    } catch (_) {
+      if (!_closing) _scheduleReconnect();
     }
   }
 
