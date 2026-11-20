@@ -187,12 +187,27 @@ class _AnalogClock extends StatelessWidget {
         tween: ColorTween(end: palette?.accentColor ?? const Color(0xFFFF9800)),
         duration: GlassTokens.artworkBackdropTransitionDuration,
         curve: Curves.easeInOutCubic,
-        builder: (context, secondsHandColor, _) => CustomPaint(
-          painter: _AnalogDialPainter(
-            now,
-            dialColor ?? const Color(0xFFF4F4F4),
-            handsColor ?? const Color(0xFFF4F4F4),
-            secondsHandColor ?? const Color(0xFFFF9800),
+        builder: (context, secondsHandColor, _) => RepaintBoundary(
+          child: SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _AnalogFacePainter(
+                      dialColor ?? const Color(0xFFF4F4F4),
+                    ),
+                  ),
+                ),
+                CustomPaint(
+                  painter: _AnalogHandsPainter(
+                    now,
+                    handsColor ?? const Color(0xFFF4F4F4),
+                    secondsHandColor ?? const Color(0xFFFF9800),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -374,17 +389,9 @@ class _WeatherPlaceholder extends StatelessWidget {
   );
 }
 
-class _AnalogDialPainter extends CustomPainter {
-  const _AnalogDialPainter(
-    this.time,
-    this.dialColor,
-    this.handsColor,
-    this.secondsHandColor,
-  );
-  final DateTime time;
+class _AnalogFacePainter extends CustomPainter {
+  const _AnalogFacePainter(this.dialColor);
   final Color dialColor;
-  final Color handsColor;
-  final Color secondsHandColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -436,6 +443,23 @@ class _AnalogDialPainter extends CustomPainter {
       text.paint(canvas, position - Offset(text.width / 2, text.height / 2));
     }
 
+  }
+
+  @override
+  bool shouldRepaint(covariant _AnalogFacePainter oldDelegate) =>
+      oldDelegate.dialColor != dialColor;
+}
+
+class _AnalogHandsPainter extends CustomPainter {
+  const _AnalogHandsPainter(this.time, this.handsColor, this.secondsHandColor);
+  final DateTime time;
+  final Color handsColor;
+  final Color secondsHandColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) * 0.47;
     final minute = time.minute + time.second / 60;
     final hour = (time.hour % 12) + minute / 60;
     _hand(canvas, center, hour / 12 * 2 * math.pi - math.pi / 2, radius, 0.46, 11, handsColor);
@@ -517,7 +541,10 @@ class _AnalogDialPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _AnalogDialPainter oldDelegate) => oldDelegate.time != time || oldDelegate.dialColor != dialColor || oldDelegate.handsColor != handsColor || oldDelegate.secondsHandColor != secondsHandColor;
+  bool shouldRepaint(covariant _AnalogHandsPainter oldDelegate) =>
+      oldDelegate.time != time ||
+      oldDelegate.handsColor != handsColor ||
+      oldDelegate.secondsHandColor != secondsHandColor;
 }
 
 class _ClockTime extends StatelessWidget {
