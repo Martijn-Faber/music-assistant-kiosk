@@ -54,7 +54,7 @@ class ClockScreensaverPage extends StatefulWidget {
 
 class _ClockScreensaverPageState extends State<ClockScreensaverPage>
     with SingleTickerProviderStateMixin {
-  late DateTime _now;
+  late final ValueNotifier<DateTime> _clock;
   late final PageController _designController;
   late final AnimationController _editModeController;
   Timer? _clockTimer;
@@ -67,7 +67,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage>
   @override
   void initState() {
     super.initState();
-    _now = DateTime.now();
+    _clock = ValueNotifier(DateTime.now());
     _designController = PageController(initialPage: widget.design);
     _editModeController = AnimationController(
       vsync: this,
@@ -76,7 +76,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage>
     );
     _previewDesign = widget.design;
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
+      _clock.value = DateTime.now();
     });
     _loadWeather();
     _weatherTimer = Timer.periodic(const Duration(minutes: 30), (_) => _loadWeather());
@@ -122,6 +122,7 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage>
     _weatherTimer?.cancel();
     _editModeController.dispose();
     _designController.dispose();
+    _clock.dispose();
     super.dispose();
   }
 
@@ -144,11 +145,6 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage>
       child: Builder(
         builder: (context) {
           final materialLocalizations = MaterialLocalizations.of(context);
-          final time = materialLocalizations.formatTimeOfDay(
-            TimeOfDay.fromDateTime(_now),
-            alwaysUse24HourFormat: use24HourFormat,
-          );
-          final date = materialLocalizations.formatFullDate(_now);
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -220,22 +216,32 @@ class _ClockScreensaverPageState extends State<ClockScreensaverPage>
                   child: IgnorePointer(
                     ignoring: widget.editing,
                     child: Center(
-                    child: ClockfaceDesign(
-                      design: design,
-                      time: time,
-                      date: date,
-                      now: _now,
-                      weather: _weather,
-                      weatherLocation: widget.weatherLocation,
-                      weatherLoading: _weatherLoading,
-                      nowPlayingLabel:
-                          widget.nowPlayingLabel ?? startListeningLabel,
-                      editing: widget.editing,
-                      musicPalette: widget.musicPalette,
-                      locale: appLocale,
-                      onNowPlayingTap: widget.nowPlayingLabel == null
-                          ? null
-                          : widget.onNowPlayingTap,
+                    child: ValueListenableBuilder<DateTime>(
+                      valueListenable: _clock,
+                      builder: (context, now, _) {
+                        final time = materialLocalizations.formatTimeOfDay(
+                          TimeOfDay.fromDateTime(now),
+                          alwaysUse24HourFormat: use24HourFormat,
+                        );
+                        final date = materialLocalizations.formatFullDate(now);
+                        return ClockfaceDesign(
+                          design: design,
+                          time: time,
+                          date: date,
+                          now: now,
+                          weather: _weather,
+                          weatherLocation: widget.weatherLocation,
+                          weatherLoading: _weatherLoading,
+                          nowPlayingLabel:
+                              widget.nowPlayingLabel ?? startListeningLabel,
+                          editing: widget.editing,
+                          musicPalette: widget.musicPalette,
+                          locale: appLocale,
+                          onNowPlayingTap: widget.nowPlayingLabel == null
+                              ? null
+                              : widget.onNowPlayingTap,
+                        );
+                      },
                     ),
                   ),
                   ),
