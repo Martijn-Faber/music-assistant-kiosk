@@ -222,7 +222,14 @@ class AppPagePagerState extends State<AppPagePager> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        RepaintBoundary(child: child!),
+                        TickerMode(
+                          // Keep tickers active only for pages currently
+                          // participating in the swipe. Settled neighboring
+                          // pages stay mounted for smooth paging, but pause
+                          // their animations while fully offscreen.
+                          enabled: distance < 1,
+                          child: RepaintBoundary(child: child!),
+                        ),
                         IgnorePointer(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
